@@ -16,9 +16,8 @@ qtest: qtest.c report.c console.c harness.c queue.o
 	$(CC) $(CFLAGS) -o qtest qtest.c report.c console.c harness.c queue.o
 	tar cf handin.tar queue.c queue.h
 
-test: qtest driver.py
-	chmod +x driver.py
-	./driver.py
+test: qtest scripts/driver.py
+	scripts/driver.py
 
 clean:
 	rm -f *.o *~ qtest 
