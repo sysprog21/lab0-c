@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+CPPCHECK_OPTS="-I. -I./include --error-exitcode=1 ."
+
+RETURN=0
+CLANG_FORMAT=$(which clang-format)
+if [ $? -ne 0 ]; then
+    echo "[!] clang-format not installed. Unable to check source file format policy." >&2
+    exit 1
+fi
+
+CPPCHECK=$(which cppcheck)
+if [ $? -ne 0 ]; then
+    echo "[!] cppcheck not installed. Unable to perform static analysis." >&2
+    exit 1
+fi
+
+DIFF=$(which colordiff)
+if [ $? -ne 0 ]; then
+    DIFF=diff
+fi
+
+FILES=`git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h)$"`
+for FILE in $FILES; do
+    nf=`git checkout-index --temp $FILE | cut -f 1`
+    newfile=`mktemp /tmp/${nf}.XXXXXX` || exit 1
+    $CLANG_FORMAT $nf > $newfile 2>> /dev/null
+    $DIFF -u -p -B  "${nf}" "${newfile}"
+    r=$?
+    rm "${newfile}"
+    rm "${nf}"
+    if [ $r != 0 ] ; then
+        echo "[!] $FILE does not follow the consistent coding style." >&2
+        RETURN=1
+    fi
+done
+
+if [ $RETURN -eq 1 ]; then
+    echo "" >&2
+    echo "Make sure you indent as the following:" >&2
+    echo "    clang-format -i $FILE" >&2
+    echo
+fi
+
+# static analysis
+$CPPCHECK $CPPCHECK_OPTS >/dev/null
+if [ $? -ne 0 ]; then
+    RETURN=1
+    echo "" >&2
+    echo "Fail to pass static analysis." >&2
+    echo
+fi
+
+exit $RETURN
