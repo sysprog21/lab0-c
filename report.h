@@ -1,5 +1,5 @@
-#include <stdbool.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 /* Default reporting level.  Must recompile when change */
 #ifndef RPT

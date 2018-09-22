@@ -1,20 +1,20 @@
 /* Implementation of simple command-line interface */
 
+#include <ctype.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <limits.h>
-#include <unistd.h>
-#include <inttypes.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/select.h>
-#include <fcntl.h>
-#include <ctype.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-#include "report.h"
 #include "console.h"
+#include "report.h"
 
 
 /* Some global values */

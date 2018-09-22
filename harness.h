@@ -1,6 +1,6 @@
-#include <stdbool.h>
-#include <stdarg.h>
 #include <setjmp.h>
+#include <stdarg.h>
+#include <stdbool.h>
 
 /*
   This test harness enables us to do stringent testing of code.
