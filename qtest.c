@@ -1,10 +1,10 @@
 /* Implementation of testing code for queue code */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <getopt.h>
 #include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* Our program needs to use regular malloc/free */
 #define INTERNAL 1
@@ -23,8 +23,8 @@
 */
 #include "queue.h"
 
-#include "report.h"
 #include "console.h"
+#include "report.h"
 
 /***** Settable parameters *****/
 
