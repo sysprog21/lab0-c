@@ -17,6 +17,14 @@ qtest: qtest.c report.c console.c harness.c queue.o
 test: qtest scripts/driver.py
 	scripts/driver.py
 
+valgrind_existence:
+	@which valgrind 2>&1 > /dev/null
+
+valgrind: qtest valgrind_existence
+	cp qtest qtest.patched
+	sed -i "s/alarm/isnan/g" qtest.patched
+	scripts/driver.py -p ./qtest.patched --valgrind
+
 clean:
 	rm -f *.o *~ qtest 
 	rm -rf *.dSYM
