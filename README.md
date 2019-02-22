@@ -13,6 +13,15 @@ Check the correctness of your code:
 make test
 ```
 
+Check the memory issue of your code:
+
+```shell
+make valgrind
+```
+
+* Modify `./.valgrindrc` to customize arguments of Valgrind
+* Use `make clean` or `rm /tmp/qtest.*` to clean the temporary files created by target valgrind
+
 ## Using qtest
 
 qtest provides a command interpreter that can create and manipulate queues.
