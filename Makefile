@@ -21,12 +21,17 @@ valgrind_existence:
 	@which valgrind 2>&1 > /dev/null
 
 valgrind: qtest valgrind_existence
-	cp qtest qtest.patched
-	sed -i "s/alarm/isnan/g" qtest.patched
-	scripts/driver.py -p ./qtest.patched --valgrind
+	$(eval patched_file := $(shell mktemp /tmp/qtest.XXXXXX))
+	cp qtest $(patched_file)
+	chmod u+x $(patched_file)
+	sed -i "s/alarm/isnan/g" $(patched_file)
+	scripts/driver.py -p $(patched_file) --valgrind
+	@echo
+	@echo "Test with specific case by running command:" 
+	@echo "scripts/driver.py -p $(patched_file) --valgrind -t <tid>"
 
 clean:
-	rm -f *.o *~ qtest 
+	rm -f *.o *~ qtest /tmp/qtest.*
 	rm -rf *.dSYM
 	(cd traces; rm -f *~)
 
