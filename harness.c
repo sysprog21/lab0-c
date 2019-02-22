@@ -185,6 +185,16 @@ void test_free(void *p)
     allocated_count--;
 }
 
+char *test_strdup(const char *s)
+{
+    size_t len = strlen(s) + 1;
+    void *new = test_malloc(len);
+
+    if (new == NULL)
+        return NULL;
+    return (char *) memcpy(new, s, len);
+}
+
 size_t allocation_check()
 {
     return allocated_count;

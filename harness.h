@@ -10,6 +10,7 @@
 
 void *test_malloc(size_t size);
 void test_free(void *p);
+char *test_strdup(const char *s);
 
 #ifdef INTERNAL
 /* Report number of allocated blocks */
@@ -57,4 +58,5 @@ void trigger_exception(char *msg);
 /* Tested program use our versions of malloc and free */
 #define malloc test_malloc
 #define free test_free
+#define strdup test_strdup
 #endif
