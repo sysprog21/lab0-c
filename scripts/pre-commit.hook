@@ -33,14 +33,13 @@ for FILE in $FILES; do
         echo "[!] $FILE does not follow the consistent coding style." >&2
         RETURN=1
     fi
+    if [ $RETURN -eq 1 ]; then
+        echo "" >&2
+        echo "Make sure you indent as the following:" >&2
+        echo "    clang-format -i $FILE" >&2
+        echo
+    fi
 done
-
-if [ $RETURN -eq 1 ]; then
-    echo "" >&2
-    echo "Make sure you indent as the following:" >&2
-    echo "    clang-format -i $FILE" >&2
-    echo
-fi
 
 # static analysis
 $CPPCHECK $CPPCHECK_OPTS >/dev/null
