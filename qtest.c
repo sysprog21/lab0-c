@@ -294,7 +294,18 @@ bool do_remove_head(int argc, char *argv[])
         if (removes[0] == '\0') {
             report(1, "ERROR: Failed to store removed value");
             ok = false;
-        } else if (removes[string_length + 1] != 'X') {
+        }
+
+        bool check_overflow = true;
+        int i = 0;
+        for (i = string_length + 1; i < string_length + STRINGPAD; i++) {
+            if (removes[i] != 'X') {
+                check_overflow = false;
+                break;
+            }
+        }
+
+        if (!check_overflow) {
             report(1,
                    "ERROR: copying of string in remove_head overflowed "
                    "destination buffer.");
