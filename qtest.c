@@ -297,8 +297,7 @@ bool do_remove_head(int argc, char *argv[])
         }
 
         bool check_overflow = true;
-        int i = 0;
-        for (i = string_length + 1; i < string_length + STRINGPAD; i++) {
+        for (int i = string_length + 1; i < string_length + STRINGPAD; i++) {
             if (removes[i] != 'X') {
                 check_overflow = false;
                 break;
