@@ -297,8 +297,8 @@ bool do_remove_head(int argc, char *argv[])
         }
 
         /*
-        Validate memory by checking removes's padding positions are still
-        initial value 'X'.
+          Validate memory by checking removes's padding positions are still
+          initial value 'X'.
         */
         bool check_overflow = true;
         for (int i = string_length + 1; i < string_length + STRINGPAD; i++) {
