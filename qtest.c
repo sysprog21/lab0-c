@@ -301,7 +301,7 @@ bool do_remove_head(int argc, char *argv[])
           initial value 'X'.
         */
         int i = string_length + 1;
-        while (i < string_length + STRINGPAD && removes[i] == 'X') {
+        while ((i < string_length + STRINGPAD) && (removes[i] == 'X')) {
             i++;
         }
         if (i != string_length + STRINGPAD) {
