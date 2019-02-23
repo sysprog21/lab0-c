@@ -300,15 +300,11 @@ bool do_remove_head(int argc, char *argv[])
           Validate memory by checking removes's padding positions are still
           initial value 'X'.
         */
-        bool check_overflow = true;
-        for (int i = string_length + 1; i < string_length + STRINGPAD; i++) {
-            if (removes[i] != 'X') {
-                check_overflow = false;
-                break;
-            }
+        int i = string_length + 1;
+        while (i < string_length + STRINGPAD && removes[i] == 'X') {
+            i++;
         }
-
-        if (!check_overflow) {
+        if (i != string_length + STRINGPAD) {
             report(1,
                    "ERROR: copying of string in remove_head overflowed "
                    "destination buffer.");
