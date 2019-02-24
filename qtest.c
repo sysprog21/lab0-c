@@ -294,7 +294,17 @@ bool do_remove_head(int argc, char *argv[])
         if (removes[0] == '\0') {
             report(1, "ERROR: Failed to store removed value");
             ok = false;
-        } else if (removes[string_length + 1] != 'X') {
+        }
+
+        /*
+          Check whether padding in array removes are still initial value 'X'. If
+          there's other character in padding, it's overflowed.
+        */
+        int i = string_length + 1;
+        while ((i < string_length + STRINGPAD) && (removes[i] == 'X')) {
+            i++;
+        }
+        if (i != string_length + STRINGPAD) {
             report(1,
                    "ERROR: copying of string in remove_head overflowed "
                    "destination buffer.");
