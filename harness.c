@@ -154,8 +154,6 @@ void test_free(void *p)
         return;
     }
     if (p == NULL) {
-        report(MSG_ERROR, "Attempt to free NULL");
-        error_occurred = true;
         return;
     }
     block_ele_t *b = find_header(p);
