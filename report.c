@@ -145,7 +145,7 @@ void safe_report(int level, char *msg)
 /* Need to be able to print without using malloc */
 void fail_fun(char *format, char *msg)
 {
-    sprintf(fail_buf, format, msg);
+    snprintf(fail_buf, sizeof(fail_buf), format, msg);
     /* Tack on return */
     fail_buf[strlen(fail_buf)] = '\n';
     /* Use write to avoid any buffering issues */
@@ -262,7 +262,7 @@ char *strsave_or_fail(char *s, char *fun_name)
     peak_bytes = MAX(peak_bytes, current_bytes);
     last_peak_bytes = MAX(last_peak_bytes, current_bytes);
 
-    return strcpy(ss, s);
+    return strncpy(ss, s, len + 1);
 }
 
 /* Free block, as from malloc, realloc, or strsave */

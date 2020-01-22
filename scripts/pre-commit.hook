@@ -46,6 +46,24 @@ for FILE in $FILES; do
     fi
 done
 
+# Prevent unsafe functions
+root=$(git rev-parse --show-toplevel)
+banned="([^f]gets\()|(sprintf\()|(strcpy\()"
+status=0
+for file in $(git diff --staged --name-only | grep -E "\.(c|cc|cpp|h|hh|hpp)\$")
+do
+    filepath="${root}/${file}"
+    output=$(grep -nrE "${banned}" "${filepath}")
+    if [ ! -z "${output}" ]; then
+        echo "Dangerous function detected in ${filepath}"
+        echo "${output}"
+        echo
+        echo "Read 'Common vulnerabilities guide for C programmers' carefully."
+        echo "    https://security.web.cern.ch/security/recommendations/en/codetools/c.shtml"
+        RETURN=1
+    fi
+done
+
 # static analysis
 $CPPCHECK $CPPCHECK_OPTS >/dev/null
 if [ $? -ne 0 ]; then
