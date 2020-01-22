@@ -26,7 +26,7 @@ void init_files(FILE *efile, FILE *vfile)
 
 static char fail_buf[1024] = "FATAL Error.  Exiting\n";
 
-volatile int rval = 0;
+static volatile int ret = 0;
 
 /* Default fatal function */
 void default_fatal_fun()
@@ -36,7 +36,7 @@ void default_fatal_fun()
     GB\n",
            gigabytes(current_bytes), gigabytes(resident_bytes()));
     */
-    rval = write(STDOUT_FILENO, fail_buf, strlen(fail_buf) + 1);
+    ret = write(STDOUT_FILENO, fail_buf, strlen(fail_buf) + 1);
     if (logfile)
         fputs(fail_buf, logfile);
 }
@@ -155,7 +155,7 @@ void fail_fun(char *format, char *msg)
     /* Tack on return */
     fail_buf[strlen(fail_buf)] = '\n';
     /* Use write to avoid any buffering issues */
-    rval = write(STDOUT_FILENO, fail_buf, strlen(fail_buf) + 1);
+    ret = write(STDOUT_FILENO, fail_buf, strlen(fail_buf) + 1);
     if (logfile) {
         /* Don't know file descriptor for logfile */
         fputs(fail_buf, logfile);
