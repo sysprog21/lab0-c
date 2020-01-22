@@ -1,3 +1,6 @@
+#ifndef LAB0_HARNESS_H
+#define LAB0_HARNESS_H
+
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -60,3 +63,5 @@ void trigger_exception(char *msg);
 #define free test_free
 #define strdup test_strdup
 #endif
+
+#endif /* LAB0_HARNESS_H */

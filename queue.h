@@ -1,3 +1,6 @@
+#ifndef LAB0_QUEUE_H
+#define LAB0_QUEUE_H
+
 /*
  * Code for basic C skills diagnostic.
  * Developed for courses 15-213/18-213/15-513 by R. E. Bryant, 2017
@@ -88,3 +91,5 @@ int q_size(queue_t *q);
   It should rearrange the existing ones.
  */
 void q_reverse(queue_t *q);
+
+#endif /* LAB0_QUEUE_H */

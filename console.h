@@ -1,3 +1,6 @@
+#ifndef LAB0_CONSOLE_H
+#define LAB0_CONSOLE_H
+
 /* Implementation of simple command-line interface */
 
 /* Each command defined in terms of a function */
@@ -102,3 +105,5 @@ int cmd_select(int nfds,
 /* Run command loop.  Non-null infile_name implies read commands from that file
  */
 bool run_console(char *infile_name);
+
+#endif /* LAB0_CONSOLE_H */
