@@ -84,14 +84,6 @@ void init_time(double *timep);
    and reset timer */
 double delta_time(double *timep);
 
-/** Memory usage **/
-
-/* Number of bytes resident in physical memory */
-size_t resident_bytes();
-
-/* Convert bytes to gigabytes */
-double gigabytes(size_t bytes);
-
 /** Counters giving peak memory usage **/
 
 /* Never resets */

@@ -31,11 +31,6 @@ static volatile int ret = 0;
 /* Default fatal function */
 void default_fatal_fun()
 {
-    /*
-    sprintf(fail_buf, "FATAL.  Memory: allocated = %.3f GB, resident = %.3f
-    GB\n",
-           gigabytes(current_bytes), gigabytes(resident_bytes()));
-    */
     ret = write(STDOUT_FILENO, fail_buf, strlen(fail_buf) + 1);
     if (logfile)
         fputs(fail_buf, logfile);
@@ -88,7 +83,6 @@ void report_event(message_t msg, char *fmt, ...)
         exit(1);
     }
 }
-
 
 void report(int level, char *fmt, ...)
 {
@@ -332,48 +326,3 @@ double delta_time(double *timep)
     *timep = current_time;
     return delta;
 }
-
-/* Number of bytes resident in physical memory */
-size_t resident_bytes()
-{
-    struct rusage r;
-    size_t mem = 0;
-    int code = getrusage(RUSAGE_SELF, &r);
-    if (code < 0) {
-        report_event(MSG_ERROR, "Call to getrusage failed");
-    } else {
-        mem = r.ru_maxrss * 1024;
-    }
-    return mem;
-}
-
-double gigabytes(size_t n)
-{
-    return (double) n / (1UL << 30);
-}
-
-void reset_peak_bytes()
-{
-    last_peak_bytes = current_bytes;
-}
-
-#if 0
-static char timeout_buf[256];
-
-void sigalrmhandler(int sig) {
-    safe_report(true, timeout_buf);
-}
-
-
-void change_timeout(int oldval) {
-    sprintf(timeout_buf, "Program timed out after %d seconds\n", timelimit);
-    /* alarm function will correctly cancel existing alarms */
-    signal(SIGALRM, sigalrmhandler);
-    alarm(timelimit);
-}
-
-/* Handler for SIGTERM signals */
-void sigterm_handler(int sig) {
-    safe_report(true, "SIGTERM signal received");
-}
-#endif
