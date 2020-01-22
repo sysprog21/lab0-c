@@ -4,16 +4,32 @@ CFLAGS = -O0 -g -Wall -Werror
 GIT_HOOKS := .git/hooks/applied
 all: $(GIT_HOOKS) qtest
 
+# Control the build verbosity
+ifeq ("$(VERBOSE)","1")
+    Q :=
+    VECHO = @true
+else
+    Q := @
+    VECHO = @printf
+endif
+
 $(GIT_HOOKS):
 	@scripts/install-git-hooks
 	@echo
 
-queue.o: queue.c queue.h harness.h
-	$(CC) $(CFLAGS) -c queue.c 
+OBJS := qtest.o report.o console.o harness.o queue.o
+deps := $(OBJS:%.o=.%.o.d)
 
-qtest: qtest.c report.c console.c harness.c queue.o
-	$(CC) $(CFLAGS) -o qtest qtest.c report.c console.c harness.c queue.o
+qtest: $(OBJS)
+	$(VECHO) "  LD\t$@\n"
+	$(Q)$(CC) $(LDFLAGS)  -o $@ $^
 
+%.o: %.c
+	$(VECHO) "  CC\t$@\n"
+	$(Q)$(CC) -o $@ $(CFLAGS) -c -MMD -MF .$@.d $<
+
+
+check: test
 test: qtest scripts/driver.py
 	scripts/driver.py
 
@@ -31,7 +47,8 @@ valgrind: qtest valgrind_existence
 	@echo "scripts/driver.py -p $(patched_file) --valgrind -t <tid>"
 
 clean:
-	rm -f *.o *~ qtest /tmp/qtest.*
+	rm -f $(OBJS) $(deps) *~ qtest /tmp/qtest.*
 	rm -rf *.dSYM
 	(cd traces; rm -f *~)
 
+-include $(deps)

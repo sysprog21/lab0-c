@@ -1,3 +1,4 @@
-handin.tar
 qtest
 *.o
+*.o.d
+*.dSYM
