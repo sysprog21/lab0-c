@@ -1,10 +1,26 @@
 personal_ws-1.1 en 500
+qtest
+sanitizer
+unix
+linux
+valgrind
+ubuntu
+gdb
+sdk
 aspell
 cppcheck
+glibc
 git
 pre
 gcc
 clang
+enqueue
+dequeue
+fifo
+lifo
+stdin
+stdout
+stderr
 strdup
 strcmp
 strcasecmp
