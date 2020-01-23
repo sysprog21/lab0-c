@@ -139,6 +139,21 @@ validate_commit_message() {
   # if the commit subject starts with 'fixup! ' there's nothing to validate, we can return here
   [[ $COMMIT_SUBJECT == 'fixup! '* ]] && return;
 
+  # 0. Check spelling
+  # ------------------------------------------------------------------------------
+  ASPELL=$(which aspell)
+  if [ $? -ne 0 ]; then
+      echo "Aspell not installed - unable to check spelling"
+  else
+    for i in "${!v}"; do
+      LINE_NUMBER=$((i+1))
+      MISSPELLED_WORDS=`echo "$COMMIT_MSG_LINES[LINE_NUMBER]" | $ASPELL --list`
+      if [ -n "$MISSPELLED_WORDS" ]; then
+        add_warning LINE_NUMBER "Possible misspelled word(s): $MISSPELLED_WORDS"
+      fi
+    done
+  fi
+
   # 1. Separate subject from body with a blank line
   # ------------------------------------------------------------------------------
 
