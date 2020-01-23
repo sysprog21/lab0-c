@@ -12,6 +12,7 @@
 
 /* What character limit will be used for displaying strings? */
 #define MAXSTRING 1024
+
 /* How much padding should be added to check for string overrun? */
 #define STRINGPAD MAXSTRING
 
@@ -34,33 +35,33 @@
  * and whether cautious mode is used when freeing the list
  */
 #define BIG_QUEUE 30
-
-int big_queue_size = BIG_QUEUE;
+static int big_queue_size = BIG_QUEUE;
 
 /* Global variables */
 
 /* Queue being tested */
-queue_t *q = NULL;
+static queue_t *q = NULL;
+
 /* Number of elements in queue */
 size_t qcnt = 0;
 
 /* How many times can queue operations fail */
-int fail_limit = BIG_QUEUE;
-int fail_count = 0;
+static int fail_limit = BIG_QUEUE;
+static int fail_count = 0;
 
-int string_length = MAXSTRING;
+static int string_length = MAXSTRING;
 
 /* Forward declarations */
 static bool show_queue(int vlevel);
-bool do_new(int argc, char *argv[]);
-bool do_free(int argc, char *argv[]);
-bool do_insert_head(int argc, char *argv[]);
-bool do_insert_tail(int argc, char *argv[]);
-bool do_remove_head(int argc, char *argv[]);
-bool do_remove_head_quiet(int argc, char *argv[]);
-bool do_reverse(int argc, char *argv[]);
-bool do_size(int argc, char *argv[]);
-bool do_show(int argc, char *argv[]);
+static bool do_new(int argc, char *argv[]);
+static bool do_free(int argc, char *argv[]);
+static bool do_insert_head(int argc, char *argv[]);
+static bool do_insert_tail(int argc, char *argv[]);
+static bool do_remove_head(int argc, char *argv[]);
+static bool do_remove_head_quiet(int argc, char *argv[]);
+static bool do_reverse(int argc, char *argv[]);
+static bool do_size(int argc, char *argv[]);
+static bool do_show(int argc, char *argv[]);
 
 static void queue_init();
 
@@ -92,7 +93,7 @@ static void console_init()
               "Number of times allow queue operations to return false", NULL);
 }
 
-bool do_new(int argc, char *argv[])
+static bool do_new(int argc, char *argv[])
 {
     if (argc != 1) {
         report(1, "%s takes no arguments", argv[0]);
@@ -113,7 +114,7 @@ bool do_new(int argc, char *argv[])
     return ok && !error_check();
 }
 
-bool do_free(int argc, char *argv[])
+static bool do_free(int argc, char *argv[])
 {
     if (argc != 1) {
         report(1, "%s takes no arguments", argv[0]);
@@ -142,7 +143,7 @@ bool do_free(int argc, char *argv[])
     return ok && !error_check();
 }
 
-bool do_insert_head(int argc, char *argv[])
+static bool do_insert_head(int argc, char *argv[])
 {
     char *inserts;
     char *lasts = NULL;
@@ -203,7 +204,7 @@ bool do_insert_head(int argc, char *argv[])
     return ok;
 }
 
-bool do_insert_tail(int argc, char *argv[])
+static bool do_insert_tail(int argc, char *argv[])
 {
     char *inserts;
     int reps = 1;
@@ -250,7 +251,7 @@ bool do_insert_tail(int argc, char *argv[])
     return ok;
 }
 
-bool do_remove_head(int argc, char *argv[])
+static bool do_remove_head(int argc, char *argv[])
 {
     if (argc != 1 && argc != 2) {
         report(1, "%s needs 0-1 arguments", argv[0]);
@@ -297,9 +298,9 @@ bool do_remove_head(int argc, char *argv[])
         }
 
         /*
-          Check whether padding in array removes are still initial value 'X'. If
-          there's other character in padding, it's overflowed.
-        */
+         * Check whether padding in array removes are still initial value 'X'.
+         * If there's other character in padding, it's overflowed.
+         */
         int i = string_length + 1;
         while ((i < string_length + STRINGPAD) && (removes[i] == 'X')) {
             i++;
@@ -334,7 +335,7 @@ bool do_remove_head(int argc, char *argv[])
     return ok && !error_check();
 }
 
-bool do_remove_head_quiet(int argc, char *argv[])
+static bool do_remove_head_quiet(int argc, char *argv[])
 {
     if (argc != 1) {
         report(1, "%s takes no arguments", argv[0]);
@@ -366,7 +367,7 @@ bool do_remove_head_quiet(int argc, char *argv[])
     return ok && !error_check();
 }
 
-bool do_reverse(int argc, char *argv[])
+static bool do_reverse(int argc, char *argv[])
 {
     if (argc != 1) {
         report(1, "%s takes no arguments", argv[0]);
@@ -384,7 +385,7 @@ bool do_reverse(int argc, char *argv[])
     return !error_check();
 }
 
-bool do_size(int argc, char *argv[])
+static bool do_size(int argc, char *argv[])
 {
     if (argc != 1 && argc != 2) {
         report(1, "%s takes 0-1 arguments", argv[0]);
@@ -469,7 +470,7 @@ static bool show_queue(int vlevel)
     return ok;
 }
 
-bool do_show(int argc, char *argv[])
+static bool do_show(int argc, char *argv[])
 {
     if (argc != 1) {
         report(1, "%s takes no arguments", argv[0]);
@@ -479,14 +480,14 @@ bool do_show(int argc, char *argv[])
 }
 
 /* Signal handlers */
-void sigsegvhandler(int sig)
+static void sigsegvhandler(int sig)
 {
     trigger_exception(
         "Segmentation fault occurred.  You dereferenced a NULL or invalid "
         "pointer");
 }
 
-void sigalrmhandler(int sig)
+static void sigalrmhandler(int sig)
 {
     trigger_exception(
         "Time limit exceeded.  Either you are in an infinite loop, or your "
