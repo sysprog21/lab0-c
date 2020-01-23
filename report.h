@@ -45,25 +45,16 @@ void report_noreturn(int verblevel, char *fmt, ...);
 /* Simple failure report.  Works even when malloc returns NULL */
 void fail_fun(char *format, char *msg);
 
-/* Signal safe reporting function */
-void safe_report(int verblevel, char *msg);
-
 /* Attempt to call malloc.  Fail when returns NULL */
 void *malloc_or_fail(size_t bytes, char *fun_name);
 
 /* Attempt to call calloc.  Fail when returns NULL */
 void *calloc_or_fail(size_t cnt, size_t bytes, char *fun_name);
 
-/* Attempt to call realloc.  Fail when returns NULL */
-void *realloc_or_fail(void *old,
-                      size_t old_bytes,
-                      size_t new_bytes,
-                      char *fun_name);
-
 /* Attempt to save string.  Fail when malloc returns NULL */
 char *strsave_or_fail(char *s, char *fun_name);
 
-/* Free block, as from malloc, realloc, or strsave */
+/* Free block, as from malloc, or strsave */
 void free_block(void *b, size_t len);
 
 /* Free array, as from calloc */
@@ -71,9 +62,6 @@ void free_array(void *b, size_t cnt, size_t bytes);
 
 /* Free string saved by strsave_or_fail */
 void free_string(char *s);
-
-/* Report current allocation status */
-void mem_status(FILE *fp);
 
 /** Time measurement.  **/
 

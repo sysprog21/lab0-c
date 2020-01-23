@@ -253,12 +253,6 @@ void add_quit_helper(cmd_function qf)
         report_event(MSG_FATAL, "Exceeded limit on quit helpers");
 }
 
-/* Set prompt string */
-void set_prompt(char *p)
-{
-    prompt = p;
-}
-
 /* Turn echoing on/off */
 void set_echo(bool on)
 {
@@ -475,7 +469,7 @@ static char *readline()
     char c;
     char *lptr = linebuf;
 
-    if (buf_stack == NULL)
+    if (!buf_stack)
         return NULL;
 
     for (cnt = 0; cnt < RIO_BUFSIZE - 2; cnt++) {
@@ -519,23 +513,6 @@ static char *readline()
     return linebuf;
 }
 
-
-void block_console()
-{
-    block_flag = true;
-}
-
-void unblock_console()
-{
-    block_flag = false;
-    if (block_timing) {
-        double delta = delta_time(&last_time);
-        report(1, "Delta time = %.3f", delta);
-    }
-    block_timing = false;
-}
-
-
 /* Determine if there is a complete command line in input buffer */
 static bool read_ready()
 {
@@ -576,7 +553,7 @@ int cmd_select(int nfds,
         return 0;
     if (!block_flag) {
         /* Process any commands in input buffer */
-        if (readfds == NULL)
+        if (!readfds)
             readfds = &local_readset;
         /* Add input fd to readset for select */
         infd = buf_stack->fd;
@@ -607,19 +584,9 @@ int cmd_select(int nfds,
     return result;
 }
 
-
-bool start_cmd(char *infile_name)
-{
-    bool ok = push_file(infile_name);
-    if (!ok)
-        report(1, "Could not open source file '%s'",
-               infile_name ? infile_name : "standard input");
-    return ok;
-}
-
 bool cmd_done()
 {
-    return buf_stack == NULL || quit_flag;
+    return !buf_stack || quit_flag;
 }
 
 

@@ -76,7 +76,7 @@ static bool fail_allocation()
  */
 static block_ele_t *find_header(void *p)
 {
-    if (p == NULL) {
+    if (!p) {
         report_event(MSG_ERROR, "Attempting to free null block");
         error_occurred = true;
     }
@@ -109,6 +109,7 @@ static block_ele_t *find_header(void *p)
 /* Given pointer to block, find its footer */
 static size_t *find_footer(block_ele_t *b)
 {
+    // cppcheck-suppress nullPointerRedundantCheck
     size_t *p = (size_t *) ((size_t) b + b->payload_size + sizeof(block_ele_t));
     return p;
 }
@@ -129,16 +130,20 @@ void *test_malloc(size_t size)
     }
     block_ele_t *new_block =
         malloc(size + sizeof(block_ele_t) + sizeof(size_t));
-    if (new_block == NULL) {
+    if (!new_block) {
         report_event(MSG_FATAL, "Couldn't allocate any more memory");
         error_occurred = true;
     }
+    // cppcheck-suppress nullPointerRedundantCheck
     new_block->magic_header = MAGICHEADER;
+    // cppcheck-suppress nullPointerRedundantCheck
     new_block->payload_size = size;
     *find_footer(new_block) = MAGICFOOTER;
     void *p = (void *) &new_block->payload;
     memset(p, FILLCHAR, size);
+    // cppcheck-suppress nullPointerRedundantCheck
     new_block->next = allocated;
+    // cppcheck-suppress nullPointerRedundantCheck
     new_block->prev = NULL;
     if (allocated)
         allocated->prev = new_block;
@@ -153,9 +158,8 @@ void test_free(void *p)
         report_event(MSG_FATAL, "Calls to free disallowed");
         return;
     }
-    if (p == NULL) {
+    if (!p)
         return;
-    }
     block_ele_t *b = find_header(p);
     size_t footer = *find_footer(b);
     if (footer != MAGICFOOTER) {
@@ -183,12 +187,13 @@ void test_free(void *p)
     allocated_count--;
 }
 
+// cppcheck-suppress unusedFunction
 char *test_strdup(const char *s)
 {
     size_t len = strlen(s) + 1;
     void *new = test_malloc(len);
 
-    if (new == NULL)
+    if (!new)
         return NULL;
     return (char *) memcpy(new, s, len);
 }

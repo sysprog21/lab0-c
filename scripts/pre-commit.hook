@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-CPPCHECK_OPTS="-I. -I./include --error-exitcode=1 ."
+CPPCHECK_suppresses="--inline-suppr harness.c --suppress=unmatchedSuppression:harness.c"
+CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1 --force $CPPCHECK_suppresses ."
 
 RETURN=0
 CLANG_FORMAT=$(which clang-format)

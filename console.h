@@ -54,29 +54,8 @@ bool get_int(char *vname, int *loc);
 /* Add function to be executed as part of program exit */
 void add_quit_helper(cmd_function qf);
 
-/* Set prompt */
-void set_prompt(char *prompt);
-
 /* Turn echoing on/off */
 void set_echo(bool on);
-
-/*
-  Some console commands require network activity to complete.
-  Program maintains a flag indicating whether console is ready to execute a new
-  command (unblocked) or it must wait for pending network activity (blocked).
-
-  The following calls set/clear that flag
-*/
-
-void block_console();
-void unblock_console();
-
-/* Start command intrepretation.
-   If infile_name is NULL, then read commands from stdin
-   Otherwise, use infile as command source
-*/
-bool start_cmd(char *infile_name);
-
 
 /* Is it time to quit the command loop? */
 bool cmd_done();

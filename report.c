@@ -86,10 +86,10 @@ void report_event(message_t msg, char *fmt, ...)
 
 void report(int level, char *fmt, ...)
 {
-    va_list ap;
     if (!verbfile)
         init_files(stdout, stdout);
     if (level <= verblevel) {
+        va_list ap;
         va_start(ap, fmt);
         vfprintf(verbfile, fmt, ap);
         fprintf(verbfile, "\n");
@@ -107,10 +107,10 @@ void report(int level, char *fmt, ...)
 
 void report_noreturn(int level, char *fmt, ...)
 {
-    va_list ap;
     if (!verbfile)
         init_files(stdout, stdout);
     if (level <= verblevel) {
+        va_list ap;
         va_start(ap, fmt);
         vfprintf(verbfile, fmt, ap);
         fflush(verbfile);
@@ -123,20 +123,6 @@ void report_noreturn(int level, char *fmt, ...)
         }
     }
 }
-
-void safe_report(int level, char *msg)
-{
-    if (level > verblevel)
-        return;
-    if (!errfile)
-        init_files(stdout, stdout);
-    fputs(msg, errfile);
-    if (logfile) {
-        fputs(msg, logfile);
-    }
-}
-
-
 
 /* Functions denoting failures */
 
@@ -222,30 +208,6 @@ void *calloc_or_fail(size_t cnt, size_t bytes, char *fun_name)
     return p;
 }
 
-/* Call realloc returns NULL & exit if fails.
-   Require explicit indication of current allocation */
-void *realloc_or_fail(void *old,
-                      size_t old_bytes,
-                      size_t new_bytes,
-                      char *fun_name)
-{
-    if (new_bytes > old_bytes)
-        check_exceed(new_bytes - old_bytes);
-    void *p = realloc(old, new_bytes);
-    if (!p) {
-        fail_fun("Realloc returned NULL in %s", fun_name);
-        return NULL;
-    }
-    allocate_cnt++;
-    allocate_bytes += new_bytes;
-    current_bytes += (new_bytes - old_bytes);
-    peak_bytes = MAX(peak_bytes, current_bytes);
-    last_peak_bytes = MAX(last_peak_bytes, current_bytes);
-    free_cnt++;
-    free_bytes += old_bytes;
-    return p;
-}
-
 char *strsave_or_fail(char *s, char *fun_name)
 {
     if (!s)
@@ -268,9 +230,8 @@ char *strsave_or_fail(char *s, char *fun_name)
 /* Free block, as from malloc, realloc, or strsave */
 void free_block(void *b, size_t bytes)
 {
-    if (b == NULL) {
+    if (!b)
         report_event(MSG_ERROR, "Attempting to free null block");
-    }
     free(b);
     free_cnt++;
     free_bytes += bytes;
@@ -280,9 +241,8 @@ void free_block(void *b, size_t bytes)
 /* Free array, as from calloc */
 void free_array(void *b, size_t cnt, size_t bytes)
 {
-    if (b == NULL) {
+    if (!b)
         report_event(MSG_ERROR, "Attempting to free null block");
-    }
     free(b);
     free_cnt++;
     free_bytes += cnt * bytes;
@@ -292,23 +252,9 @@ void free_array(void *b, size_t cnt, size_t bytes)
 /* Free string saved by strsave_or_fail */
 void free_string(char *s)
 {
-    if (s == NULL) {
+    if (!s)
         report_event(MSG_ERROR, "Attempting to free null block");
-    }
     free_block((void *) s, strlen(s) + 1);
-}
-
-
-/* Report current allocation status */
-void mem_status(FILE *fp)
-{
-    fprintf(fp,
-            "Allocated cnt/bytes: %lu/%lu.  Freed cnt/bytes: %lu/%lu.\n"
-            "  Peak bytes %lu, Last peak bytes %ld, Current bytes %ld\n",
-            (long unsigned) allocate_cnt, (long unsigned) allocate_bytes,
-            (long unsigned) free_cnt, (long unsigned) free_bytes,
-            (long unsigned) peak_bytes, (long unsigned) last_peak_bytes,
-            (long unsigned) current_bytes);
 }
 
 /* Initialization of timers */
