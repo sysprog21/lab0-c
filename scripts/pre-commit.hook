@@ -16,6 +16,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+ASPELL=$(which aspell)
+if [ $? -ne 0 ]; then
+    echo "[!] aspell not installed. Unable to do spelling check." >&2
+    exit 1
+fi
+
 DIFF=$(which colordiff)
 if [ $? -ne 0 ]; then
     DIFF=diff
