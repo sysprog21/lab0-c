@@ -13,6 +13,12 @@ Check the correctness of your code:
 $ make test
 ```
 
+Check the example usage of 'qtest':
+```shell
+$ make check
+```
+Each step about command invocation will be shown accordingly.
+
 Check the memory issue of your code:
 ```shell
 $ make valgrind

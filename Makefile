@@ -28,8 +28,9 @@ qtest: $(OBJS)
 	$(VECHO) "  CC\t$@\n"
 	$(Q)$(CC) -o $@ $(CFLAGS) -c -MMD -MF .$@.d $<
 
+check: qtest
+	cat traces/trace-eg.cmd | ./$< -v 3
 
-check: test
 test: qtest scripts/driver.py
 	scripts/driver.py
 
