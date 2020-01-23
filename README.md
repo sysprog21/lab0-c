@@ -1,6 +1,17 @@
 # lab0-c
 Assessing Your C Programming Skills
 
+## Prerequisites
+
+There are a few prerequisites which must be installed on your machine before you will
+be able to build and run the autograders.
+
+The following command will install all required and optional dependencies on Ubuntu
+Linux 18.04 or later:
+```shell
+$ sudo apt install build-essential git clang-format cppcheck aspell colordiff valgrind
+```
+
 ## Running the autograders
 
 Before running the autograders, compile your code to create the testing program qtest
