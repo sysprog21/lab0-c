@@ -118,7 +118,7 @@ read_commit_message() {
     [[ $REPLY =~ ^# ]]
     test $? -eq 0 || COMMIT_MSG_LINES+=("$REPLY")
 
-  done < <(cat $COMMIT_MSG_FILE)
+  done < $COMMIT_MSG_FILE
 }
 
 #
