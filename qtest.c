@@ -61,6 +61,7 @@ static bool do_remove_head(int argc, char *argv[]);
 static bool do_remove_head_quiet(int argc, char *argv[]);
 static bool do_reverse(int argc, char *argv[]);
 static bool do_size(int argc, char *argv[]);
+static bool do_sort(int argc, char *argv[]);
 static bool do_show(int argc, char *argv[]);
 
 static void queue_init();
@@ -82,6 +83,7 @@ static void console_init()
         "rhq", do_remove_head_quiet,
         "                | Remove from head of queue without reporting value.");
     add_cmd("reverse", do_reverse, "                | Reverse queue");
+    add_cmd("sort", do_sort, "                | Sort queue in ascending order");
     add_cmd("size", do_size,
             " [n]            | Compute queue size n times (default: n == 1)");
     add_cmd("show", do_show, "                | Show queue contents");
@@ -425,6 +427,40 @@ static bool do_size(int argc, char *argv[])
     }
     show_queue(3);
 
+    return ok && !error_check();
+}
+
+bool do_sort(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "%s takes no arguments", argv[0]);
+        return false;
+    }
+    if (q == NULL)
+        report(3, "Warning: Calling sort on null queue");
+    int cnt = q_size(q);
+    if (cnt < 2)
+        report(3, "Warning: Calling sort on single node");
+    error_check();
+    set_noallocate_mode(true);
+    if (exception_setup(true))
+        q_sort(q);
+    exception_cancel();
+    set_noallocate_mode(false);
+
+    list_ele_t *e = q->head;
+    bool ok = true;
+    while (ok && e && --cnt) {
+        /* Ensure each element in ascending order */
+        /* FIXME: add an option to specify sorting order */
+        if (strcmp(e->value, e->next->value) > 0) {
+            report(1, "ERROR: Not sorted in ascending order");
+            ok = false;
+        }
+        e = e->next;
+    }
+
+    show_queue(3);
     return ok && !error_check();
 }
 

@@ -87,4 +87,11 @@ int q_size(queue_t *q);
  */
 void q_reverse(queue_t *q);
 
+/*
+ * Sort elements of queue in ascending order
+ * No effect if q is NULL or empty. In addition, if q has only one
+ * element, do nothing.
+ */
+void q_sort(queue_t *q);
+
 #endif /* LAB0_QUEUE_H */
