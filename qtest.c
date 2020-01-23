@@ -501,7 +501,6 @@ static void queue_init()
     signal(SIGALRM, sigalrmhandler);
 }
 
-
 static bool queue_quit(int argc, char *argv[])
 {
     report(3, "Freeing queue");

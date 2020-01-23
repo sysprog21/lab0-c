@@ -5,30 +5,29 @@ Assessing Your C Programming Skills
 
 Before running the autograders, compile your code to create the testing program qtest
 ```shell
-make
+$ make
 ```
 
 Check the correctness of your code:
 ```shell
-make test
+$ make test
 ```
 
 Check the memory issue of your code:
-
 ```shell
-make valgrind
+$ make valgrind
 ```
 
 * Modify `./.valgrindrc` to customize arguments of Valgrind
-* Use `make clean` or `rm /tmp/qtest.*` to clean the temporary files created by target valgrind
+* Use `$ make clean` or `$ rm /tmp/qtest.*` to clean the temporary files created by target valgrind
 
 ## Using qtest
 
 qtest provides a command interpreter that can create and manipulate queues.
 
-Run `./qtest -h` to see the list of command-line options
+Run `$ ./qtest -h` to see the list of command-line options
 
-When you execute `./qtest`, it will give a command prompt "cmd>".  Type
+When you execute `$ ./qtest`, it will give a command prompt "cmd>".  Type
 "help" to see a list of available commands
 
 ## Files
