@@ -42,9 +42,6 @@ void add_param(char *name,
                char *doccumentation,
                setter_function setter);
 
-/* Execute a command from a command line */
-bool interpret_cmd(char *cmdline);
-
 /* Execute a sequence of commands read from a file */
 bool interpret_file(FILE *fp);
 
@@ -65,16 +62,9 @@ bool cmd_done();
 bool finish_cmd();
 
 /*
-   Handle command processing in program that uses select as main
-   control loop.  Like select, but (if console unblocked) it checks
-   whether command input either present in internal buffer or readable
-   from command input.  If so, that command is executed.  Same return
-   as select.  Command input file removed from readfds
-
-   nfds should be set to the maximum file descriptor for network sockets.
-   If nfds == 0, this indicates that there is no pending network activity
-*/
-
+ * Handle command processing in program that uses select as main
+ * control loop.
+ */
 int cmd_select(int nfds,
                fd_set *readfds,
                fd_set *writefds,

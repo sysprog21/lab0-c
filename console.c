@@ -16,7 +16,6 @@
 #include "console.h"
 #include "report.h"
 
-
 /* Some global values */
 static cmd_ptr cmd_list = NULL;
 static param_ptr param_list = NULL;
@@ -31,9 +30,9 @@ static double first_time;
 static double last_time;
 
 /*
-  Implement buffered I/O using variant of RIO package from CS:APP
-  Must create stack of buffers to handle I/O with nested source commands.
-*/
+ * Implement buffered I/O using variant of RIO package from CS:APP
+ * Must create stack of buffers to handle I/O with nested source commands.
+ */
 
 #define RIO_BUFSIZE 8192
 typedef struct RIO_ELE rio_t, *rio_ptr;
@@ -59,7 +58,6 @@ static int echo = 0;
 
 static bool quit_flag = false;
 static char *prompt = "cmd>";
-
 
 /* Optional function to call as part of exit process */
 /* Maximum number of quit functions */
@@ -102,11 +100,6 @@ void init_cmd()
     add_param("verbose", &verblevel, "Verbosity level", NULL);
     add_param("error", &err_limit, "Number of errors until exit", NULL);
     add_param("echo", &echo, "Do/don't echo commands", NULL);
-#if 0
-    add_param("megabytes", &mblimit, "Maximum megabytes allowed", NULL);
-    add_param("seconds", &timelimit, "Maximum seconds allowed",
-              change_timeout);
-#endif
     init_in();
     init_time(&last_time);
     first_time = last_time;
@@ -150,9 +143,8 @@ void add_param(char *name,
     *last_loc = ele;
 }
 
-
 /* Parse a string into a command line */
-char **parse_args(char *line, int *argcp)
+static char **parse_args(char *line, int *argcp)
 {
     /*
       Must first determine how many arguments there are.
@@ -195,7 +187,7 @@ char **parse_args(char *line, int *argcp)
     return argv;
 }
 
-void record_error()
+static void record_error()
 {
     err_cnt++;
     if (err_cnt >= err_limit) {
@@ -227,7 +219,7 @@ static bool interpret_cmda(int argc, char *argv[])
 }
 
 /* Execute a command from a command line */
-bool interpret_cmd(char *cmdline)
+static bool interpret_cmd(char *cmdline)
 {
     int argc;
     if (quit_flag)
@@ -259,7 +251,6 @@ void set_echo(bool on)
     echo = on ? 1 : 0;
 }
 
-
 /* Built-in commands */
 bool do_quit_cmd(int argc, char *argv[])
 {
@@ -270,6 +261,7 @@ bool do_quit_cmd(int argc, char *argv[])
         c = c->next;
         free_block(ele, sizeof(cmd_ele));
     }
+
     param_ptr p = param_list;
     while (p) {
         param_ptr ele = p;
@@ -278,8 +270,7 @@ bool do_quit_cmd(int argc, char *argv[])
     }
     while (buf_stack)
         pop_file();
-    int i;
-    for (i = 0; i < quit_helper_cnt; i++) {
+    for (int i = 0; i < quit_helper_cnt; i++) {
         ok = ok && quit_helpers[i](argc, argv);
     }
     quit_flag = true;
@@ -421,9 +412,9 @@ bool do_time_cmd(int argc, char *argv[])
 }
 
 /* Create new buffer for named file.
-   Name == NULL for stdin.
-   Return true if successful.
-*/
+ *  Name == NULL for stdin.
+ *  Return true if successful.
+ */
 static bool push_file(char *fname)
 {
     int fd = fname ? open(fname, O_RDONLY) : STDIN_FILENO;
@@ -441,8 +432,8 @@ static bool push_file(char *fname)
 }
 
 /* Pop a file buffer from stack.
-   Return true if stack is now empty
-*/
+ *  Return true if stack is now empty
+ */
 static void pop_file()
 {
     if (buf_stack) {
@@ -453,7 +444,6 @@ static void pop_file()
     }
 }
 
-
 /* Handling of input */
 static void init_in()
 {
@@ -461,8 +451,8 @@ static void init_in()
 }
 
 /* Read command from input file.
-   When hit EOF, close that file and return NULL
-*/
+ *  When hit EOF, close that file and return NULL
+ */
 static char *readline()
 {
     int cnt;
@@ -516,8 +506,7 @@ static char *readline()
 /* Determine if there is a complete command line in input buffer */
 static bool read_ready()
 {
-    int i;
-    for (i = 0; buf_stack && i < buf_stack->cnt; i++) {
+    for (int i = 0; buf_stack && i < buf_stack->cnt; i++) {
         if (buf_stack->bufptr[i] == '\n')
             return true;
     }
@@ -525,16 +514,15 @@ static bool read_ready()
 }
 
 /*
-   Handle command processing in program that uses select as main control loop.
-   Like select, but checks whether command input either present in internal
-   buffer
-   or readable from command input.  If so, that command is executed.
-   Same return as select.  Command input file removed from readfds
-
-   nfds should be set to the maximum file descriptor for network sockets.
-   If nfds == 0, this indicates that there is no pending network activity
-*/
-
+ * Handle command processing in program that uses select as main control loop.
+ * Like select, but checks whether command input either present in internal
+ * buffer
+ * or readable from command input.  If so, that command is executed.
+ * Same return as select.  Command input file removed from readfds
+ *
+ * nfds should be set to the maximum file descriptor for network sockets.
+ * If nfds == 0, this indicates that there is no pending network activity
+ */
 int cmd_select(int nfds,
                fd_set *readfds,
                fd_set *writefds,
@@ -589,7 +577,6 @@ bool cmd_done()
     return !buf_stack || quit_flag;
 }
 
-
 bool finish_cmd()
 {
     bool ok = true;
@@ -605,6 +592,7 @@ bool run_console(char *infile_name)
         report(1, "ERROR: Could not open source file '%s'", infile_name);
         return false;
     }
+
     while (!cmd_done()) {
         cmd_select(0, NULL, NULL, NULL, NULL);
     }

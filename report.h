@@ -24,12 +24,6 @@ bool set_logfile(char *file_name);
 extern int verblevel;
 void set_verblevel(int level);
 
-/* Maximum number of megabytes that application can use (0 = unlimited) */
-extern int mblimit;
-
-/* Maximum number of seconds that application can use.  (0 = unlimited)  */
-extern int timelimit;
-
 /* Optional function to call when fatal error encountered */
 extern void (*fatal_fun)();
 
@@ -83,13 +77,8 @@ size_t last_peak_bytes;
 /* Instantaneous */
 size_t current_bytes;
 
-
 /* Reset last_peak_bytes */
 void reset_peak_bytes();
-
-
-/* Change value of timeout */
-void change_timeout(int oldval);
 
 /* Handler for SIGTERM signals */
 void sigterm_handler(int sig);

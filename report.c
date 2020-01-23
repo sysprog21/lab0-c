@@ -148,9 +148,7 @@ void fail_fun(char *format, char *msg)
 }
 
 /* Maximum number of megabytes that application can use (0 = unlimited) */
-int mblimit = 0;
-/* Maximum number of seconds that application can use.  (0 = unlimited)  */
-int timelimit = 0;
+static int mblimit = 0;
 
 /* Keeping track of memory allocation */
 static size_t allocate_cnt = 0;

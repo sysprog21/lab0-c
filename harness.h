@@ -6,10 +6,10 @@
 #include <stdbool.h>
 
 /*
-  This test harness enables us to do stringent testing of code.
-  It overloads the library versions of malloc and free with ones that
-  allow checking for common allocation errors.
-*/
+ * This test harness enables us to do stringent testing of code.
+ * It overloads the library versions of malloc and free with ones that
+ * allow checking for common allocation errors.
+ */
 
 void *test_malloc(size_t size);
 void test_free(void *p);
@@ -23,17 +23,16 @@ size_t allocation_check();
 int fail_probability;
 
 /*
-  Set/unset cautious mode.
-  In this mode, makes extra sure any block to be freed is currently allocated.
-*/
+ * Set/unset cautious mode.
+ * In this mode, makes extra sure any block to be freed is currently allocated.
+ */
 void set_cautious_mode(bool cautious);
 
 /*
-  Set/unset restricted allocation mode.
-  In this mode, calls to malloc and free are disallowed.
+ * Set/unset restricted allocation mode.
+ * In this mode, calls to malloc and free are disallowed.
  */
 void set_noallocate_mode(bool noallocate);
-
 
 /*
   Return whether any errors have occurred since last time checked
@@ -56,8 +55,7 @@ void exception_cancel();
  */
 void trigger_exception(char *msg);
 
-
-#else
+#else /* !INTERNAL */
 /* Tested program use our versions of malloc and free */
 #define malloc test_malloc
 #define free test_free

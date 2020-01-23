@@ -16,28 +16,28 @@
 #define STRINGPAD MAXSTRING
 
 /*
-  It is a bit sketchy to use this #include file on the solution version of the
-  code.
-  OK as long as head field of queue_t structure is in first position in solution
-  code
-*/
+ * It is a bit sketchy to use this #include file on the solution version of the
+ * code.
+ * OK as long as head field of queue_t structure is in first position in
+ * solution code
+ */
 #include "queue.h"
 
 #include "console.h"
 #include "report.h"
 
-/***** Settable parameters *****/
+/* Settable parameters */
 
 /*
-  How large is a queue before it's considered big.
-  This affects how it gets printed
-  and whether cautious mode is used when freeing the list
-*/
+ * How large is a queue before it's considered big.
+ * This affects how it gets printed
+ * and whether cautious mode is used when freeing the list
+ */
 #define BIG_QUEUE 30
 
 int big_queue_size = BIG_QUEUE;
 
-/******* Global variables ******/
+/* Global variables */
 
 /* Queue being tested */
 queue_t *q = NULL;
@@ -50,7 +50,7 @@ int fail_count = 0;
 
 int string_length = MAXSTRING;
 
-/****** Forward declarations ******/
+/* Forward declarations */
 static bool show_queue(int vlevel);
 bool do_new(int argc, char *argv[]);
 bool do_free(int argc, char *argv[]);
@@ -98,6 +98,7 @@ bool do_new(int argc, char *argv[])
         report(1, "%s takes no arguments", argv[0]);
         return false;
     }
+
     bool ok = true;
     if (q) {
         report(3, "Freeing old queue");
@@ -118,6 +119,7 @@ bool do_free(int argc, char *argv[])
         report(1, "%s takes no arguments", argv[0]);
         return false;
     }
+
     bool ok = true;
     if (!q)
         report(3, "Warning: Calling free on null queue");
@@ -491,7 +493,6 @@ void sigalrmhandler(int sig)
         "code is too inefficient");
 }
 
-
 static void queue_init()
 {
     fail_count = 0;
@@ -518,7 +519,6 @@ static bool queue_quit(int argc, char *argv[])
     }
     return true;
 }
-
 
 static void usage(char *cmd)
 {
