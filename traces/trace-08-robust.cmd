@@ -5,3 +5,4 @@ new
 rh
 reverse
 size
+sort

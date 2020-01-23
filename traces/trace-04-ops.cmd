@@ -1,4 +1,4 @@
-# Test of insert_head, insert_tail, and size
+# Test of insert_head, insert_tail, size, and sort
 option fail 0
 option malloc 0
 new
@@ -10,6 +10,7 @@ it meerkat
 it bear
 it gerbil
 size
+sort
 rh dolphin
 rh
 rh

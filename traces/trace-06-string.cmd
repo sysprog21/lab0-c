@@ -25,6 +25,7 @@ rh aardvark
 option length 100
 rh aardvark_bear_dolphin_gerbil_jaguar
 reverse
+sort
 rh meerkat_panda_squirrel_vulture_wolf
 free
 quit
