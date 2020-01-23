@@ -54,8 +54,9 @@ bool q_insert_head(queue_t *q, char *s)
  */
 bool q_insert_tail(queue_t *q, char *s)
 {
-    /* You need to write the complete code for this function */
+    /* TODO: You need to write the complete code for this function */
     /* Remember: It should operate in O(1) time */
+    /* TODO: Remove the above comment when you are about to implement. */
     return false;
 }
 
@@ -69,7 +70,8 @@ bool q_insert_tail(queue_t *q, char *s)
  */
 bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
 {
-    /* You need to fix up this code. */
+    /* TODO: You need to fix up this code. */
+    /* TODO: Remove the above comment when you are about to implement. */
     q->head = q->head->next;
     return true;
 }
@@ -80,8 +82,9 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
  */
 int q_size(queue_t *q)
 {
-    /* You need to write the code for this function */
+    /* TODO: You need to write the code for this function */
     /* Remember: It should operate in O(1) time */
+    /* TODO: Remove the above comment when you are about to implement. */
     return 0;
 }
 
@@ -94,5 +97,6 @@ int q_size(queue_t *q)
  */
 void q_reverse(queue_t *q)
 {
-    /* You need to write the code for this function */
+    /* TODO: You need to write the code for this function */
+    /* TODO: Remove the above comment when you are about to implement. */
 }

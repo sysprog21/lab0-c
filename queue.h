@@ -2,12 +2,6 @@
 #define LAB0_QUEUE_H
 
 /*
- * Code for basic C skills diagnostic.
- * Developed for courses 15-213/18-213/15-513 by R. E. Bryant, 2017
- * Extended to store strings, 2018
- */
-
-/*
  * This program implements a queue supporting both FIFO and LIFO
  * operations.
  *
