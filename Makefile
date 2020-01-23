@@ -13,6 +13,14 @@ else
     VECHO = @printf
 endif
 
+# Enable sanitizers
+ifeq ("$(SANITIER)","0")
+    # required by Valgrind
+else
+    CFLAGS += -fsanitize=address -fno-omit-frame-pointer
+    LDFLAGS += -fsanitize=address
+endif
+
 $(GIT_HOOKS):
 	@scripts/install-git-hooks
 	@echo
@@ -37,7 +45,9 @@ test: qtest scripts/driver.py
 valgrind_existence:
 	@which valgrind 2>&1 > /dev/null
 
-valgrind: qtest valgrind_existence
+valgrind: valgrind_existence
+	$(MAKE) clean
+	$(MAKE) SANITIER=0 qtest
 	$(eval patched_file := $(shell mktemp /tmp/qtest.XXXXXX))
 	cp qtest $(patched_file)
 	chmod u+x $(patched_file)
