@@ -55,7 +55,6 @@ set_editor() {
 
 prompt_help() {
   echo -e "${RED}$(cat <<-EOF
-How to Write a Git Commit Message: https://chris.beams.io/posts/git-commit/
 e - edit commit message
 n - abort commit
 ? - print help
@@ -91,6 +90,12 @@ display_warnings() {
       echo -e " ${YELLOW}- ${ERROR}${NC}"
     done
   done
+
+  echo
+  echo -e "${RED}$(cat <<-EOF
+How to Write a Git Commit Message: https://chris.beams.io/posts/git-commit/
+EOF
+)${NC}"
 }
 
 #
