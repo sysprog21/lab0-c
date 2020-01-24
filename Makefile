@@ -37,7 +37,7 @@ qtest: $(OBJS)
 	$(Q)$(CC) -o $@ $(CFLAGS) -c -MMD -MF .$@.d $<
 
 check: qtest
-	cat traces/trace-eg.cmd | ./$< -v 3
+	./$< -v 3 -f traces/trace-eg.cmd
 
 test: qtest scripts/driver.py
 	scripts/driver.py
