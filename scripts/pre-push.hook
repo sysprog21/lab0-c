@@ -22,7 +22,7 @@ if [ x"$commit" != x"d9805e67e74ea3a05956d92447bbe67214154c06" ] ; then
 fi
 
 # Show hints
-echo -e "${YELLOW}Hint${NC}: You might want to know why is Git is always ${GREEN}asking for my password${NC}."
+echo -e "${YELLOW}Hint${NC}: You might want to know why Git is always ${GREEN}asking for my password${NC}."
 echo -e "      https://help.github.com/en/github/using-git/why-is-git-always-asking-for-my-password"
 echo ""
 
@@ -44,7 +44,7 @@ if [[ $current_branch = $protected_branch ]] ; then
     fi
 
     # Everything went OK so we can exit with a zero
-    echo -e "${GREEN}Pre push check passed!${NC}"
+    echo -e "${GREEN}Pre-push check passed!${NC}"
     echo ""
 fi
 
