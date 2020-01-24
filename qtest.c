@@ -43,7 +43,7 @@ static int big_queue_size = BIG_QUEUE;
 static queue_t *q = NULL;
 
 /* Number of elements in queue */
-size_t qcnt = 0;
+static size_t qcnt = 0;
 
 /* How many times can queue operations fail */
 static int fail_limit = BIG_QUEUE;
@@ -108,11 +108,13 @@ static bool do_new(int argc, char *argv[])
         ok = do_free(argc, argv);
     }
     error_check();
+
     if (exception_setup(true))
         q = q_new();
     exception_cancel();
     qcnt = 0;
     show_queue(3);
+
     return ok && !error_check();
 }
 
@@ -127,27 +129,30 @@ static bool do_free(int argc, char *argv[])
     if (!q)
         report(3, "Warning: Calling free on null queue");
     error_check();
+
     if (qcnt > big_queue_size)
         set_cautious_mode(false);
     if (exception_setup(true))
         q_free(q);
     exception_cancel();
     set_cautious_mode(true);
+
     q = NULL;
     qcnt = 0;
     show_queue(3);
+
     size_t bcnt = allocation_check();
     if (bcnt > 0) {
         report(1, "ERROR: Freed queue, but %lu blocks are still allocated",
                bcnt);
         ok = false;
     }
+
     return ok && !error_check();
 }
 
 static bool do_insert_head(int argc, char *argv[])
 {
-    char *inserts;
     char *lasts = NULL;
     int reps = 1;
     bool ok = true;
@@ -155,16 +160,19 @@ static bool do_insert_head(int argc, char *argv[])
         report(1, "%s needs 1-2 arguments", argv[0]);
         return false;
     }
-    inserts = argv[1];
+
+    char *inserts = argv[1];
     if (argc == 3) {
         if (!get_int(argv[2], &reps)) {
             report(1, "Invalid number of insertions '%s'", argv[2]);
             return false;
         }
     }
+
     if (!q)
         report(3, "Warning: Calling insert head on null queue");
     error_check();
+
     if (exception_setup(true)) {
         for (int r = 0; ok && r < reps; r++) {
             bool rval = q_insert_head(q, inserts);
@@ -202,20 +210,21 @@ static bool do_insert_head(int argc, char *argv[])
         }
     }
     exception_cancel();
+
     show_queue(3);
     return ok;
 }
 
 static bool do_insert_tail(int argc, char *argv[])
 {
-    char *inserts;
     int reps = 1;
     bool ok = true;
     if (argc != 2 && argc != 3) {
         report(1, "%s needs 1-2 arguments", argv[0]);
         return false;
     }
-    inserts = argv[1];
+
+    char *inserts = argv[1];
     if (argc == 3) {
         if (!get_int(argv[2], &reps)) {
             report(1, "Invalid number of insertions '%s'", argv[2]);
@@ -225,6 +234,7 @@ static bool do_insert_tail(int argc, char *argv[])
     if (!q)
         report(3, "Warning: Calling insert tail on null queue");
     error_check();
+
     if (exception_setup(true)) {
         for (int r = 0; ok && r < reps; r++) {
             bool rval = q_insert_tail(q, inserts);
@@ -259,12 +269,14 @@ static bool do_remove_head(int argc, char *argv[])
         report(1, "%s needs 0-1 arguments", argv[0]);
         return false;
     }
+
     char *removes = malloc(string_length + STRINGPAD + 1);
     if (!removes) {
         report(1,
                "INTERNAL ERROR.  Could not allocate space for removed strings");
         return false;
     }
+
     char *checks = malloc(string_length + 1);
     if (!checks) {
         report(1,
@@ -272,6 +284,7 @@ static bool do_remove_head(int argc, char *argv[])
         free(removes);
         return false;
     }
+
     bool check = argc > 1;
     bool ok = true;
     if (check) {
@@ -288,10 +301,12 @@ static bool do_remove_head(int argc, char *argv[])
     else if (!q->head)
         report(3, "Warning: Calling remove head on empty queue");
     error_check();
+
     bool rval = false;
     if (exception_setup(true))
         rval = q_remove_head(q, removes, string_length + 1);
     exception_cancel();
+
     if (rval) {
         removes[string_length + STRINGPAD] = '\0';
         if (removes[0] == '\0') {
@@ -304,9 +319,8 @@ static bool do_remove_head(int argc, char *argv[])
          * If there's other character in padding, it's overflowed.
          */
         int i = string_length + 1;
-        while ((i < string_length + STRINGPAD) && (removes[i] == 'X')) {
+        while ((i < string_length + STRINGPAD) && (removes[i] == 'X'))
             i++;
-        }
         if (i != string_length + STRINGPAD) {
             report(1,
                    "ERROR: copying of string in remove_head overflowed "
@@ -326,12 +340,15 @@ static bool do_remove_head(int argc, char *argv[])
             ok = false;
         }
     }
+
     if (ok && check && strcmp(removes, checks) != 0) {
         report(1, "ERROR:  Removed value %s != expected value %s", removes,
                checks);
         ok = false;
     }
+
     show_queue(3);
+
     free(removes);
     free(checks);
     return ok && !error_check();
@@ -343,16 +360,19 @@ static bool do_remove_head_quiet(int argc, char *argv[])
         report(1, "%s takes no arguments", argv[0]);
         return false;
     }
+
     bool ok = true;
     if (!q)
         report(3, "Warning: Calling remove head on null queue");
     else if (!q->head)
         report(3, "Warning: Calling remove head on empty queue");
     error_check();
+
     bool rval = false;
     if (exception_setup(true))
         rval = q_remove_head(q, NULL, 0);
     exception_cancel();
+
     if (rval) {
         report(2, "Removed element from queue");
         qcnt--;
@@ -365,6 +385,7 @@ static bool do_remove_head_quiet(int argc, char *argv[])
             ok = false;
         }
     }
+
     show_queue(3);
     return ok && !error_check();
 }
@@ -375,13 +396,16 @@ static bool do_reverse(int argc, char *argv[])
         report(1, "%s takes no arguments", argv[0]);
         return false;
     }
+
     if (!q)
         report(3, "Warning: Calling reverse on null queue");
     error_check();
+
     set_noallocate_mode(true);
     if (exception_setup(true))
         q_reverse(q);
     exception_cancel();
+
     set_noallocate_mode(false);
     show_queue(3);
     return !error_check();
@@ -393,21 +417,25 @@ static bool do_size(int argc, char *argv[])
         report(1, "%s takes 0-1 arguments", argv[0]);
         return false;
     }
+
     int reps = 1;
     bool ok = true;
     if (argc != 1 && argc != 2) {
         report(1, "%s needs 0-1 arguments", argv[0]);
         return false;
     }
+
     if (argc == 2) {
         if (!get_int(argv[1], &reps)) {
             report(1, "Invalid number of calls to size '%s'", argv[2]);
         }
     }
+
     int cnt = 0;
     if (!q)
         report(3, "Warning: Calling size on null queue");
     error_check();
+
     if (exception_setup(true)) {
         for (int r = 0; ok && r < reps; r++) {
             cnt = q_size(q);
@@ -415,6 +443,7 @@ static bool do_size(int argc, char *argv[])
         }
     }
     exception_cancel();
+
     if (ok) {
         if (qcnt == cnt) {
             report(2, "Queue size = %d", cnt);
@@ -425,6 +454,7 @@ static bool do_size(int argc, char *argv[])
             ok = false;
         }
     }
+
     show_queue(3);
 
     return ok && !error_check();
@@ -436,12 +466,15 @@ bool do_sort(int argc, char *argv[])
         report(1, "%s takes no arguments", argv[0]);
         return false;
     }
+
     if (q == NULL)
         report(3, "Warning: Calling sort on null queue");
+
     int cnt = q_size(q);
     if (cnt < 2)
         report(3, "Warning: Calling sort on single node");
     error_check();
+
     set_noallocate_mode(true);
     if (exception_setup(true))
         q_sort(q);
@@ -469,11 +502,13 @@ static bool show_queue(int vlevel)
     bool ok = true;
     if (verblevel < vlevel)
         return true;
+
     int cnt = 0;
     if (!q) {
         report(vlevel, "q = NULL");
         return true;
     }
+
     report_noreturn(vlevel, "q = [");
     list_ele_t *e = q->head;
     if (exception_setup(true)) {
@@ -486,10 +521,12 @@ static bool show_queue(int vlevel)
         }
     }
     exception_cancel();
+
     if (!ok) {
         report(vlevel, " ... ]");
         return false;
     }
+
     if (!e) {
         if (cnt <= big_queue_size)
             report(vlevel, "]");
@@ -503,6 +540,7 @@ static bool show_queue(int vlevel)
             qcnt);
         ok = false;
     }
+
     return ok;
 }
 
@@ -543,16 +581,19 @@ static bool queue_quit(int argc, char *argv[])
     report(3, "Freeing queue");
     if (qcnt > big_queue_size)
         set_cautious_mode(false);
+
     if (exception_setup(true))
         q_free(q);
     exception_cancel();
     set_cautious_mode(true);
+
     size_t bcnt = allocation_check();
     if (bcnt > 0) {
         report(1, "ERROR: Freed queue, but %lu blocks are still allocated",
                bcnt);
         return false;
     }
+
     return true;
 }
 
@@ -602,18 +643,23 @@ int main(int argc, char *argv[])
             break;
         }
     }
+
     queue_init();
     init_cmd();
     console_init();
+
     set_verblevel(level);
     if (level > 1) {
         set_echo(true);
     }
     if (logfile_name)
         set_logfile(logfile_name);
+
     add_quit_helper(queue_quit);
+
     bool ok = true;
     ok = ok && run_console(infile_name);
     ok = ok && finish_cmd();
+
     return ok ? 0 : 1;
 }

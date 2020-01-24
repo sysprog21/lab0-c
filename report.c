@@ -13,12 +13,12 @@
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 
-FILE *errfile = NULL;
-FILE *verbfile = NULL;
-FILE *logfile = NULL;
+static FILE *errfile = NULL;
+static FILE *verbfile = NULL;
+static FILE *logfile = NULL;
 
 int verblevel = 0;
-void init_files(FILE *efile, FILE *vfile)
+static void init_files(FILE *efile, FILE *vfile)
 {
     errfile = efile;
     verbfile = vfile;
@@ -29,7 +29,7 @@ static char fail_buf[1024] = "FATAL Error.  Exiting\n";
 static volatile int ret = 0;
 
 /* Default fatal function */
-void default_fatal_fun()
+static void default_fatal_fun()
 {
     ret = write(STDOUT_FILENO, fail_buf, strlen(fail_buf) + 1);
     if (logfile)
@@ -37,7 +37,7 @@ void default_fatal_fun()
 }
 
 /* Optional function to call when fatal error encountered */
-void (*fatal_fun)() = default_fatal_fun;
+static void (*fatal_fun)() = default_fatal_fun;
 
 void set_verblevel(int level)
 {
@@ -60,14 +60,17 @@ void report_event(message_t msg, char *fmt, ...)
     int level = msg == MSG_WARN ? 2 : msg == MSG_ERROR ? 1 : 0;
     if (verblevel < level)
         return;
+
     if (!errfile)
         init_files(stdout, stdout);
+
     va_start(ap, fmt);
     fprintf(errfile, "%s: ", msg_name);
     vfprintf(errfile, fmt, ap);
     fprintf(errfile, "\n");
     fflush(errfile);
     va_end(ap);
+
     if (logfile) {
         va_start(ap, fmt);
         fprintf(logfile, "Error: ");
@@ -77,6 +80,7 @@ void report_event(message_t msg, char *fmt, ...)
         va_end(ap);
         fclose(logfile);
     }
+
     if (fatal) {
         if (fatal_fun)
             fatal_fun();
@@ -88,6 +92,7 @@ void report(int level, char *fmt, ...)
 {
     if (!verbfile)
         init_files(stdout, stdout);
+
     if (level <= verblevel) {
         va_list ap;
         va_start(ap, fmt);
@@ -95,6 +100,7 @@ void report(int level, char *fmt, ...)
         fprintf(verbfile, "\n");
         fflush(verbfile);
         va_end(ap);
+
         if (logfile) {
             va_start(ap, fmt);
             vfprintf(logfile, fmt, ap);
@@ -109,12 +115,14 @@ void report_noreturn(int level, char *fmt, ...)
 {
     if (!verbfile)
         init_files(stdout, stdout);
+
     if (level <= verblevel) {
         va_list ap;
         va_start(ap, fmt);
         vfprintf(verbfile, fmt, ap);
         fflush(verbfile);
         va_end(ap);
+
         if (logfile) {
             va_start(ap, fmt);
             vfprintf(logfile, fmt, ap);
@@ -126,24 +134,26 @@ void report_noreturn(int level, char *fmt, ...)
 
 /* Functions denoting failures */
 
-/* General failure */
-
 /* Need to be able to print without using malloc */
-void fail_fun(char *format, char *msg)
+static void fail_fun(char *format, char *msg)
 {
     snprintf(fail_buf, sizeof(fail_buf), format, msg);
     /* Tack on return */
     fail_buf[strlen(fail_buf)] = '\n';
     /* Use write to avoid any buffering issues */
     ret = write(STDOUT_FILENO, fail_buf, strlen(fail_buf) + 1);
+
     if (logfile) {
         /* Don't know file descriptor for logfile */
         fputs(fail_buf, logfile);
     }
+
     if (fatal_fun)
         fatal_fun();
+
     if (logfile)
         fclose(logfile);
+
     exit(1);
 }
 
@@ -155,10 +165,11 @@ static size_t allocate_cnt = 0;
 static size_t allocate_bytes = 0;
 static size_t free_cnt = 0;
 static size_t free_bytes = 0;
-/* These are externally visible */
-size_t peak_bytes = 0;
-size_t last_peak_bytes = 0;
-size_t current_bytes = 0;
+
+/* Counters giving peak memory usage */
+static size_t peak_bytes = 0;
+static size_t last_peak_bytes = 0;
+static size_t current_bytes = 0;
 
 static void check_exceed(size_t new_bytes)
 {
@@ -180,11 +191,13 @@ void *malloc_or_fail(size_t bytes, char *fun_name)
         fail_fun("Malloc returned NULL in %s", fun_name);
         return NULL;
     }
+
     allocate_cnt++;
     allocate_bytes += bytes;
     current_bytes += bytes;
     peak_bytes = MAX(peak_bytes, current_bytes);
     last_peak_bytes = MAX(last_peak_bytes, current_bytes);
+
     return p;
 }
 
@@ -197,6 +210,7 @@ void *calloc_or_fail(size_t cnt, size_t bytes, char *fun_name)
         fail_fun("Calloc returned NULL in %s", fun_name);
         return NULL;
     }
+
     allocate_cnt++;
     allocate_bytes += cnt * bytes;
     current_bytes += cnt * bytes;
@@ -210,12 +224,13 @@ char *strsave_or_fail(char *s, char *fun_name)
 {
     if (!s)
         return NULL;
+
     size_t len = strlen(s);
     check_exceed(len + 1);
     char *ss = malloc(len + 1);
-    if (!ss) {
+    if (!ss)
         fail_fun("strsave failed in %s", fun_name);
-    }
+
     allocate_cnt++;
     allocate_bytes += len + 1;
     current_bytes += len + 1;
@@ -231,6 +246,7 @@ void free_block(void *b, size_t bytes)
     if (!b)
         report_event(MSG_ERROR, "Attempting to free null block");
     free(b);
+
     free_cnt++;
     free_bytes += bytes;
     current_bytes -= bytes;
@@ -242,6 +258,7 @@ void free_array(void *b, size_t cnt, size_t bytes)
     if (!b)
         report_event(MSG_ERROR, "Attempting to free null block");
     free(b);
+
     free_cnt++;
     free_bytes += cnt * bytes;
     current_bytes -= cnt * bytes;

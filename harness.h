@@ -16,11 +16,12 @@ void test_free(void *p);
 char *test_strdup(const char *s);
 
 #ifdef INTERNAL
+
 /* Report number of allocated blocks */
 size_t allocation_check();
 
 /* Probability of malloc failing, expressed as percent */
-int fail_probability;
+extern int fail_probability;
 
 /*
  * Set/unset cautious mode.
@@ -56,10 +57,12 @@ void exception_cancel();
 void trigger_exception(char *msg);
 
 #else /* !INTERNAL */
+
 /* Tested program use our versions of malloc and free */
 #define malloc test_malloc
 #define free test_free
 #define strdup test_strdup
+
 #endif
 
 #endif /* LAB0_HARNESS_H */
