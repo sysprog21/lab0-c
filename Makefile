@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O0 -g -Wall -Werror
+CFLAGS = -O1 -g -Wall -Werror
 
 GIT_HOOKS := .git/hooks/applied
 all: $(GIT_HOOKS) qtest
@@ -17,7 +17,8 @@ endif
 ifeq ("$(SANITIER)","0")
     # required by Valgrind
 else
-    CFLAGS += -fsanitize=address -fno-omit-frame-pointer
+    # https://github.com/google/sanitizers/wiki/AddressSanitizerFlags
+    CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-common
     LDFLAGS += -fsanitize=address
 endif
 
