@@ -70,3 +70,8 @@ Trace files
   * We encourage to study them to see what tests are being performed.
   * XX is the trace number (1-15).  CAT describes the general nature of the test.
 * traces/trace-eg.cmd : A simple, documented trace file to demonstrate the operation of qtest
+
+## License
+
+`lab0-c`is released under the BSD 2 clause license. Use of this source code is governed by
+a BSD-style license that can be found in the LICENSE file.
