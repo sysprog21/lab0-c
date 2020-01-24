@@ -11,6 +11,9 @@ chmod +x .git/hooks/pre-commit
 ln -sf ../../scripts/commit-msg.hook .git/hooks/commit-msg || exit 1
 chmod +x .git/hooks/commit-msg
 
+ln -sf ../../scripts/pre-push.hook .git/hooks/pre-push || exit 1
+chmod +x .git/hooks/pre-push
+
 touch .git/hooks/applied || exit 1
 
 echo
