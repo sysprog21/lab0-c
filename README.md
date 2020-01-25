@@ -57,8 +57,8 @@ $ make valgrind
 
 Run `$ ./qtest -h` to see the list of command-line options
 
-When you execute `$ ./qtest`, it will give a command prompt `cmd>`.  Type
-"help" to see a list of available commands
+When you execute `$ ./qtest`, it will give a command prompt `cmd> `.  Type
+"help" to see a list of available commands.
 
 ## Files
 

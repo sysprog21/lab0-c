@@ -57,7 +57,7 @@ static int err_cnt = 0;
 static int echo = 0;
 
 static bool quit_flag = false;
-static char *prompt = "cmd>";
+static char *prompt = "cmd> ";
 
 /* Optional function to call as part of exit process */
 /* Maximum number of quit functions */
