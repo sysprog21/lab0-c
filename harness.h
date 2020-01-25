@@ -12,6 +12,7 @@
  */
 
 void *test_malloc(size_t size);
+void *test_calloc(size_t nmemb, size_t size);
 void test_free(void *p);
 char *test_strdup(const char *s);
 /* FIXME: provide test_realloc as well */
