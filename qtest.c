@@ -2,9 +2,13 @@
 
 #include <getopt.h>
 #include <signal.h>
+#include <spawn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 /* Our program needs to use regular malloc/free */
 #define INTERNAL 1
@@ -607,10 +611,45 @@ static void usage(char *cmd)
     exit(0);
 }
 
-#define BUFSIZE 256
+#define GIT_HOOK ".git/hooks/"
+static bool sanity_check()
+{
+    struct stat buf;
+    /* Directory .git not found */
+    if (stat(".git", &buf)) {
+        fprintf(stderr,
+                "FATAL: You should run qtest in the directory containing valid "
+                "git workspace.\n");
+        return false;
+    }
+    /* Expected pre-commit and pre-push hooks not found */
+    if (stat(GIT_HOOK "commit-msg", &buf) ||
+        stat(GIT_HOOK "pre-commit", &buf) || stat(GIT_HOOK "pre-push", &buf)) {
+        fprintf(stderr, "FATAL: Git hooks are not properly installed.\n");
 
+        /* Attempt to install Git hooks */
+        char *argv[] = {"sh", "-c", "scripts/install-git-hooks", NULL};
+        extern char **environ;
+        pid_t pid;
+        int status = posix_spawn(&pid, "/bin/sh", NULL, NULL, argv, environ);
+        if (status == 0) {
+            /* Finally, succeed */
+            if ((waitpid(pid, &status, 0) != -1) && (status == 0))
+                return true;
+            perror("waitpid");
+        }
+        return false;
+    }
+    return true;
+}
+
+#define BUFSIZE 256
 int main(int argc, char *argv[])
 {
+    /* sanity check for git hook integration */
+    if (!sanity_check())
+        return -1;
+
     /* To hold input file name */
     char buf[BUFSIZE];
     char *infile_name = NULL;
