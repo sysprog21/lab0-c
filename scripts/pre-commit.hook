@@ -38,7 +38,8 @@ for FILE in $FILES; do
     mv $nf $source
     cp .clang-format $tempdir
     $CLANG_FORMAT $source > $newfile 2>> /dev/null
-    $DIFF -u -p -B  "${source}" "${newfile}"
+    $DIFF -u -p -B --label="modified $FILE" --label="expected coding style" \
+          "${source}" "${newfile}"
     r=$?
     rm -rf "${tempdir}"
     if [ $r != 0 ] ; then
