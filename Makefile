@@ -44,7 +44,7 @@ test: qtest scripts/driver.py
 	scripts/driver.py
 
 valgrind_existence:
-	@which valgrind 2>&1 > /dev/null
+	@which valgrind 2>&1 > /dev/null || (echo "FATAL: valgrind not found"; exit 1)
 
 valgrind: valgrind_existence
 	$(MAKE) clean
