@@ -485,16 +485,18 @@ bool do_sort(int argc, char *argv[])
     exception_cancel();
     set_noallocate_mode(false);
 
-    list_ele_t *e = q->head;
     bool ok = true;
-    while (ok && e && --cnt) {
-        /* Ensure each element in ascending order */
-        /* FIXME: add an option to specify sorting order */
-        if (strcmp(e->value, e->next->value) > 0) {
-            report(1, "ERROR: Not sorted in ascending order");
-            ok = false;
+    if (q) {
+        list_ele_t *e = q->head;
+        while (ok && e && --cnt) {
+            /* Ensure each element in ascending order */
+            /* FIXME: add an option to specify sorting order */
+            if (strcmp(e->value, e->next->value) > 0) {
+                report(1, "ERROR: Not sorted in ascending order");
+                ok = false;
+            }
+            e = e->next;
         }
-        e = e->next;
     }
 
     show_queue(3);
