@@ -339,14 +339,14 @@ static bool do_remove_head(int argc, char *argv[])
         if (!check && fail_count < fail_limit) {
             report(2, "Removal from queue failed");
         } else {
-            report(1, "ERROR:  Removal from queue failed (%d failures total)",
+            report(1, "ERROR: Removal from queue failed (%d failures total)",
                    fail_count);
             ok = false;
         }
     }
 
     if (ok && check && strcmp(removes, checks) != 0) {
-        report(1, "ERROR:  Removed value %s != expected value %s", removes,
+        report(1, "ERROR: Removed value %s != expected value %s", removes,
                checks);
         ok = false;
     }
@@ -488,15 +488,14 @@ bool do_sort(int argc, char *argv[])
 
     bool ok = true;
     if (q) {
-        list_ele_t *e = q->head;
-        while (ok && e && --cnt) {
+        for (list_ele_t *e = q->head; e && --cnt; e = e->next) {
             /* Ensure each element in ascending order */
             /* FIXME: add an option to specify sorting order */
             if (strcmp(e->value, e->next->value) > 0) {
                 report(1, "ERROR: Not sorted in ascending order");
                 ok = false;
+                break;
             }
-            e = e->next;
         }
     }
 
