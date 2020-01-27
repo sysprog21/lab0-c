@@ -11,7 +11,7 @@ it bear
 it gerbil
 size
 sort
-rh dolphin
+rh bear
 rh
 rh
 rh
