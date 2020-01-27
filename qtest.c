@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h> /* strcasecmp */
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -345,7 +346,7 @@ static bool do_remove_head(int argc, char *argv[])
         }
     }
 
-    if (ok && check && strcmp(removes, checks) != 0) {
+    if (ok && check && !strcmp(removes, checks)) {
         report(1, "ERROR: Removed value %s != expected value %s", removes,
                checks);
         ok = false;
@@ -491,7 +492,7 @@ bool do_sort(int argc, char *argv[])
         for (list_ele_t *e = q->head; e && --cnt; e = e->next) {
             /* Ensure each element in ascending order */
             /* FIXME: add an option to specify sorting order */
-            if (strcmp(e->value, e->next->value) > 0) {
+            if (strcasecmp(e->value, e->next->value) > 0) {
                 report(1, "ERROR: Not sorted in ascending order");
                 ok = false;
                 break;
