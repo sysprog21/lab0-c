@@ -453,7 +453,7 @@ static bool do_size(int argc, char *argv[])
             report(2, "Queue size = %d", cnt);
         } else {
             report(1,
-                   "ERROR:  Computed queue size as %d, but correct value is %d",
+                   "ERROR: Computed queue size as %d, but correct value is %d",
                    cnt, (int) qcnt);
             ok = false;
         }
@@ -471,8 +471,9 @@ bool do_sort(int argc, char *argv[])
         return false;
     }
 
-    if (q == NULL)
+    if (!q)
         report(3, "Warning: Calling sort on null queue");
+    error_check();
 
     int cnt = q_size(q);
     if (cnt < 2)
