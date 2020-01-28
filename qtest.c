@@ -346,7 +346,7 @@ static bool do_remove_head(int argc, char *argv[])
         }
     }
 
-    if (ok && check && !strcmp(removes, checks)) {
+    if (ok && check && strcmp(removes, checks)) {
         report(1, "ERROR: Removed value %s != expected value %s", removes,
                checks);
         ok = false;
