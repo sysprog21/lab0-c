@@ -9,7 +9,9 @@
 #include <strings.h> /* strcasecmp */
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
+
 
 /* Our program needs to use regular malloc/free */
 #define INTERNAL 1
@@ -62,6 +64,7 @@ static bool do_new(int argc, char *argv[]);
 static bool do_free(int argc, char *argv[]);
 static bool do_insert_head(int argc, char *argv[]);
 static bool do_insert_tail(int argc, char *argv[]);
+static bool do_random_insert(int argc, char *argv[]);
 static bool do_remove_head(int argc, char *argv[]);
 static bool do_remove_head_quiet(int argc, char *argv[]);
 static bool do_reverse(int argc, char *argv[]);
@@ -80,6 +83,9 @@ static void console_init()
             "(default: n == 1)");
     add_cmd("it", do_insert_tail,
             " str [n]        | Insert string str at tail of queue n times "
+            "(default: n == 1)");
+    add_cmd("randi", do_random_insert,
+            " [n] [order]        | Insert random strings with order"
             "(default: n == 1)");
     add_cmd("rh", do_remove_head,
             " [str]          | Remove from head of queue.  Optionally compare "
@@ -504,6 +510,78 @@ bool do_sort(int argc, char *argv[])
     return ok && !error_check();
 }
 
+static void word_generator(char *buf, size_t buf_size, char *prefix)
+{
+    size_t n = (prefix) ? 1 : 0;
+    size_t len = 0;
+    while (len < 2)
+        len = rand() % buf_size;
+    if (prefix) {
+        buf[0] = *prefix;
+    }
+    for (; n < len; n++) {
+        buf[n] = 'a' + rand() % 26;
+    }
+    buf[len] = '\0';
+}
+
+static bool do_random_insert(int argc, char *argv[])
+{
+    if (argc > 3) {
+        report(1, "%s takes only 0-2 arguments", argv[0]);
+        return false;
+    }
+
+    int size = 1;
+    if (argc >= 2) {
+        if (!get_int(argv[1], &size)) {
+            report(1, "Invalid number of random inserting '%s'", argv[1]);
+        }
+    }
+    // order: 1 ASC, 2 DESC
+    int order = 0;
+    if (argc == 3) {
+        if (strcasecmp(argv[2], "ASC") == 0) {
+            order = 1;
+        } else if (strcasecmp(argv[2], "DESC") == 0) {
+            order = 2;
+        } else {
+            report(1,
+                   "The order of random inserting should be ASC or DESC: '%s'",
+                   argv[2]);
+        }
+    }
+
+    size_t partition = (size / 26) + 1;
+    char *it_cmd = "it", *ih_cmd = "ih", *insert_n = "1";
+    char word[10];
+    char *sub_argv[3];
+
+    sub_argv[2] = insert_n;
+    bool result;
+
+    for (size_t n = 0; n < size; n++) {
+        if (!order) {
+            word_generator(word, 10, NULL);
+        } else {
+            char prefix = 'a' + (n / partition);
+            word_generator(word, 10, &prefix);
+        }
+        sub_argv[1] = word;
+
+        if (order == 2) {
+            sub_argv[0] = ih_cmd;
+            result = do_insert_head(3, sub_argv);
+        } else {
+            sub_argv[0] = it_cmd;
+            result = do_insert_tail(3, sub_argv);
+        }
+        if (!result)
+            return result;
+    }
+    return true;
+}
+
 static bool show_queue(int vlevel)
 {
     bool ok = true;
@@ -686,6 +764,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    srand(time(NULL));
     queue_init();
     init_cmd();
     console_init();
