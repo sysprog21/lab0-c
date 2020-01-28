@@ -29,7 +29,8 @@ class Tracer:
         12 : "trace-12-malloc",
         13 : "trace-13-perf",
         14 : "trace-14-perf",
-        15 : "trace-15-perf"
+        15 : "trace-15-perf",
+        16 : "trace-16-perf"
         }
 
     traceProbs = {
@@ -47,11 +48,12 @@ class Tracer:
         12 : "Trace-12",
         13 : "Trace-13",
         14 : "Trace-14",
-        15 : "Trace-15"
+        15 : "Trace-15",
+        16 : "Trace-16"
         }
 
 
-    maxScores = [0, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7]
+    maxScores = [0, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7]
 
     def __init__(self, qtest = "", verbLevel = 0, autograde = False, useValgrind = False):
         if qtest != "":
