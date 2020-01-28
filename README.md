@@ -32,7 +32,7 @@ Before running the autograders, compile your code to create the testing program 
 $ make
 ```
 
-Check the correctness of your code:
+Check the correctness of your code, i.e. autograders:
 ```shell
 $ make test
 ```
@@ -50,6 +50,10 @@ $ make valgrind
 
 * Modify `./.valgrindrc` to customize arguments of Valgrind
 * Use `$ make clean` or `$ rm /tmp/qtest.*` to clean the temporary files created by target valgrind
+
+Extra options can be recognized by make:
+* `VERBOSE`: control the build verbosity. If `VERBOSE=1`, echo eacho command in build process.
+* `SANITIER`: enable sanitizer(s) directed build. At the moment, AddressSanitizer is supported.
 
 ## Using qtest
 

@@ -13,10 +13,8 @@ else
     VECHO = @printf
 endif
 
-# Enable sanitizers
-ifeq ("$(SANITIER)","0")
-    # required by Valgrind
-else
+# Enable sanitizer(s) or not
+ifeq ("$(SANITIER)","1")
     # https://github.com/google/sanitizers/wiki/AddressSanitizerFlags
     CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-common
     LDFLAGS += -fsanitize=address
@@ -47,8 +45,8 @@ valgrind_existence:
 	@which valgrind 2>&1 > /dev/null || (echo "FATAL: valgrind not found"; exit 1)
 
 valgrind: valgrind_existence
-	$(MAKE) clean
-	$(MAKE) SANITIER=0 qtest
+	# Explicitly disable sanitizer(s)
+	$(MAKE) clean SANITIER=0 qtest
 	$(eval patched_file := $(shell mktemp /tmp/qtest.XXXXXX))
 	cp qtest $(patched_file)
 	chmod u+x $(patched_file)
