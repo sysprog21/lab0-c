@@ -15,6 +15,15 @@ if [ $? -ne 0 ]; then
     echo "[!] cppcheck not installed. Unable to perform static analysis." >&2
     exit 1
 fi
+# Expected Cppcheck version is 1.90
+# FIXME: extract version number for 2.xx
+CPPCHECK_VER=$($CPPCHECK --version | sed -Ee 's/Cppcheck 1.([0-9]+)/\1/;q')
+if [ $CPPCHECK_VER -lt 90 ]; then
+    echo "[!] cppcheck version must be at least 1.90." >&2
+    echo -e "    Check 'Developer Info' for building Cppcheck from source:\n" \
+            "          http://cppcheck.sourceforge.net/devinfo/" >&2
+    exit 1
+fi
 
 ASPELL=$(which aspell)
 if [ $? -ne 0 ]; then
