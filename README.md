@@ -27,7 +27,11 @@ $ sudo apt install build-essential git clang-format cppcheck aspell colordiff va
 
 Note: [Cppcheck](http://cppcheck.sourceforge.net/) version must be at least 1.90, otherwise
 it might report errors with false positives. You can get its version by executing `$ cppcheck --version`.
-Check [Developer Info](http://cppcheck.sourceforge.net/devinfo/) for building Cppcheck from source.
+Check [Developer Info](http://cppcheck.sourceforge.net/devinfo/) for building Cppcheck from source. Alternatively,
+you can make use of [snap](https://snapcraft.io/) for latest Cppcheck:
+```
+$ sudo snap install cppcheck
+```
 
 ## Running the autograders
 
