@@ -9,6 +9,7 @@
 #include <strings.h> /* strcasecmp */
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 
 /* Our program needs to use regular malloc/free */
@@ -56,6 +57,10 @@ static int fail_count = 0;
 
 static int string_length = MAXSTRING;
 
+#define MIN_RANDSTR_LEN 5
+#define MAX_RANDSTR_LEN 10
+static const char charset[] = "abcdefghijklmnopqrstuvwxyz";
+
 /* Forward declarations */
 static bool show_queue(int vlevel);
 static bool do_new(int argc, char *argv[]);
@@ -76,11 +81,11 @@ static void console_init()
     add_cmd("new", do_new, "                | Create new queue");
     add_cmd("free", do_free, "                | Delete queue");
     add_cmd("ih", do_insert_head,
-            " str [n]        | Insert string str at head of queue n times "
-            "(default: n == 1)");
+            " str [n]        | Insert string str at head of queue n times. "
+            "Generate random string(s) if str == RAND. (default: n == 1)");
     add_cmd("it", do_insert_tail,
             " str [n]        | Insert string str at tail of queue n times "
-            "(default: n == 1)");
+            "Generate random string(s) if str == RAND. (default: n == 1)");
     add_cmd("rh", do_remove_head,
             " [str]          | Remove from head of queue.  Optionally compare "
             "to expected value str");
@@ -155,12 +160,28 @@ static bool do_free(int argc, char *argv[])
 
     return ok && !error_check();
 }
+/*
+ * TODO: Add a buf_size check of if the buf_size may be less
+ * than MIN_RANDSTR_LEN.
+ */
+static void fill_rand_string(char *buf, size_t buf_size)
+{
+    size_t len = 0;
+    while (len < MIN_RANDSTR_LEN)
+        len = rand() % buf_size;
+
+    for (size_t n = 0; n < len; n++) {
+        buf[n] = charset[rand() % (sizeof charset - 1)];
+    }
+    buf[len] = '\0';
+}
 
 static bool do_insert_head(int argc, char *argv[])
 {
     char *lasts = NULL;
+    char randstr_buf[MAX_RANDSTR_LEN];
     int reps = 1;
-    bool ok = true;
+    bool ok = true, need_rand = false;
     if (argc != 2 && argc != 3) {
         report(1, "%s needs 1-2 arguments", argv[0]);
         return false;
@@ -174,12 +195,19 @@ static bool do_insert_head(int argc, char *argv[])
         }
     }
 
+    if (!strcmp(inserts, "RAND")) {
+        need_rand = true;
+        inserts = randstr_buf;
+    }
+
     if (!q)
         report(3, "Warning: Calling insert head on null queue");
     error_check();
 
     if (exception_setup(true)) {
         for (int r = 0; ok && r < reps; r++) {
+            if (need_rand)
+                fill_rand_string(randstr_buf, sizeof(randstr_buf));
             bool rval = q_insert_head(q, inserts);
             if (rval) {
                 qcnt++;
@@ -222,8 +250,9 @@ static bool do_insert_head(int argc, char *argv[])
 
 static bool do_insert_tail(int argc, char *argv[])
 {
+    char randstr_buf[MAX_RANDSTR_LEN];
     int reps = 1;
-    bool ok = true;
+    bool ok = true, need_rand = false;
     if (argc != 2 && argc != 3) {
         report(1, "%s needs 1-2 arguments", argv[0]);
         return false;
@@ -236,12 +265,20 @@ static bool do_insert_tail(int argc, char *argv[])
             return false;
         }
     }
+
+    if (!strcmp(inserts, "RAND")) {
+        need_rand = true;
+        inserts = randstr_buf;
+    }
+
     if (!q)
         report(3, "Warning: Calling insert tail on null queue");
     error_check();
 
     if (exception_setup(true)) {
         for (int r = 0; ok && r < reps; r++) {
+            if (need_rand)
+                fill_rand_string(randstr_buf, sizeof(randstr_buf));
             bool rval = q_insert_tail(q, inserts);
             if (rval) {
                 qcnt++;
@@ -686,6 +723,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    srand((unsigned int) (time(NULL)));
     queue_init();
     init_cmd();
     console_init();
