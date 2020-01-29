@@ -82,10 +82,10 @@ static void console_init()
     add_cmd("free", do_free, "                | Delete queue");
     add_cmd("ih", do_insert_head,
             " str [n]        | Insert string str at head of queue n times. "
-            "Generate random string(s) if str == RAND. (default: n == 1)");
+            "Generate random string(s) if str equals RAND. (default: n == 1)");
     add_cmd("it", do_insert_tail,
-            " str [n]        | Insert string str at tail of queue n times "
-            "Generate random string(s) if str == RAND. (default: n == 1)");
+            " str [n]        | Insert string str at tail of queue n times. "
+            "Generate random string(s) if str equals RAND. (default: n == 1)");
     add_cmd("rh", do_remove_head,
             " [str]          | Remove from head of queue.  Optionally compare "
             "to expected value str");
