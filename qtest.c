@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include "dudect/fixture.h"
 
 /* Our program needs to use regular malloc/free */
 #define INTERNAL 1
@@ -250,6 +251,20 @@ static bool do_insert_head(int argc, char *argv[])
 
 static bool do_insert_tail(int argc, char *argv[])
 {
+    if (simulation) {
+        if (argc != 1) {
+            report(1, "%s does not need arguments in simulation mode", argv[0]);
+            return false;
+        }
+        bool ok = is_insert_tail_const();
+        if (!ok) {
+            report(1, "ERROR: Probably not constant time");
+            return false;
+        }
+        report(1, "Probably constant time");
+        return ok;
+    }
+
     char randstr_buf[MAX_RANDSTR_LEN];
     int reps = 1;
     bool ok = true, need_rand = false;
@@ -455,6 +470,20 @@ static bool do_reverse(int argc, char *argv[])
 
 static bool do_size(int argc, char *argv[])
 {
+    if (simulation) {
+        if (argc != 1) {
+            report(1, "%s does not need arguments in simulation mode", argv[0]);
+            return false;
+        }
+        bool ok = is_size_const();
+        if (!ok) {
+            report(1, "ERROR: Probably not constant time");
+            return false;
+        }
+        report(1, "Probably constant time");
+        return ok;
+    }
+
     if (argc != 1 && argc != 2) {
         report(1, "%s takes 0-1 arguments", argv[0]);
         return false;
