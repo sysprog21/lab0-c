@@ -1,7 +1,11 @@
 #ifndef LAB0_CONSOLE_H
 #define LAB0_CONSOLE_H
+#include <stdbool.h>
 
 /* Implementation of simple command-line interface */
+
+/* Simulation flag of console option */
+extern bool simulation;
 
 /* Each command defined in terms of a function */
 typedef bool (*cmd_function)(int argc, char *argv[]);
