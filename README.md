@@ -62,7 +62,7 @@ $ make valgrind
 
 Extra options can be recognized by make:
 * `VERBOSE`: control the build verbosity. If `VERBOSE=1`, echo eacho command in build process.
-* `SANITIER`: enable sanitizer(s) directed build. At the moment, AddressSanitizer is supported.
+* `SANITIZER`: enable sanitizer(s) directed build. At the moment, AddressSanitizer is supported.
 
 ## Using qtest
 
