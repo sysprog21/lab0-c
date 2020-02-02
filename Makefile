@@ -14,7 +14,7 @@ else
 endif
 
 # Enable sanitizer(s) or not
-ifeq ("$(SANITIER)","1")
+ifeq ("$(SANITIZER)","1")
     # https://github.com/google/sanitizers/wiki/AddressSanitizerFlags
     CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-common
     LDFLAGS += -fsanitize=address
@@ -46,7 +46,7 @@ valgrind_existence:
 
 valgrind: valgrind_existence
 	# Explicitly disable sanitizer(s)
-	$(MAKE) clean SANITIER=0 qtest
+	$(MAKE) clean SANITIZER=0 qtest
 	$(eval patched_file := $(shell mktemp /tmp/qtest.XXXXXX))
 	cp qtest $(patched_file)
 	chmod u+x $(patched_file)
