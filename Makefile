@@ -1,7 +1,8 @@
 CC = gcc
-CFLAGS = -O1 -g -Wall -Werror
+CFLAGS = -O1 -g -Wall -Werror -Idudect -I.
 
 GIT_HOOKS := .git/hooks/applied
+DUT_DIR := dudect
 all: $(GIT_HOOKS) qtest
 
 # Control the build verbosity
@@ -24,14 +25,16 @@ $(GIT_HOOKS):
 	@scripts/install-git-hooks
 	@echo
 
-OBJS := qtest.o report.o console.o harness.o queue.o
+OBJS := qtest.o report.o console.o harness.o queue.o \
+        random.o dudect/constant.o dudect/fixture.o dudect/ttest.o
 deps := $(OBJS:%.o=.%.o.d)
 
 qtest: $(OBJS)
 	$(VECHO) "  LD\t$@\n"
-	$(Q)$(CC) $(LDFLAGS)  -o $@ $^
+	$(Q)$(CC) $(LDFLAGS) -o $@ $^ -lm
 
 %.o: %.c
+	@mkdir -p .$(DUT_DIR)
 	$(VECHO) "  CC\t$@\n"
 	$(Q)$(CC) -o $@ $(CFLAGS) -c -MMD -MF .$@.d $<
 
@@ -58,6 +61,7 @@ valgrind: valgrind_existence
 
 clean:
 	rm -f $(OBJS) $(deps) *~ qtest /tmp/qtest.*
+	rm -rf .$(DUT_DIR)
 	rm -rf *.dSYM
 	(cd traces; rm -f *~)
 
