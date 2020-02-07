@@ -101,3 +101,7 @@ Trace files
 
 `lab0-c`is released under the BSD 2 clause license. Use of this source code is governed by
 a BSD-style license that can be found in the LICENSE file.
+
+External source code:
+* [dudect](https://github.com/oreparaz/dudect): public domain
+* [git-good-commit](https://github.com/tommarshall/git-good-commit): MIT License
