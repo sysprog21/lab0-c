@@ -55,7 +55,7 @@ class Tracer:
         17: "Trace-17"
     }
 
-    maxScores = [0, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0]
+    maxScores = [0, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5]
 
     def __init__(self,
                  qtest="",
