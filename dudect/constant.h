@@ -7,10 +7,10 @@
         q = q_new(); \
     }
 
-#define dut_size(n)                 \
-    do {                            \
-        for (int i = 0; i < n; ++i) \
-            q_size(q);              \
+#define dut_size(n)                                \
+    do {                                           \
+        for (int __iter = 0; __iter < n; ++__iter) \
+            q_size(q);                             \
     } while (0);
 
 #define dut_insert_head(s, n)    \
