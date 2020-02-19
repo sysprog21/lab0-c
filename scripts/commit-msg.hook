@@ -153,13 +153,11 @@ validate_commit_message() {
   if [ $? -ne 0 ]; then
       echo "Aspell not installed - unable to check spelling"
   else
-    for i in "${!v}"; do
-      LINE_NUMBER=$((i+1))
-      MISSPELLED_WORDS=`echo "$COMMIT_MSG_LINES[LINE_NUMBER]" | $ASPELL --list --home-dir=scripts --personal=aspell-pws`
+      LINE_NUMBER=1
+      MISSPELLED_WORDS=`echo "$COMMIT_MSG_LINES[LINE_NUMBER]" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws`
       if [ -n "$MISSPELLED_WORDS" ]; then
         add_warning LINE_NUMBER "Possible misspelled word(s): $MISSPELLED_WORDS"
       fi
-    done
   fi
 
   # 1. Separate subject from body with a blank line
