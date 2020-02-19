@@ -1,6 +1,6 @@
 #include <stdint.h>
 // http://www.intel.com/content/www/us/en/embedded/training/ia-32-ia-64-benchmark-code-execution-paper.html
-inline int64_t cpucycles(void)
+static inline int64_t cpucycles(void)
 {
 #if defined(__i386__) || defined(__x86_64__)
     unsigned int hi, lo;
