@@ -120,3 +120,4 @@ setjmp
 signal
 srand
 sscanf
+macOS
