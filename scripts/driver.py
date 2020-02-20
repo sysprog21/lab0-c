@@ -74,7 +74,7 @@ class Tracer:
             return False
         fname = "%s/%s.cmd" % (self.traceDirectory, self.traceDict[tid])
         vname = "%d" % self.verbLevel
-        clist = [self.command, self.qtest, "-v", vname, "-f", fname]
+        clist = [self.command, "-v", vname, "-f", fname]
         try:
             retcode = subprocess.call(clist)
         except Exception as e:
@@ -95,10 +95,9 @@ class Tracer:
         score = 0
         maxscore = 0
         if self.useValgrind:
-            self.command = 'valgrind'
+            self.command = 'valgrind ' + self.qtest
         else:
             self.command = self.qtest
-            self.qtest = ''
         for t in tidList:
             tname = self.traceDict[t]
             if self.verbLevel > 0:
