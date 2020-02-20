@@ -629,9 +629,11 @@ static bool do_show(int argc, char *argv[])
 /* Signal handlers */
 static void sigsegvhandler(int sig)
 {
-    trigger_exception(
-        "Segmentation fault occurred.  You dereferenced a NULL or invalid "
-        "pointer");
+    report(1,
+           "Segmentation fault occurred.  You dereferenced a NULL or invalid "
+           "pointer");
+    /* Raising a SIGABRT signal to produce a core dump for debugging. */
+    abort();
 }
 
 static void sigalrmhandler(int sig)
