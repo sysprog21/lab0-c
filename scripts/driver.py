@@ -70,7 +70,7 @@ class Tracer:
 
     def runTrace(self, tid):
         if not tid in self.traceDict:
-            print("ERROR: No trace with id %d" % tid)
+            print("\033[91mERROR: No trace with id %d" % tid)
             return False
         fname = "%s/%s.cmd" % (self.traceDirectory, self.traceDict[tid])
         vname = "%d" % self.verbLevel
@@ -78,7 +78,7 @@ class Tracer:
         try:
             retcode = subprocess.call(clist)
         except Exception as e:
-            print("Call of '%s' failed: %s" % (" ".join(clist), e))
+            print("\033[91mCall of '%s' failed: %s" % (" ".join(clist), e))
             return False
         return retcode == 0
 
@@ -89,7 +89,7 @@ class Tracer:
             tidList = self.traceDict.keys()
         else:
             if not tid in self.traceDict:
-                print("ERROR: Invalid trace ID %d" % tid)
+                print("\033[91mERROR: Invalid trace ID %d" % tid)
                 return
             tidList = [tid]
         score = 0
@@ -101,15 +101,21 @@ class Tracer:
         for t in tidList:
             tname = self.traceDict[t]
             if self.verbLevel > 0:
-                print("+++ TESTING trace %s:" % tname)
+                print("\033[0m+++ TESTING trace %s:" % tname)
             ok = self.runTrace(t)
             maxval = self.maxScores[t]
             tval = maxval if ok else 0
-            print("---\t%s\t%d/%d" % (tname, tval, maxval))
+            if tval < maxval:
+                print("\033[91m---\t%s\t%d/%d" % (tname, tval, maxval))
+            else:
+                print("\033[92m---\t%s\t%d/%d" % (tname, tval, maxval)) 
             score += tval
             maxscore += maxval
             scoreDict[t] = tval
-        print("---\tTOTAL\t\t%d/%d" % (score, maxscore))
+        if score < maxscore:
+            print("\033[91m---\tTOTAL\t\t%d/%d" % (score, maxscore))
+        else:
+            print("\033[92m---\tTOTAL\t\t%d/%d" % (score, maxscore))
         if self.autograde:
             # Generate JSON string
             jstring = '{"scores": {'
