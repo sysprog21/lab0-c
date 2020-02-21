@@ -1,8 +1,10 @@
 #!/usr/bin/python
 
+from __future__ import print_function
 import subprocess
 import sys
 import getopt
+
 
 
 # Driver program for C programming exercise
@@ -14,6 +16,7 @@ class Tracer:
     verbLevel = 0
     autograde = False
     useValgrind = False
+    colorFul = False
 
     traceDict = {
         1: "trace-01-ops",
@@ -57,20 +60,31 @@ class Tracer:
 
     maxScores = [0, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5]
 
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    WHITE = '\033[0m'
+
     def __init__(self,
                  qtest="",
                  verbLevel=0,
                  autograde=False,
-                 useValgrind=False):
+                 useValgrind=False,
+                 colorFul=False):
         if qtest != "":
             self.qtest = qtest
         self.verbLevel = verbLevel
         self.autograde = autograde
         self.useValgrind = useValgrind
+        self.colorFul = colorFul
+
+    def printInColor(self, text, color):
+        if self.colorFul == False:
+            color = self.WHITE
+        print(color, text, self.WHITE, sep = '')
 
     def runTrace(self, tid):
         if not tid in self.traceDict:
-            print("\033[91mERROR: No trace with id %d" % tid)
+            self.printInColor("ERROR: No trace with id %d" % tid, self.RED)
             return False
         fname = "%s/%s.cmd" % (self.traceDirectory, self.traceDict[tid])
         vname = "%d" % self.verbLevel
@@ -78,7 +92,7 @@ class Tracer:
         try:
             retcode = subprocess.call(clist)
         except Exception as e:
-            print("\033[91mCall of '%s' failed: %s" % (" ".join(clist), e))
+            self.printInColor("Call of '%s' failed: %s" % (" ".join(clist), e), self.RED)
             return False
         return retcode == 0
 
@@ -89,7 +103,7 @@ class Tracer:
             tidList = self.traceDict.keys()
         else:
             if not tid in self.traceDict:
-                print("\033[91mERROR: Invalid trace ID %d" % tid)
+                self.printInColor("ERROR: Invalid trace ID %d" % tid, self.RED)
                 return
             tidList = [tid]
         score = 0
@@ -101,21 +115,21 @@ class Tracer:
         for t in tidList:
             tname = self.traceDict[t]
             if self.verbLevel > 0:
-                print("\033[0m+++ TESTING trace %s:" % tname)
+                print("+++ TESTING trace %s:" % tname)
             ok = self.runTrace(t)
             maxval = self.maxScores[t]
             tval = maxval if ok else 0
             if tval < maxval:
-                print("\033[91m---\t%s\t%d/%d" % (tname, tval, maxval))
+                self.printInColor("---\t%s\t%d/%d" % (tname, tval, maxval), self.RED)
             else:
-                print("\033[92m---\t%s\t%d/%d" % (tname, tval, maxval)) 
+                self.printInColor("---\t%s\t%d/%d" % (tname, tval, maxval), self.GREEN)
             score += tval
             maxscore += maxval
             scoreDict[t] = tval
         if score < maxscore:
-            print("\033[91m---\tTOTAL\t\t%d/%d" % (score, maxscore))
+            self.printInColor("---\tTOTAL\t\t%d/%d" % (score, maxscore), self.RED)
         else:
-            print("\033[92m---\tTOTAL\t\t%d/%d" % (score, maxscore))
+            self.printInColor("---\tTOTAL\t\t%d/%d" % (score, maxscore), self.GREEN)
         if self.autograde:
             # Generate JSON string
             jstring = '{"scores": {'
@@ -130,11 +144,12 @@ class Tracer:
 
 
 def usage(name):
-    print("Usage: %s [-h] [-p PROG] [-t TID] [-v VLEVEL] [--valgrind]" % name)
+    print("Usage: %s [-h] [-p PROG] [-t TID] [-v VLEVEL] [--valgrind] [-c]" % name)
     print("  -h        Print this message")
     print("  -p PROG   Program to test")
     print("  -t TID    Trace ID to test")
     print("  -v VLEVEL Set verbosity level (0-3)")
+    print("  -c Print colored text in terminal")
     sys.exit(0)
 
 
@@ -145,8 +160,9 @@ def run(name, args):
     levelFixed = False
     autograde = False
     useValgrind = False
+    colorFul = False
 
-    optlist, args = getopt.getopt(args, 'hp:t:v:A', ['valgrind'])
+    optlist, args = getopt.getopt(args, 'hp:t:v:A:c', ['valgrind'])
     for (opt, val) in optlist:
         if opt == '-h':
             usage(name)
@@ -161,6 +177,8 @@ def run(name, args):
             autograde = True
         elif opt == '--valgrind':
             useValgrind = True
+        elif opt == '-c':
+            colorFul = True
         else:
             print("Unrecognized option '%s'" % opt)
             usage(name)
@@ -169,7 +187,8 @@ def run(name, args):
     t = Tracer(qtest=prog,
                verbLevel=vlevel,
                autograde=autograde,
-               useValgrind=useValgrind)
+               useValgrind=useValgrind,
+               colorFul=colorFul)
     t.run(tid)
 
 
