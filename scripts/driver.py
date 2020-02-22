@@ -16,7 +16,7 @@ class Tracer:
     verbLevel = 0
     autograde = False
     useValgrind = False
-    colorFul = False
+    colored = False
 
     traceDict = {
         1: "trace-01-ops",
@@ -69,16 +69,16 @@ class Tracer:
                  verbLevel=0,
                  autograde=False,
                  useValgrind=False,
-                 colorFul=False):
+                 colored=False):
         if qtest != "":
             self.qtest = qtest
         self.verbLevel = verbLevel
         self.autograde = autograde
         self.useValgrind = useValgrind
-        self.colorFul = colorFul
+        self.colored = colored
 
     def printInColor(self, text, color):
-        if self.colorFul == False:
+        if self.colored == False:
             color = self.WHITE
         print(color, text, self.WHITE, sep = '')
 
@@ -149,7 +149,7 @@ def usage(name):
     print("  -p PROG   Program to test")
     print("  -t TID    Trace ID to test")
     print("  -v VLEVEL Set verbosity level (0-3)")
-    print("  -c Print colored text in terminal")
+    print("  -c Enable colored text")
     sys.exit(0)
 
 
@@ -160,7 +160,7 @@ def run(name, args):
     levelFixed = False
     autograde = False
     useValgrind = False
-    colorFul = False
+    colored = False
 
     optlist, args = getopt.getopt(args, 'hp:t:v:A:c', ['valgrind'])
     for (opt, val) in optlist:
@@ -178,7 +178,7 @@ def run(name, args):
         elif opt == '--valgrind':
             useValgrind = True
         elif opt == '-c':
-            colorFul = True
+            colored = True
         else:
             print("Unrecognized option '%s'" % opt)
             usage(name)
@@ -188,7 +188,7 @@ def run(name, args):
                verbLevel=vlevel,
                autograde=autograde,
                useValgrind=useValgrind,
-               colorFul=colorFul)
+               colored=colored)
     t.run(tid)
 
 
