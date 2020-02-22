@@ -4,3 +4,4 @@ qtest
 *.dSYM
 .vscode
 .devcontainer
+core*
