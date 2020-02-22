@@ -34,11 +34,11 @@ $ sudo snap install cppcheck
 $ export PATH=/snap/bin:$PATH
 ```
 
-## Integrate clang-format for vim
+## Integrate clang-format to vim
 If you want to run `clang-format` automatically after saving with vim, 
 clang-format supports integration for vim according to [Clang 11 documentation](https://clang.llvm.org/docs/ClangFormat.html). 
 
-By adding the following into `~/.vimrc`
+By adding the following into `$HOME/.vimrc`
 ```shell
 function! Formatonsave()
   let l:formatdiff = 1
@@ -46,7 +46,7 @@ function! Formatonsave()
 endfunction
 autocmd BufWritePre *.h,*.cc,*.cpp call Formatonsave()
 ```
-Note: on Ubuntu Linux 18.04, the path to `clang-format.py` is `usr/share/vim/addons/syntax/`.  
+Note: on Ubuntu Linux 18.04, the path to `clang-format.py` is `/usr/share/vim/addons/syntax/`.  
 
 
 ## Running the autograders
