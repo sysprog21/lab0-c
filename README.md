@@ -44,10 +44,9 @@ function! Formatonsave()
   let l:formatdiff = 1
   py3f <path to your clang-format.py>/clang-format.py
 endfunction
-autocmd BufWritePre *.h,*.cc,*.cpp call Formatonsave()
+autocmd BufWritePre *.h,*.hpp,*.c,*.cc,*.cpp call Formatonsave()
 ```
 Note: on Ubuntu Linux 18.04, the path to `clang-format.py` is `/usr/share/vim/addons/syntax/`.  
-
 
 ## Running the autograders
 
