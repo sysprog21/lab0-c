@@ -455,9 +455,7 @@ static bool push_file(char *fname)
     return true;
 }
 
-/* Pop a file buffer from stack.
- * Return true if stack is now empty
- */
+/* Pop a file buffer from stack */
 static void pop_file()
 {
     if (buf_stack) {
