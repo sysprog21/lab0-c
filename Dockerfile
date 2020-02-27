@@ -24,6 +24,5 @@ RUN apt-get install gcc build-essential \
 
 COPY --from=cppcheck-build /cppcheck/build/bin/cppcheck /usr/bin/
 COPY --from=cppcheck-build /cppcheck/cfg /usr/local/share/Cppcheck/cfg
-COPY . /linux2020/lab0-c
 
 CMD ["bash"]
