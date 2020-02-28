@@ -63,6 +63,9 @@ for FILE in $FILES; do
     fi
 done
 
+echo "Following files need to be cleaned up:"
+echo "${FILES[*]}"
+
 # Prevent unsafe functions
 root=$(git rev-parse --show-toplevel)
 banned="([^f]gets\()|(sprintf\()|(strcpy\()"
