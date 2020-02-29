@@ -76,7 +76,7 @@ class Tracer:
         vname = "%d" % self.verbLevel
         clist = [self.command, "-v", vname, "-f", fname]
         try:
-            retcode = subprocess.call(clist)
+            retcode = subprocess.call(" ".join(clist), shell=True)
         except Exception as e:
             print("Call of '%s' failed: %s" % (" ".join(clist), e))
             return False
