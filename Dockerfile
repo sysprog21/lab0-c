@@ -18,7 +18,8 @@ RUN export CXX=g++ && \
 
 FROM base
 
-RUN apt-get install gcc build-essential \
+RUN apt-get update --fix-missing && \
+    apt-get install gcc build-essential \
     vim clang-format valgrind \
     aspell colordiff python3 -y
 
