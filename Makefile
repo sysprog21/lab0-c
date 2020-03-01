@@ -3,7 +3,6 @@ CFLAGS = -O1 -g -Wall -Werror -Idudect -I.
 
 GIT_HOOKS := .git/hooks/applied
 DUT_DIR := dudect
-PWD := $(shell pwd)
 all: $(GIT_HOOKS) qtest
 
 # Control the build verbosity
@@ -63,7 +62,7 @@ valgrind: valgrind_existence
 .PHONY: docker
 docker:
 	docker build -t lab0-c .
-	docker run -it -v $(PWD):/lab0-c -w /lab0-c lab0-c
+	docker run -it lab0-c
 
 clean:
 	rm -f $(OBJS) $(deps) *~ qtest /tmp/qtest.*

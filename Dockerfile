@@ -26,4 +26,8 @@ RUN apt-get update --fix-missing && \
 COPY --from=cppcheck-build /cppcheck/build/bin/cppcheck /usr/bin/
 COPY --from=cppcheck-build /cppcheck/cfg /usr/local/share/Cppcheck/cfg
 
+ARG DIR="/lab0-c"
+COPY . ${DIR}
+WORKDIR ${DIR}
+
 CMD ["bash"]
