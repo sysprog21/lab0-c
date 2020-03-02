@@ -22,7 +22,7 @@ FROM base
 RUN apt-get update --fix-missing && \
     apt-get install gcc build-essential \
     vim clang-format valgrind \
-    aspell colordiff python3 -y \
+    aspell colordiff python3 gdb -y \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
