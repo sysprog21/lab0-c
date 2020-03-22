@@ -1,28 +1,27 @@
 FROM ubuntu:18.04 as base
 
 RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get autoremove -y
-
-RUN apt-get install git -y
+    apt-get install build-essential python3 git-core ca-certificates -y \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 
 FROM base as cppcheck-build
 
 ARG CPPCHECK_GIT_REPO="https://github.com/danmar/cppcheck.git"
-RUN apt-get install g++ cmake python3 -y
+RUN apt-get update && \
+    apt-get install cmake -y --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 RUN git clone ${CPPCHECK_GIT_REPO}
+WORKDIR /cppcheck/build
 RUN export CXX=g++ && \
-    mkdir cppcheck/build && \
-    cd cppcheck/build && \
     cmake .. -DUSE_MATCHCOMPILER=ON -DCMAKE_INSTALL_PREFIX=/usr && \
     cmake --build .
 
 FROM base
 
-RUN apt-get update --fix-missing && \
-    apt-get install gcc build-essential \
-    vim clang-format valgrind \
-    aspell colordiff python3 gdb -y \
+RUN apt-get update && \
+    apt-get install vim clang-format valgrind \
+    aspell colordiff gdb -y \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
