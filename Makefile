@@ -62,7 +62,7 @@ valgrind: valgrind_existence
 .PHONY: docker
 docker:
 	docker build -t lab0-c .
-	docker run --cap-add=SYS_PTRACE --security-opt seccomp=unconfined -it lab0-c
+	docker run --rm --cap-add=SYS_PTRACE --security-opt seccomp=unconfined -it lab0-c
 
 clean:
 	rm -f $(OBJS) $(deps) *~ qtest /tmp/qtest.*
