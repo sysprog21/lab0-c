@@ -16,7 +16,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 # Expected Cppcheck version is at least 1.90
-CPPCHECK_VER=$($CPPCHECK --version | sed -Ee 's/Cppcheck ([0-9]).([0-9]+)/\1*100+\2/;q' | bc -l)
+N=2
+CPPCHECK_VER=$($CPPCHECK --version | sed -rEe ":r;s/\b[0-9]{1,$(($N-1))}\b/0&/;tr;s/Cppcheck ([0-9]+).([0-9]+)/\1\2/;q")
 if [ $CPPCHECK_VER -lt 190 ]; then
     echo "[!] cppcheck version must be at least 1.90." >&2
     echo -e "    Check 'Developer Info' for building Cppcheck from source:\n" \
