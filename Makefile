@@ -5,6 +5,15 @@ GIT_HOOKS := .git/hooks/applied
 DUT_DIR := dudect
 all: $(GIT_HOOKS) qtest
 
+tid := 0
+
+# Control test case option of valgrind
+ifeq ("$(tid)","0")
+    TCASE :=
+else
+    TCASE := -t $(tid)
+endif
+
 # Control the build verbosity
 ifeq ("$(VERBOSE)","1")
     Q :=
@@ -54,7 +63,7 @@ valgrind: valgrind_existence
 	cp qtest $(patched_file)
 	chmod u+x $(patched_file)
 	sed -i "s/alarm/isnan/g" $(patched_file)
-	scripts/driver.py -p $(patched_file) --valgrind
+	scripts/driver.py -p $(patched_file) --valgrind $(TCASE)
 	@echo
 	@echo "Test with specific case by running command:" 
 	@echo "scripts/driver.py -p $(patched_file) --valgrind -t <tid>"
