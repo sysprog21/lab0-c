@@ -67,8 +67,10 @@ for FILE in $FILES; do
     fi
 done
 
-echo "Following files need to be cleaned up:"
-echo "${FILES[*]}"
+if [ ! -z "${FILES[*]}" ]; then
+    echo "Following files need to be cleaned up:"
+    echo "${FILES[*]}"
+fi
 
 # Prevent unsafe functions
 root=$(git rev-parse --show-toplevel)
