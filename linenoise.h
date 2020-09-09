@@ -35,8 +35,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stddef.h>
 
+#include <stddef.h>
 #ifndef __LINENOISE_H
 #define __LINENOISE_H
 
@@ -68,7 +68,8 @@ void linenoiseSetMultiLine(int ml);
 void linenoisePrintKeyCodes(void);
 void linenoiseMaskModeEnable(void);
 void linenoiseMaskModeDisable(void);
-
+void completion(const char *buf, linenoiseCompletions *lc);
+int completion_helper(const char *target, const char *cur);
 #ifdef __cplusplus
 }
 #endif
