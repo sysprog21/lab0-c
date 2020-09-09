@@ -34,6 +34,8 @@
 #include "console.h"
 #include "report.h"
 
+
+
 /* Settable parameters */
 
 /*
@@ -713,6 +715,7 @@ static bool sanity_check()
     }
     return true;
 }
+
 
 #define BUFSIZE 256
 int main(int argc, char *argv[])

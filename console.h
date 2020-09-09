@@ -2,7 +2,7 @@
 #define LAB0_CONSOLE_H
 #include <stdbool.h>
 #include <sys/select.h>
-
+#include "linenoise.h"
 /* Implementation of simple command-line interface */
 
 /* Simulation flag of console option */
