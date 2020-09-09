@@ -575,6 +575,8 @@ int cmd_select(int nfds,
            (cmdline = linenoise(prompt)) != NULL) {
         interpret_cmd(cmdline);
         prompt_flag = true;
+        linenoiseHistoryAdd(cmdline);        /* Add to the history. */
+        linenoiseHistorySave("history.txt"); /* Save the history on disk. */
         linenoiseFree(cmdline);
     }
 
@@ -617,6 +619,9 @@ int cmd_select(int nfds,
         } else {
             while ((cmdline = linenoise(prompt)) != NULL) {
                 interpret_cmd(cmdline);
+                linenoiseHistoryAdd(cmdline); /* Add to the history. */
+                linenoiseHistorySave(
+                    "history.txt"); /* Save the history on disk. */
                 linenoiseFree(cmdline);
             }
         }

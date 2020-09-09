@@ -38,6 +38,8 @@
 
 /* Settable parameters */
 
+#define HISTORY_LEN 20
+
 /*
  * How large is a queue before it's considered big.
  * This affects how it gets printed
@@ -761,7 +763,12 @@ int main(int argc, char *argv[])
     queue_init();
     init_cmd();
     console_init();
+
+    /* Trigger call back function(auto completion) */
     linenoiseSetCompletionCallback(completion);
+
+    linenoiseHistorySetMaxLen(HISTORY_LEN);
+    linenoiseHistoryLoad("history.txt"); /* Load the history at startup */
     set_verblevel(level);
     if (level > 1) {
         set_echo(true);
