@@ -533,7 +533,7 @@ static char *readline()
 }
 //#endif
 
-//#if 0
+#if 0
 /* Determine if there is a complete command line in input buffer */
 static bool read_ready()
 {
@@ -544,7 +544,7 @@ static bool read_ready()
 
     return false;
 }
-//#endif
+#endif
 
 static bool cmd_done()
 {

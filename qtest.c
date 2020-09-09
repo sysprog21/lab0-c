@@ -761,7 +761,7 @@ int main(int argc, char *argv[])
     queue_init();
     init_cmd();
     console_init();
-
+    linenoiseSetCompletionCallback(completion);
     set_verblevel(level);
     if (level > 1) {
         set_echo(true);
