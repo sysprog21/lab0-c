@@ -42,7 +42,7 @@ void prepare_inputs(uint8_t *input_data, uint8_t *classes)
     for (size_t i = 0; i < number_measurements; i++) {
         classes[i] = randombit();
         if (classes[i] == 0)
-            *(uint16_t *) (input_data + i * chunk_size) = 0x00;
+            memset(input_data + (size_t) i * chunk_size, 0, chunk_size);
     }
 
     for (size_t i = 0; i < NR_MEASURE; ++i) {
