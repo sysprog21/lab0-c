@@ -474,7 +474,6 @@ static void init_in()
     buf_stack = NULL;
 }
 
-//#if 0
 /* Read command from input file.
  * When hit EOF, close that file and return NULL
  */
@@ -531,20 +530,6 @@ static char *readline()
 
     return linebuf;
 }
-//#endif
-
-#if 0
-/* Determine if there is a complete command line in input buffer */
-static bool read_ready()
-{
-    for (int i = 0; buf_stack && i < buf_stack->cnt; i++) {
-        if (buf_stack->bufptr[i] == '\n')
-            return true;
-    }
-
-    return false;
-}
-#endif
 
 static bool cmd_done()
 {
