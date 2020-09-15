@@ -34,8 +34,6 @@
 #include "console.h"
 #include "report.h"
 
-
-
 /* Settable parameters */
 
 #define HISTORY_LEN 20
