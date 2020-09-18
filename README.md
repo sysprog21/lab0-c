@@ -155,6 +155,12 @@ cmd>
   (gdb) 
   ```
 
+## User-friendly command line
+Integrate [linenoise](https://github.com/antirez/linenoise) to `qtest`. Contain following user-friendly features:
+* Move cursor by right and left key
+* Get previous or next command typed before by up and down key
+* Auto completion by TAB
+
 ## License
 
 `lab0-c`is released under the BSD 2 clause license. Use of this source code is governed by
@@ -163,3 +169,4 @@ a BSD-style license that can be found in the LICENSE file.
 External source code:
 * [dudect](https://github.com/oreparaz/dudect): public domain
 * [git-good-commit](https://github.com/tommarshall/git-good-commit): MIT License
+* [linenoise](https://github.com/antirez/linenoise): BSD 2-Clause "Simplified" License

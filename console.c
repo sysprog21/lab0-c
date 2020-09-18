@@ -1,5 +1,7 @@
 /* Implementation of simple command-line interface */
 
+#include "console.h"
+
 #include <ctype.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -13,7 +15,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "console.h"
 #include "report.h"
 
 /* Some global values */
@@ -59,6 +60,7 @@ static bool echo = 0;
 
 static bool quit_flag = false;
 static char *prompt = "cmd> ";
+static bool has_infile = false;
 
 /* Optional function to call as part of exit process */
 /* Maximum number of quit functions */
@@ -160,10 +162,10 @@ static char **parse_args(char *line, int *argcp)
     size_t len = strlen(line);
     /* First copy into buffer with each substring null-terminated */
     char *buf = malloc_or_fail(len + 1, "parse_args");
+    buf[len] = '\0';
     char *src = line;
     char *dst = buf;
     bool skipping = true;
-
     int c;
     int argc = 0;
     while ((c = *src++) != '\0') {
@@ -210,7 +212,6 @@ static bool interpret_cmda(int argc, char *argv[])
 {
     if (argc == 0)
         return true;
-
     /* Try to find matching command */
     cmd_ptr next_cmd = cmd_list;
     bool ok = true;
@@ -439,6 +440,7 @@ static bool do_time_cmd(int argc, char *argv[])
 static bool push_file(char *fname)
 {
     int fd = fname ? open(fname, O_RDONLY) : STDIN_FILENO;
+    has_infile = fname ? true : false;
     if (fd < 0)
         return false;
 
@@ -529,17 +531,6 @@ static char *readline()
     return linebuf;
 }
 
-/* Determine if there is a complete command line in input buffer */
-static bool read_ready()
-{
-    for (int i = 0; buf_stack && i < buf_stack->cnt; i++) {
-        if (buf_stack->bufptr[i] == '\n')
-            return true;
-    }
-
-    return false;
-}
-
 static bool cmd_done()
 {
     return !buf_stack || quit_flag;
@@ -564,10 +555,14 @@ int cmd_select(int nfds,
     char *cmdline;
     int infd;
     fd_set local_readset;
-    while (!block_flag && read_ready()) {
-        cmdline = readline();
+
+    while (!has_infile && !block_flag &&
+           (cmdline = linenoise(prompt)) != NULL) {
         interpret_cmd(cmdline);
         prompt_flag = true;
+        linenoiseHistoryAdd(cmdline);       /* Add to the history. */
+        linenoiseHistorySave(HISTORY_FILE); /* Save the history on disk. */
+        linenoiseFree(cmdline);
     }
 
     if (cmd_done())
@@ -602,9 +597,19 @@ int cmd_select(int nfds,
         /* Commandline input available */
         FD_CLR(infd, readfds);
         result--;
-        cmdline = readline();
-        if (cmdline)
-            interpret_cmd(cmdline);
+        if (has_infile) {
+            cmdline = readline();
+            if (cmdline)
+                interpret_cmd(cmdline);
+        } else {
+            while ((cmdline = linenoise(prompt)) != NULL) {
+                interpret_cmd(cmdline);
+                linenoiseHistoryAdd(cmdline); /* Add to the history. */
+                linenoiseHistorySave(
+                    HISTORY_FILE); /* Save the history on disk. */
+                linenoiseFree(cmdline);
+            }
+        }
     }
     return result;
 }
@@ -614,6 +619,7 @@ bool finish_cmd()
     bool ok = true;
     if (!quit_flag)
         ok = ok && do_quit_cmd(0, NULL);
+    has_infile = false;
     return ok && err_cnt == 0;
 }
 

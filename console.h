@@ -2,6 +2,8 @@
 #define LAB0_CONSOLE_H
 #include <stdbool.h>
 #include <sys/select.h>
+#include "linenoise.h"
+#define HISTORY_FILE ".cmd_history"
 
 /* Implementation of simple command-line interface */
 
