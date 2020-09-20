@@ -78,4 +78,7 @@ int cmd_select(int nfds,
  */
 bool run_console(char *infile_name);
 
+/* Callback function to complete command by linenoise */
+void completion(const char *buf, linenoiseCompletions *lc);
+
 #endif /* LAB0_CONSOLE_H */

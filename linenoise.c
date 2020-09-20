@@ -1327,29 +1327,3 @@ int linenoiseHistoryLoad(const char *filename)
     fclose(fp);
     return 0;
 }
-int completion_helper(const char *target, const char *cur)
-{
-    int res = 1;
-    for (int i = 0, j = 0; i < strlen(cur); i++, j++) {
-        if (cur[i] != target[j])
-            res = 0;
-    }
-    return res;
-}
-void completion(const char *buf, linenoiseCompletions *lc)
-{
-    if (completion_helper("help", buf)) {
-        linenoiseAddCompletion(lc, "help");
-    } else if (completion_helper("free", buf)) {
-        linenoiseAddCompletion(lc, "free");
-    } else if (completion_helper("ih", buf)) {
-        linenoiseAddCompletion(lc, "ih");
-    } else if (completion_helper("it", buf)) {
-        linenoiseAddCompletion(lc, "it");
-    } else if (completion_helper("new", buf)) {
-        linenoiseAddCompletion(lc, "new");
-    } else if (completion_helper("reverse", buf)) {
-        linenoiseAddCompletion(lc, "reverse");
-    }
-    /* append more command if you want */
-}
