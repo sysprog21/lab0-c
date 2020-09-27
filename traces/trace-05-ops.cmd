@@ -15,10 +15,14 @@ rh dolphin
 reverse
 size
 sort
-rh bear
-rh bear
-rh gerbil
-rh gerbil
+it fish
+reverse
+rh fish
 rh meerkat
+reverse
+rh bear
+rh bear
+rh gerbil
+rh gerbil
 size
 free
