@@ -1,4 +1,4 @@
-# lab0-c
+# lab0-c  An Amazing Project
 Assessing Your C Programming Skills
 
 This lab will give you practice in the style of programming you will need to be able to do proficiently,
