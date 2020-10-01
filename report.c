@@ -287,3 +287,5 @@ double delta_time(double *timep)
     *timep = current_time;
     return delta;
 }
+
+i would like to know how this works please can you explain? also dont reject this please.
