@@ -118,6 +118,9 @@ read_commit_message() {
     [[ $REPLY =~ ^# ]]
     test $? -eq 0 || COMMIT_MSG_LINES+=("$REPLY")
 
+    [[ $REPLY =~ "# ------------------------ >8 ------------------------" ]]
+    break
+
   done < $COMMIT_MSG_FILE
 }
 
