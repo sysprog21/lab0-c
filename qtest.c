@@ -1,5 +1,6 @@
 /* Implementation of testing code for queue code */
 
+#include <errno.h>
 #include <getopt.h>
 #include <signal.h>
 #include <spawn.h>
@@ -742,9 +743,16 @@ int main(int argc, char *argv[])
             buf[BUFSIZE - 1] = '\0';
             infile_name = buf;
             break;
-        case 'v':
-            level = atoi(optarg);
+        case 'v': {
+            char *endptr;
+            errno = 0;
+            level = strtol(optarg, &endptr, 10);
+            if (errno != 0 || endptr == optarg) {
+                fprintf(stderr, "Invalid verbosity level\n");
+                exit(EXIT_FAILURE);
+            }
             break;
+        }
         case 'l':
             strncpy(lbuf, optarg, BUFSIZE);
             buf[BUFSIZE - 1] = '\0';
