@@ -130,9 +130,22 @@ bool q_insert_tail(queue_t *q, char *s)
  */
 bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
 {
-    /* TODO: You need to fix up this code. */
-    /* TODO: Remove the above comment when you are about to implement. */
+    // if q is NULL or empty, return false
+    if (!q || q->size == 0)
+        return false;
+
+    // remove an element from queue
+    list_ele_t *target = q->head;
     q->head = q->head->next;
+
+    // if sp is non-NULL, copy the string to *sp
+    if (sp != NULL)
+        strncpy(sp, target->value, bufsize);
+
+    // free the element
+    free(target->value);
+    free(target);
+    q->size--;
     return true;
 }
 
