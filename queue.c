@@ -189,6 +189,43 @@ void q_reverse(queue_t *q)
     q->head = rev_target;
 }
 
+list_ele_t *list_merge(list_ele_t *l1, list_ele_t *l2)
+{
+    // merge with recursive
+    if (!l2)
+        return l1;
+    if (!l1)
+        return l2;
+
+    if (strcmp(l1->value, l2->value) < 0) {
+        l1->next = list_merge(l1->next, l2);
+        return l1;
+    } else {
+        l2->next = list_merge(l1, l2->next);
+        return l2;
+    }
+}
+
+list_ele_t *list_merge_sort(list_ele_t *list)
+{
+    if (!list || !list->next)
+        return list;
+
+    // split
+    list_ele_t *fast = list->next, *slow = list;
+    while (fast && fast->next) {
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+    fast = slow->next;
+    slow->next = NULL;
+
+    list_ele_t *l1 = list_merge_sort(list);
+    list_ele_t *l2 = list_merge_sort(fast);
+
+    return list_merge(l1, l2);
+}
+
 /*
  * Sort elements of queue in ascending order
  * No effect if q is NULL or empty. In addition, if q has only one
@@ -196,6 +233,18 @@ void q_reverse(queue_t *q)
  */
 void q_sort(queue_t *q)
 {
-    /* TODO: You need to write the code for this function */
-    /* TODO: Remove the above comment when you are about to implement. */
+    // if q is NULL, empty or only one element
+    if (!q || q->size <= 0)
+        return;
+
+    q->head = list_merge_sort(q->head);
+
+    // redirect q->tail
+    list_ele_t *temp = q->head;
+    while (temp->next) {
+        temp = temp->next;
+    }
+    q->tail = temp;
+
+    return;
 }
