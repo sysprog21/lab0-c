@@ -163,7 +163,7 @@ Integrate [linenoise](https://github.com/antirez/linenoise) to `qtest`. Contain 
 
 ## License
 
-`lab0-c`is released under the BSD 2 clause license. Use of this source code is governed by
+`lab0-c` is released under the BSD 2 clause license. Use of this source code is governed by
 a BSD-style license that can be found in the LICENSE file.
 
 External source code:
