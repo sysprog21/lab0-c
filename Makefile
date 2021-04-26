@@ -70,6 +70,11 @@ valgrind: valgrind_existence
 	@echo "Test with specific case by running command:" 
 	@echo "scripts/driver.py -p $(patched_file) --valgrind -t <tid>"
 
+.PHONY: docker
+docker:
+	docker build -t lab0-c .
+	docker run --rm --cap-add=SYS_PTRACE --security-opt seccomp=unconfined -it lab0-c
+
 clean:
 	rm -f $(OBJS) $(deps) *~ qtest /tmp/qtest.*
 	rm -rf .$(DUT_DIR)
