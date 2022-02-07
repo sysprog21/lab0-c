@@ -5,6 +5,8 @@ if ! test -d .git; then
     exit 1
 fi
 
+mkdir -p .git/hooks
+
 ln -sf ../../scripts/pre-commit.hook .git/hooks/pre-commit || exit 1
 chmod +x .git/hooks/pre-commit
 
