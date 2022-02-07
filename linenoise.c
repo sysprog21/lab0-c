@@ -883,7 +883,7 @@ static int linenoiseEdit(int stdin_fd,
     if (write(l.ofd, prompt, l.plen) == -1)
         return -1;
     while (1) {
-        char c;
+        signed char c;
         int nread;
         char seq[3];
 
