@@ -59,15 +59,15 @@ static void __attribute__((noreturn)) die(void)
 }
 
 static void differentiate(int64_t *exec_times,
-                          int64_t *before_ticks,
-                          int64_t *after_ticks)
+                          const int64_t *before_ticks,
+                          const int64_t *after_ticks)
 {
     for (size_t i = 0; i < number_measurements; i++) {
         exec_times[i] = after_ticks[i] - before_ticks[i];
     }
 }
 
-static void update_statistics(int64_t *exec_times, uint8_t *classes)
+static void update_statistics(const int64_t *exec_times, uint8_t *classes)
 {
     for (size_t i = 0; i < number_measurements; i++) {
         int64_t difference = exec_times[i];

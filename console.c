@@ -605,7 +605,7 @@ bool finish_cmd()
     return ok && err_cnt == 0;
 }
 
-static bool cmd_maybe(char *target, const char *src)
+static bool cmd_maybe(const char *target, const char *src)
 {
     for (int i = 0; i < strlen(src); i++) {
         if (target[i] == '\0')
