@@ -34,7 +34,7 @@ $ sudo snap install cppcheck
 $ export PATH=/snap/bin:$PATH
 ```
 
-## Integrate clang-format to vim
+## Integrate `clang-format` to `vim`
 If you want to run `clang-format` automatically after saving with vim, 
 clang-format supports integration for vim according to [Clang 11 documentation](https://clang.llvm.org/docs/ClangFormat.html). 
 
@@ -78,7 +78,7 @@ Extra options can be recognized by make:
 * `VERBOSE`: control the build verbosity. If `VERBOSE=1`, echo eacho command in build process.
 * `SANITIZER`: enable sanitizer(s) directed build. At the moment, AddressSanitizer is supported.
 
-## Using qtest
+## Using `qtest`
 
 `qtest` provides a command interpreter that can create and manipulate queues.
 
