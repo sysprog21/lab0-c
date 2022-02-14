@@ -1,21 +1,20 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 if ! test -d .git; then
     echo "Execute scripts/install-git-hooks in the top-level directory."
     exit 1
 fi
 
-USR_NAME=$(git config -l | grep -w remote.origin.url | sed -e 's/^.*github.com\/\(.*\)\/lab0-c.git/\1/')
+USR_NAME=$(git config -l | grep -w remote.origin.url | sed -e 's/^.*github.com\/\(.*\)\/lab0-c*/\1/')
 
-CURL_RES=$(curl \
+CURL_RES=$(curl -s \
 -H "Accept: application/vnd.github.v3+json" \
 https://api.github.com/repos/${USR_NAME}/lab0-c/actions/workflows)
 
 TOTAL_COUNT=$(echo ${CURL_RES} | sed -e 's/.*"total_count": \([^,"]*\).*/\1/')
-
-echo ${TOTAL_COUNT}
-if [ ${TOTAL_COUNT} == "0" ]; then
-    echo "[WARN] GitHub Action hasn't been activated"
+if [ ${TOTAL_COUNT} -eq "0" ]; then
+    echo "Fatal: GitHub Action has not been activated."
+    echo "Check this article: https://docs.github.com/en/actions/managing-workflow-runs/disabling-and-enabling-a-workflow"
     exit 1
 else
     echo "GitHub Action has been activated"
