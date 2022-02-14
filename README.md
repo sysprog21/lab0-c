@@ -109,7 +109,7 @@ Trace files
 * traces/trace-XX-CAT.cmd : Trace files used by the driver.  These are input files for `qtest`.
   * They are short and simple.
   * We encourage to study them to see what tests are being performed.
-  * XX is the trace number (1-15).  CAT describes the general nature of the test.
+  * XX is the trace number (1-17).  CAT describes the general nature of the test.
 * traces/trace-eg.cmd : A simple, documented trace file to demonstrate the operation of `qtest`
 
 ## Debugging Facilities
