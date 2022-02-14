@@ -5,6 +5,22 @@ if ! test -d .git; then
     exit 1
 fi
 
+USR_NAME=$(git config -l | grep -w remote.origin.url | sed -e 's/^.*github.com\/\(.*\)\/lab0-c.git/\1/')
+
+CURL_RES=$(curl \
+-H "Accept: application/vnd.github.v3+json" \
+https://api.github.com/repos/${USR_NAME}/lab0-c/actions/workflows)
+
+TOTAL_COUNT=$(echo ${CURL_RES} | sed -e 's/.*"total_count": \([^,"]*\).*/\1/')
+
+echo ${TOTAL_COUNT}
+if [ ${TOTAL_COUNT} == "0" ]; then
+    echo "[WARN] GitHub Action hasn't been activated"
+    exit 1
+else
+    echo "GitHub Action has been activated"
+fi
+
 mkdir -p .git/hooks
 
 ln -sf ../../scripts/pre-commit.hook .git/hooks/pre-commit || exit 1
