@@ -156,7 +156,7 @@ cmd>
   ```
 
 ## User-friendly command line
-Integrate [linenoise](https://github.com/antirez/linenoise) to `qtest`. Contain following user-friendly features:
+[linenoise](https://github.com/antirez/linenoise) was integrated into `qtest`, providing the following user-friendly features:
 * Move cursor by right and left key
 * Get previous or next command typed before by up and down key
 * Auto completion by TAB
