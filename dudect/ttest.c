@@ -5,8 +5,7 @@
  * This is basically Student's t-test for unequal
  * variances and unequal sample sizes.
  *
- * see https://en.wikipedia.org/wiki/Welch%27s_t-test
- *
+ * See https://en.wikipedia.org/wiki/Welch%27s_t-test
  */
 
 #include "ttest.h"
@@ -20,6 +19,7 @@ void t_push(t_ctx *ctx, double x, uint8_t class)
 {
     assert(class == 0 || class == 1);
     ctx->n[class]++;
+
     /* Welford method for computing online variance
      * in a numerically stable way.
      */

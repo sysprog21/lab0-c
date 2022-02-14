@@ -1,4 +1,4 @@
-# Test of insert_head, insert_tail, and remove_head
+# Test of insert_head, insert_tail, remove_head, remove_tail, and delete_mid
 option fail 0
 option malloc 0
 new
@@ -8,9 +8,13 @@ ih dolphin
 it meerkat
 it bear
 it gerbil
+it tiger
+rt tiger
+dm
+dm
+it meerkat
 rh dolphin
+rh bear
 rh bear
 rh gerbil
 rh meerkat
-rh bear
-rh gerbil

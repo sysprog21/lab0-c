@@ -1,7 +1,9 @@
-# Test performance of size
+# Test performance of insert_tail, reverse, and sort
 option fail 0
 option malloc 0
 new
 ih dolphin 1000000
-size 1000
+it gerbil 1000000
+reverse
+sort
 

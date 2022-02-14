@@ -49,6 +49,7 @@ typedef struct linenoiseCompletions {
     char **cvec;
 } linenoiseCompletions;
 
+/* clang-format off */
 typedef void(linenoiseCompletionCallback)(const char *, linenoiseCompletions *);
 typedef char *(linenoiseHintsCallback)(const char *, int *color, int *bold);
 typedef void(linenoiseFreeHintsCallback)(void *);
@@ -56,6 +57,7 @@ void linenoiseSetCompletionCallback(linenoiseCompletionCallback *);
 void linenoiseSetHintsCallback(linenoiseHintsCallback *);
 void linenoiseSetFreeHintsCallback(linenoiseFreeHintsCallback *);
 void linenoiseAddCompletion(linenoiseCompletions *, const char *);
+/* clang-format on */
 
 char *linenoise(const char *prompt);
 void linenoiseFree(void *ptr);

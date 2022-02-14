@@ -1,5 +1,7 @@
-# Test if q_insert_tail and q_size is constant time complexity
+# Test if time complexity of q_insert_tail, q_insert_head, q_remove_tail, and q_remove_head is constant
 option simulation 1
 it
-size
+ih
+rh
+rt
 option simulation 0

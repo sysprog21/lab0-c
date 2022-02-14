@@ -5,25 +5,23 @@
 #include "harness.h"
 #include "queue.h"
 
+/* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
+ * but some of them cannot occur. You can suppress them by adding the
+ * following line.
+ *   cppcheck-suppress nullPointer
+ */
+
 /*
  * Create empty queue.
  * Return NULL if could not allocate space.
  */
-queue_t *q_new()
+struct list_head *q_new()
 {
-    queue_t *q = malloc(sizeof(queue_t));
-    /* TODO: What if malloc returned NULL? */
-    q->head = NULL;
-    return q;
+    return NULL;
 }
 
 /* Free all storage used by queue */
-void q_free(queue_t *q)
-{
-    /* TODO: How about freeing the list elements and the strings? */
-    /* Free queue structure */
-    free(q);
-}
+void q_free(struct list_head *l) {}
 
 /*
  * Attempt to insert element at head of queue.
@@ -32,15 +30,8 @@ void q_free(queue_t *q)
  * Argument s points to the string to be stored.
  * The function must explicitly allocate space and copy the string into it.
  */
-bool q_insert_head(queue_t *q, char *s)
+bool q_insert_head(struct list_head *head, char *s)
 {
-    list_ele_t *newh;
-    /* TODO: What should you do if the q is NULL? */
-    newh = malloc(sizeof(list_ele_t));
-    /* Don't forget to allocate space for the string and copy it */
-    /* What if either call to malloc returns NULL? */
-    newh->next = q->head;
-    q->head = newh;
     return true;
 }
 
@@ -51,40 +42,92 @@ bool q_insert_head(queue_t *q, char *s)
  * Argument s points to the string to be stored.
  * The function must explicitly allocate space and copy the string into it.
  */
-bool q_insert_tail(queue_t *q, char *s)
+bool q_insert_tail(struct list_head *head, char *s)
 {
-    /* TODO: You need to write the complete code for this function */
-    /* Remember: It should operate in O(1) time */
-    /* TODO: Remove the above comment when you are about to implement. */
-    return false;
+    return true;
 }
 
 /*
  * Attempt to remove element from head of queue.
- * Return true if successful.
- * Return false if queue is NULL or empty.
+ * Return target element.
+ * Return NULL if queue is NULL or empty.
  * If sp is non-NULL and an element is removed, copy the removed string to *sp
  * (up to a maximum of bufsize-1 characters, plus a null terminator.)
- * The space used by the list element and the string should be freed.
+ *
+ * NOTE: "remove" is different from "delete"
+ * The space used by the list element and the string should not be freed.
+ * The only thing "remove" need to do is unlink it.
+ *
+ * REF:
+ * https://english.stackexchange.com/questions/52508/difference-between-delete-and-remove
  */
-bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
+element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    /* TODO: You need to fix up this code. */
-    /* TODO: Remove the above comment when you are about to implement. */
-    q->head = q->head->next;
-    return true;
+    return NULL;
+}
+
+/*
+ * Attempt to remove element from tail of queue.
+ * Other attribute is as same as q_remove_head.
+ */
+element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
+{
+    return NULL;
+}
+
+/*
+ * WARN: This is for external usage, don't modify it
+ * Attempt to release element.
+ */
+void q_release_element(element_t *e)
+{
+    free(e->value);
+    free(e);
 }
 
 /*
  * Return number of elements in queue.
  * Return 0 if q is NULL or empty
  */
-int q_size(queue_t *q)
+int q_size(struct list_head *head)
 {
-    /* TODO: You need to write the code for this function */
-    /* Remember: It should operate in O(1) time */
-    /* TODO: Remove the above comment when you are about to implement. */
-    return 0;
+    return -1;
+}
+
+/*
+ * Delete the middle node in list.
+ * The middle node of a linked list of size n is the
+ * ⌊n / 2⌋th node from the start using 0-based indexing.
+ * If there're six element, the third member should be return.
+ * Return NULL if list is NULL or empty.
+ */
+bool q_delete_mid(struct list_head *head)
+{
+    // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+    return true;
+}
+
+/*
+ * Delete all nodes that have duplicate string,
+ * leaving only distinct strings from the original list.
+ * Return true if successful.
+ * Return false if list is NULL.
+ *
+ * Note: this function always be called after sorting, in other words,
+ * list is guaranteed to be sorted in ascending order.
+ */
+bool q_delete_dup(struct list_head *head)
+{
+    // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+    return true;
+}
+
+/*
+ * Attempt to swap every two adjacent nodes.
+ */
+void q_swap(struct list_head *head)
+{
+    // https://leetcode.com/problems/swap-nodes-in-pairs/
 }
 
 /*
@@ -94,19 +137,11 @@ int q_size(queue_t *q)
  * (e.g., by calling q_insert_head, q_insert_tail, or q_remove_head).
  * It should rearrange the existing ones.
  */
-void q_reverse(queue_t *q)
-{
-    /* TODO: You need to write the code for this function */
-    /* TODO: Remove the above comment when you are about to implement. */
-}
+void q_reverse(struct list_head *head) {}
 
 /*
  * Sort elements of queue in ascending order
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(queue_t *q)
-{
-    /* TODO: You need to write the code for this function */
-    /* TODO: Remove the above comment when you are about to implement. */
-}
+void q_sort(struct list_head *head) {}

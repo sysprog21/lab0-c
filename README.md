@@ -11,8 +11,8 @@ of the skills tested are:
 * Implementing robust code that operates correctly with invalid arguments, including NULL pointers.
 
 The lab involves implementing a queue, supporting both last-in, first-out (LIFO) and first-in-first-out (FIFO)
-queueing disciplines. The underlying data structure is a singly-linked list, enhanced to make some of the
-operations more efficient.
+queueing disciplines. The underlying data structure is a circular doubly-linked list, enhanced to make some of
+the operations more efficient.
 
 ## Prerequisites
 

@@ -3,7 +3,14 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 void randombytes(uint8_t *x, size_t xlen);
-uint8_t randombit(void);
+
+static inline uint8_t randombit(void)
+{
+    uint8_t ret = 0;
+    randombytes(&ret, 1);
+    return ret & 1;
+}
 
 #endif

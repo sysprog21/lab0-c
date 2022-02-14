@@ -23,7 +23,7 @@ fi
 
 # Show hints
 echo -e "${YELLOW}Hint${NC}: You might want to know why Git is always ${GREEN}asking for my password${NC}."
-echo -e "      https://help.github.com/en/github/using-git/why-is-git-always-asking-for-my-password"
+echo -e "      https://docs.github.com/en/get-started/getting-started-with-git/why-is-git-always-asking-for-my-password"
 echo ""
 
 # only run this if you are pushing to master

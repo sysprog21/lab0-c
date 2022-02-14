@@ -135,3 +135,9 @@ vim
 lldb
 utf
 unicode
+checksum
+sha
+shasum
+verifier
+CI
+foreach

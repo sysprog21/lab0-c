@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
-CPPCHECK_suppresses="--inline-suppr harness.c --suppress=unmatchedSuppression:harness.c --suppress=missingIncludeSystem --suppress=unusedFunction:linenoise.c --suppress=variableScope:linenoise.c --suppress=nullPointerRedundantCheck:report.c"
+CPPCHECK_suppresses="--inline-suppr harness.c --suppress=unmatchedSuppression:harness.c --suppress=missingIncludeSystem \
+--suppress=unusedFunction:linenoise.c --suppress=variableScope:linenoise.c \
+--suppress=nullPointerRedundantCheck:report.c \
+--suppress=nullPointer:qtest.c"
 CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1 --force $CPPCHECK_suppresses ."
 
 RETURN=0
@@ -40,6 +43,11 @@ if [ $? -ne 0 ]; then
     DIFF=diff
 fi
 
+SHA1SUM=$(which sha1sum)
+if [ $? -ne 0 ]; then
+    SHA1SUM=shasum
+fi
+
 FILES=`git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h)$"`
 for FILE in $FILES; do
     nf=`git checkout-index --temp $FILE | cut -f 1`
@@ -70,6 +78,12 @@ done
 if [ ! -z "${FILES[*]}" ]; then
     echo "Following files need to be cleaned up:"
     echo "${FILES[*]}"
+fi
+
+$SHA1SUM -c scripts/checksums
+if [ $? -ne 0 ]; then
+    echo "[!] You are not allowed to change the header file queue.h or list.h" >&2
+    exit 1
 fi
 
 # Prevent unsafe functions

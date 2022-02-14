@@ -43,6 +43,7 @@ void init_cmd();
 
 /* Add a new command */
 void add_cmd(char *name, cmd_function operation, char *documentation);
+#define ADD_COMMAND(cmd, msg) add_cmd(#cmd, do_##cmd, msg)
 
 /* Add a new parameter */
 void add_param(char *name,
