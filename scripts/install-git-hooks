@@ -5,19 +5,26 @@ if ! test -d .git; then
     exit 1
 fi
 
-USR_NAME=$(git config -l | grep -w remote.origin.url | sed -e 's/^.*github.com\/\(.*\)\/lab0-c*/\1/')
+ACCOUNT=$(git config -l | grep -w remote.origin.url | sed -e 's/^.*github.com\/\(.*\)\/lab0.*/\1/')
 
 CURL_RES=$(curl -s \
 -H "Accept: application/vnd.github.v3+json" \
-https://api.github.com/repos/${USR_NAME}/lab0-c/actions/workflows)
+https://api.github.com/repos/${ACCOUNT}/lab0-c/actions/workflows)
 
 TOTAL_COUNT=$(echo ${CURL_RES} | sed -e 's/.*"total_count": \([^,"]*\).*/\1/')
+case ${TOTAL_COUNT} in
+    *"Not Found"*)
+        echo "Check your repository. It should be located at https://github.com/${ACCOUNT}/lab0-c"
+        exit 1
+esac
+
 if [ ${TOTAL_COUNT} -eq "0" ]; then
-    echo "Fatal: GitHub Action has not been activated."
+    echo "Fatal: GitHub Actions MUST be activated."
     echo "Check this article: https://docs.github.com/en/actions/managing-workflow-runs/disabling-and-enabling-a-workflow"
+    echo "Then, execute 'make' again."
     exit 1
 else
-    echo "GitHub Action has been activated"
+    echo "GitHub Actions has been activated"
 fi
 
 mkdir -p .git/hooks
