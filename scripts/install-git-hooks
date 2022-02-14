@@ -5,7 +5,7 @@ if ! test -d .git; then
     exit 1
 fi
 
-ACCOUNT=$(git config -l | grep -w remote.origin.url | sed -e 's/^.*github.com\/\(.*\)\/lab0.*/\1/')
+ACCOUNT=$(git config -l | grep -w remote.origin.url | sed -e 's/^.*github.com[\/:]\(.*\)\/lab0-c.*/\1/')
 
 CURL_RES=$(curl -s \
 -H "Accept: application/vnd.github.v3+json" \
