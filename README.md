@@ -20,7 +20,7 @@ There are a few prerequisites which must be installed on your machine before you
 be able to build and run the autograders.
 
 The following command will install all required and optional dependencies on Ubuntu
-Linux 18.04 or later:
+Linux 20.04 or later:
 ```shell
 $ sudo apt install build-essential git clang-format cppcheck aspell colordiff valgrind
 ```
