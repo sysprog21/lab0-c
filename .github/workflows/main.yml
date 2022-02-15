@@ -13,11 +13,15 @@ jobs:
             sudo apt-get update
             sudo apt-get -q -y install build-essential cppcheck
     - name: make
-      run: make
+      run:  make
     - name: make check
-      run: make check
+      run: |
+            make check || (cat scripts/weeping.raw ; exit 1)
+            cat scripts/pikachu.raw
     - name: make test
-      run: make test
+      run: |
+            make test || (cat scripts/weeping.raw ; exit 1)
+            cat scripts/pikachu.raw
 
   coding-style:
     runs-on: ubuntu-20.04
@@ -27,4 +31,5 @@ jobs:
       run: |
             sudo apt-get install -q -y clang-format-12
             sh .ci/check-format.sh
+            cat scripts/pikachu.raw
       shell: bash
