@@ -371,7 +371,7 @@ static inline void list_move_tail(struct list_head *node,
  * @node: list_head pointer used as iterator
  * @head: pointer to the head of the list
  *
- * The nodes and the head of the list must must be kept unmodified while
+ * The nodes and the head of the list must be kept unmodified while
  * iterating through it. Any modifications to the the list will cause undefined
  * behavior.
  */
@@ -384,7 +384,7 @@ static inline void list_move_tail(struct list_head *node,
  * @head: pointer to the head of the list
  * @member: name of the list_head member variable in struct type of @entry
  *
- * The nodes and the head of the list must must be kept unmodified while
+ * The nodes and the head of the list must be kept unmodified while
  * iterating through it. Any modifications to the the list will cause undefined
  * behavior.
  *
