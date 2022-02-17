@@ -56,6 +56,13 @@ void q_free(struct list_head *l)
  */
 bool q_insert_head(struct list_head *head, char *s)
 {
+    element_t *element;
+    if (!head)
+        return false;
+    element = _new_element(s);
+    if (!element)
+        return false;
+    list_add(&element->list, head);
     return true;
 }
 
