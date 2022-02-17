@@ -34,6 +34,7 @@ void q_free(struct list_head *l)
         return;
     for (struct list_head *i = l->next, *next; i != l; i = next) {
         element = list_entry(i, element_t, list);
+        /* `next` as a temporary variable to save the next `list_head` */
         next = element->list.next;
         q_release_element(element);
     }
