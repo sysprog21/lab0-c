@@ -12,6 +12,12 @@
  */
 
 /*
+ * Create an element with string initialized.
+ * Return NULL if could not allocate space or `s` is NULL.
+ */
+static element_t *_new_element(const char *s);
+
+/*
  * Create empty queue.
  * Return NULL if could not allocate space.
  */
@@ -170,3 +176,29 @@ void q_reverse(struct list_head *head) {}
  * element, do nothing.
  */
 void q_sort(struct list_head *head) {}
+
+/*
+ * Create an element with string initialized.
+ * Return NULL if could not allocate space or `s` is NULL.
+ */
+static element_t *_new_element(const char *s)
+{
+    element_t *element;
+    size_t slen;
+    if (!s)
+        return NULL;
+    element = malloc(sizeof(element_t));
+    if (!element)
+        return NULL;
+
+    INIT_LIST_HEAD(&element->list);
+
+    slen = strlen(s) + 1;
+    element->value = malloc(slen);
+    if (!element->value) {
+        free(element);
+        return NULL;
+    }
+    memcpy(element->value, s, slen);
+    return element;
+}
