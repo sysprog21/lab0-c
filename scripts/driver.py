@@ -142,7 +142,8 @@ class Tracer:
                 jstring += '"%s" : %d' % (self.traceProbs[k], scoreDict[k])
             jstring += '}}'
             print(jstring)
-
+        if score < maxscore:
+            sys.exit(1)
 
 def usage(name):
     print("Usage: %s [-h] [-p PROG] [-t TID] [-v VLEVEL] [--valgrind] [-c]" % name)
