@@ -17,8 +17,7 @@
  */
 struct list_head *q_new()
 {
-    struct list_head *new =
-        (struct list_head *) malloc(sizeof(struct list_head));
+    struct list_head *new = malloc(sizeof(struct list_head));
     if (!new)
         return NULL;
     INIT_LIST_HEAD(new);
@@ -26,7 +25,17 @@ struct list_head *q_new()
 }
 
 /* Free all storage used by queue */
-void q_free(struct list_head *l) {}
+void q_free(struct list_head *l)
+{
+    if (!l || !l->next)
+        return;
+    struct list_head *node;
+    list_for_each (node, l) {
+        list_del(node);
+        q_release_element(list_entry(node, element_t, list));
+    }
+    free(l);
+}
 
 /*
  * Attempt to insert element at head of queue.
@@ -37,12 +46,12 @@ void q_free(struct list_head *l) {}
  */
 bool q_insert_head(struct list_head *head, char *s)
 {
-    element_t *new = (element_t *) malloc(sizeof(element_t));
+    element_t *new = malloc(sizeof(element_t));
     int str_size = strlen(s) + 1;
     if (!new)
         return false;
     INIT_LIST_HEAD(&new->list);
-    new->value = (char *) malloc(str_size);
+    new->value = malloc(str_size);
     if (!new->value)
         return false;
     strncpy(new->value, s, str_size);
@@ -59,6 +68,16 @@ bool q_insert_head(struct list_head *head, char *s)
  */
 bool q_insert_tail(struct list_head *head, char *s)
 {
+    int str_size = strlen(s) + 1;
+    element_t *new = malloc(sizeof(element_t));
+    if (!new)
+        return false;
+    INIT_LIST_HEAD(&new->list);
+    new->value = malloc(str_size);
+    if (!new->value)
+        return false;
+    strncpy(new->value, s, str_size);
+    list_add_tail(&new->list, head);
     return true;
 }
 
@@ -78,7 +97,14 @@ bool q_insert_tail(struct list_head *head, char *s)
  */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head || !head->next)
+        return NULL;
+    element_t *target = list_entry(head->next, element_t, list);
+    int str_size = strlen(target->value) + 1;
+    list_del(&target->list);
+    strncpy(sp, target->value, str_size);
+    *(sp + str_size) = '\0';
+    return target;
 }
 
 /*
@@ -87,7 +113,14 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
  */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head || !head->next)
+        return NULL;
+    element_t *target = list_entry(head->prev, element_t, list);
+    int str_size = strlen(target->value) + 1;
+    list_del(&target->list);
+    strncpy(sp, target->value, str_size);
+    *(sp + str_size) = '\0';
+    return target;
 }
 
 /*
@@ -106,7 +139,11 @@ void q_release_element(element_t *e)
  */
 int q_size(struct list_head *head)
 {
-    return -1;
+    int size = 0;
+    struct list_head *node;
+    list_for_each (node, head)
+        size++;
+    return size;
 }
 
 /*
@@ -120,6 +157,15 @@ int q_size(struct list_head *head)
 bool q_delete_mid(struct list_head *head)
 {
     // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+    if (!head || !head->next)
+        return false;
+    struct list_head *rabbit = head->next, *turtle = head->next;
+    while (rabbit != head && rabbit->next != head) {
+        rabbit = rabbit->next->next;
+        turtle = turtle->next;
+    }
+    list_del(turtle);
+    q_release_element(list_entry(turtle, element_t, list));
     return true;
 }
 
@@ -153,7 +199,17 @@ void q_swap(struct list_head *head)
  * (e.g., by calling q_insert_head, q_insert_tail, or q_remove_head).
  * It should rearrange the existing ones.
  */
-void q_reverse(struct list_head *head) {}
+void q_reverse(struct list_head *head)
+{
+    struct list_head *prev = head->prev, *curr = head, *next = head->next;
+    while (next != head) {
+        next = curr->next;
+        curr->next = prev;
+        curr->prev = next;
+        prev = curr;
+        curr = next;
+    }
+}
 
 /*
  * Sort elements of queue in ascending order
