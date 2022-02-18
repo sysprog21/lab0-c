@@ -18,6 +18,15 @@
 static element_t *ele_alloc_helper(const char *s);
 
 /*
+ * Attempt to remove node from a queue.
+ * Return target element.
+ * Return NULL if queue is NULL or empty.
+ * If sp is non-NULL and an element is removed, copy the removed string to *sp
+ * (up to a maximum of bufsize-1 characters, plus a null terminator.)
+ */
+static element_t *my_q_remove(struct list_head *node, char *sp, size_t bufsize);
+
+/*
  * Create empty queue.
  * Return NULL if could not allocate space.
  */
@@ -225,5 +234,25 @@ static element_t *ele_alloc_helper(const char *s)
         return NULL;
     }
     memcpy(element->value, s, slen);
+    return element;
+}
+
+/*
+ * Attempt to remove node from a queue.
+ * Return target element.
+ * Return NULL if queue is NULL or empty.
+ * If sp is non-NULL and an element is removed, copy the removed string to *sp
+ * (up to a maximum of bufsize-1 characters, plus a null terminator.)
+ */
+static element_t *my_q_remove(struct list_head *node, char *sp, size_t bufsize)
+{
+    element_t *const element = list_entry(node, element_t, list);
+    list_del_init(node);
+    if (sp && bufsize) {
+        size_t min = strlen(element->value) + 1;
+        min = min > bufsize ? bufsize : min;
+        memcpy(sp, element->value, min);
+        sp[min - 1] = '\0';
+    }
     return element;
 }
