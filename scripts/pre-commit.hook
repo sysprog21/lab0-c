@@ -3,7 +3,9 @@
 CPPCHECK_suppresses="--inline-suppr harness.c --suppress=unmatchedSuppression:harness.c --suppress=missingIncludeSystem \
 --suppress=unusedFunction:linenoise.c --suppress=variableScope:linenoise.c \
 --suppress=nullPointerRedundantCheck:report.c \
---suppress=nullPointer:qtest.c"
+--suppress=nullPointer:qtest.c \
+--suppress=nullPointer:queue.c \
+--suppress=unmatchedSuppression:queue.c"
 CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1 --force $CPPCHECK_suppresses ."
 
 RETURN=0
