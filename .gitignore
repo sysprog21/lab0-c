@@ -6,3 +6,21 @@ qtest
 .devcontainer
 core*
 .cmd_history
+
+# ctags files
+TAGS
+.TAGS
+!TAGS/
+tags
+.tags
+!tags/
+
+# cscope files
+cscope.*
+ncscope.*
+
+# gnu global files
+GPATH
+GRTAGS
+GSYMS
+GTAGS
