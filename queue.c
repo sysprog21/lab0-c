@@ -123,16 +123,10 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
         return NULL;
 
     element_t *target = list_entry(head->next, element_t, list);
-    int str_size = strlen(target->value);
     list_del(&target->list);
 
-    if (!bufsize)
-        sp = NULL;
-    else if (bufsize >= str_size) {
-        strncpy(sp, target->value, str_size + 1);
-        *(sp + str_size) = '\0';
-    } else {
-        strncpy(sp, target->value, bufsize);
+    if (bufsize) {
+        strncpy(sp, target->value, bufsize - 1);
         *(sp + bufsize - 1) = '\0';
     }
     return target;
@@ -148,16 +142,10 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
         return NULL;
 
     element_t *target = list_entry(head->prev, element_t, list);
-    int str_size = strlen(target->value);
     list_del(&target->list);
 
-    if (!bufsize)
-        sp = NULL;
-    else if (bufsize >= str_size) {
-        strncpy(sp, target->value, str_size + 1);
-        *(sp + str_size) = '\0';
-    } else {
-        strncpy(sp, target->value, bufsize);
+    if (bufsize) {
+        strncpy(sp, target->value, bufsize - 1);
         *(sp + bufsize - 1) = '\0';
     }
     return target;
