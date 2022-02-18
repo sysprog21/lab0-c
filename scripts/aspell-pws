@@ -141,3 +141,4 @@ shasum
 verifier
 CI
 foreach
+dup
