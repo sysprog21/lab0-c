@@ -190,6 +190,13 @@ bool q_delete_dup(struct list_head *head)
 void q_swap(struct list_head *head)
 {
     // https://leetcode.com/problems/swap-nodes-in-pairs/
+    // if (!head && !head->next)
+    //     return;
+    // struct list_head *prev = head->next, *curr = head, *next;
+    // head = head->next;
+    // while (curr && curr->next) {
+    //     next = curr->next->next;
+    // }
 }
 
 /*
