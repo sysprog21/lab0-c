@@ -27,6 +27,17 @@ static element_t *ele_alloc_helper(const char *s);
 static element_t *my_q_remove(struct list_head *node, char *sp, size_t bufsize);
 
 /*
+ * Get the middle node in list.
+ * The middle node of a linked list of size n is the
+ * ⌊n / 2⌋th node from the start using 0-based indexing.
+ * If there're six element, the third member should be return.
+ * Return the middle node.
+ *
+ * Note: `head` must not be empty
+ */
+static struct list_head *get_mid_node(const struct list_head *head);
+
+/*
  * Create empty queue.
  * Return NULL if could not allocate space.
  */
@@ -274,4 +285,21 @@ static element_t *my_q_remove(struct list_head *node, char *sp, size_t bufsize)
         sp[min - 1] = '\0';
     }
     return element;
+}
+
+/*
+ * Get the middle node in list.
+ * The middle node of a linked list of size n is the
+ * ⌊n / 2⌋th node from the start using 0-based indexing.
+ * If there're six element, the third member should be return.
+ * Return the middle node.
+ *
+ * Note: `head` must not be empty
+ */
+static struct list_head *get_mid_node(const struct list_head *head)
+{
+    struct list_head *i = head->next, *j = head->prev;
+    while (i != j && i->next != j)
+        i = i->next, j = j->prev;
+    return j;
 }
