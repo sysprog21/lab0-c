@@ -185,7 +185,7 @@ static inline int list_is_singular(const struct list_head *head)
  * @list: pointer to the head of the list with the node entries
  * @head: pointer to the head of the list
  *
- * All nodes from @list are added to to the beginning of the list of @head.
+ * All nodes from @list are added to the beginning of the list of @head.
  * It is similar to list_add but for multiple nodes. The @list head is not
  * modified and has to be initialized to be used as a valid list head/node
  * again.
