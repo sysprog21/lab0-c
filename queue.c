@@ -34,9 +34,9 @@ void q_free(struct list_head *l)
     struct list_head *node = l->next;
 
     while (node != l) {
-        list_del_init(node);
-        q_release_element(list_entry(node, element_t, list));
-        node = l->next;
+        struct list_head *del = node;
+        node = node->next;
+        q_release_element(list_entry(del, element_t, list));
     }
     free(l);
 }
@@ -254,7 +254,6 @@ bool q_delete_dup(struct list_head *head)
         next = next->next;
     }
     return true;
-
 }
 
 /*
