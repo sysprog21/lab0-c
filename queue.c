@@ -15,7 +15,7 @@
  * Create an element with string initialized.
  * Return NULL if could not allocate space or `s` is NULL.
  */
-static element_t *_new_element(const char *s);
+static element_t *ele_alloc_helper(const char *s);
 
 /*
  * Create empty queue.
@@ -59,7 +59,7 @@ bool q_insert_head(struct list_head *head, char *s)
     element_t *element;
     if (!head)
         return false;
-    element = _new_element(s);
+    element = ele_alloc_helper(s);
     if (!element)
         return false;
     list_add(&element->list, head);
@@ -78,7 +78,7 @@ bool q_insert_tail(struct list_head *head, char *s)
     element_t *element;
     if (!head)
         return false;
-    element = _new_element(s);
+    element = ele_alloc_helper(s);
     if (!element)
         return false;
     list_add_tail(&element->list, head);
@@ -206,7 +206,7 @@ void q_sort(struct list_head *head) {}
  * Create an element with string initialized.
  * Return NULL if could not allocate space or `s` is NULL.
  */
-static element_t *_new_element(const char *s)
+static element_t *ele_alloc_helper(const char *s)
 {
     element_t *element;
     size_t slen;
