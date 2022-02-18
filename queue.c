@@ -242,7 +242,38 @@ void q_reverse(struct list_head *head)
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(struct list_head *head) {}
+void q_sort(struct list_head *head)
+{
+    // Merge sort
+    struct list_head *i, *j, *tmp;
+    LIST_HEAD(new_head);
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+    // Split the list
+    list_cut_position(&new_head, head, get_mid_node(head)->prev);
+    // Call recursively
+    q_sort(&new_head);
+    q_sort(head);
+    // Insert nodes in new_head to head
+    i = head->next;
+    for (j = new_head.next; !list_empty(&new_head); j = tmp) {
+        while (i != head &&
+               strcmp(((element_t *) list_entry(i, element_t, list))->value,
+                      ((element_t *) list_entry(j, element_t, list))->value) <
+                   0) {
+            i = i->next;
+        }
+        if (i == head) {
+            // All of the remaining elements in new_head is greater than i
+            list_splice_tail_init(&new_head, i);
+        } else {
+            tmp = j->next;
+            list_del_init(j);
+            list_add_tail(j, i);
+            // i->prev == j
+        }
+    }
+}
 
 /*
  * Create an element with string initialized.
