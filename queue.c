@@ -287,35 +287,71 @@ void q_reverse(struct list_head *head)
 }
 
 /*
+ * Merge the two lists in a one sorted list.
+ */
+static struct list_head *mergelist(struct list_head *list1,
+                                   struct list_head *list2)
+{
+    struct list_head *res = NULL;
+    struct list_head **ptr = &res;
+    while (list1 && list2) {
+        element_t *list1_entry = list_entry(list1, element_t, list);
+        element_t *list2_entry = list_entry(list2, element_t, list);
+        if (strcmp(list1_entry->value, list2_entry->value) < 0) {
+            *ptr = list1;
+            list1 = list1->next;
+        } else {
+            *ptr = list2;
+            list2 = list2->next;
+        }
+        ptr = &(*ptr)->next;
+    }
+    *ptr = (struct list_head *) ((u_int64_t) list1 | (u_int64_t) list2);
+
+    return res;
+}
+
+/*
+ * Divide the list into several nodes and merge to sorted list.
+ * No effect if q is NULL or empty.
+ */
+static struct list_head *mergesort(struct list_head *head)
+{
+    if (!head || !head->next)
+        return head;
+
+    struct list_head *rabbit = head, *turtle = head;
+    while (rabbit && rabbit->next) {
+        rabbit = rabbit->next->next;
+        turtle = turtle->next;
+    }
+
+    struct list_head *mid = turtle;
+    turtle->prev->next = NULL;
+
+    struct list_head *left = mergesort(head);
+    struct list_head *right = mergesort(mid);
+    return mergelist(left, right);
+}
+
+/*
  * Sort elements of queue in ascending order
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
 void q_sort(struct list_head *head)
 {
-    struct list_head less, greater;
-    element_t *pivot, *item, *is = NULL;
-
-    if (!head || list_empty(head) || list_is_singular(head))
+    if (!head || list_empty(head))
         return;
+    head->prev->next = NULL;
+    head->next = mergesort(head->next);
 
-    INIT_LIST_HEAD(&less);
-    INIT_LIST_HEAD(&greater);
-
-    pivot = list_first_entry(head, element_t, list);
-    list_del(&pivot->list);
-
-    list_for_each_entry_safe (item, is, head, list) {
-        if (strcmp(item->value, pivot->value) < 0)
-            list_move_tail(&item->list, &less);
-        else
-            list_move(&item->list, &greater);
+    struct list_head *curr = head, *next = head->next;
+    while (next) {
+        next->prev = curr;
+        curr = next;
+        next = next->next;
     }
-
-    q_sort(&less);
-    q_sort(&greater);
-
-    list_add(&pivot->list, head);
-    list_splice(&less, head);
-    list_splice_tail(&greater, head);
+    curr->next = head;
+    head->prev = curr;
 }
