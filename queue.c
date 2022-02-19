@@ -293,21 +293,20 @@ static struct list_head *mergelist(struct list_head *list1,
                                    struct list_head *list2)
 {
     struct list_head *res = NULL;
-    struct list_head **ptr = &res;
+    struct list_head **indirect = &res;
     while (list1 && list2) {
         element_t *list1_entry = list_entry(list1, element_t, list);
         element_t *list2_entry = list_entry(list2, element_t, list);
         if (strcmp(list1_entry->value, list2_entry->value) < 0) {
-            *ptr = list1;
+            *indirect = list1;
             list1 = list1->next;
         } else {
-            *ptr = list2;
+            *indirect = list2;
             list2 = list2->next;
         }
-        ptr = &(*ptr)->next;
+        indirect = &(*indirect)->next;
     }
-    *ptr = (struct list_head *) ((u_int64_t) list1 | (u_int64_t) list2);
-
+    *indirect = (struct list_head *) ((u_int64_t) list1 | (u_int64_t) list2);
     return res;
 }
 
