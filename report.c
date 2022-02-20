@@ -54,9 +54,11 @@ void report_event(message_t msg, char *fmt, ...)
 {
     va_list ap;
     bool fatal = msg == MSG_FATAL;
-    char *msg_name = msg == MSG_WARN    ? "WARNING"
-                     : msg == MSG_ERROR ? "ERROR"
-                                        : "FATAL ERROR";
+    /* clang-format off */
+    char *msg_name = (msg == MSG_WARN) ? "WARNING" :
+                                         (msg == MSG_ERROR) ? "ERROR" :
+                                                              "FATAL ERROR";
+    /* clang-format on */
     int level = msg == MSG_WARN ? 2 : msg == MSG_ERROR ? 1 : 0;
     if (verblevel < level)
         return;
