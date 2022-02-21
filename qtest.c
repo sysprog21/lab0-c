@@ -493,21 +493,19 @@ static bool do_dedup(int argc, char *argv[])
         return false;
     }
 
-    bool ok = true;
-    // set_noallocate_mode(true);
-    if (exception_setup(true))
-        ok = q_delete_dup(l_meta.l);
-    exception_cancel();
-
-    // set_noallocate_mode(false);
-
-    if (!ok) {
-        report(1, "ERROR: Calling delete duplicate on null queue");
+    // establish checking list dup_value
+    struct list_head *dup_value = malloc(sizeof(*dup_value));
+    if (!dup_value) {
+        report(
+            1,
+            "INTERNAL ERROR.  Could not allocate space for duplicate checking");
         return false;
     }
-
+    INIT_LIST_HEAD(dup_value);
     element_t *item = NULL;
-    if (l_meta.size) {
+    if (l_meta.l && !list_empty(l_meta.l)) {
+        bool last_dup = false;
+
         list_for_each_entry (item, l_meta.l, list) {
             element_t *next_item;
             if (item->list.next == l_meta.l)
@@ -515,14 +513,115 @@ static bool do_dedup(int argc, char *argv[])
             next_item = list_entry(item->list.next, element_t, list);
 
             // assume queue has been sorted
-            if (strcmp(item->value, next_item->value) == 0) {
-                report(1, "ERROR: Contain duplicate string on queue");
+            bool match = !strcmp(item->value, next_item->value);
+            if (match && !last_dup) {
+                int n = strlen(item->value) + 1;
+                char *str = malloc(sizeof(*str) * n);
+                element_t *entry = malloc(sizeof(*entry));
+                if (!str || !entry) {
+                    report(1,
+                           "INTERNAL ERROR.  Could not allocate space for "
+                           "duplicate checking");
+                    free(str);
+
+                    if (list_empty(dup_value)) {
+                        free(dup_value);
+                        return false;
+                    }
+                    element_t *cur, *safe;
+                    list_for_each_entry_safe (cur, safe, dup_value, list) {
+                        free(cur->value);
+                        free(cur);
+                    }
+                    free(dup_value);
+
+                    return false;
+                }
+                strncpy(str, item->value, n);
+                entry->value = str;
+
+                list_add_tail(&entry->list, dup_value);
+            }
+            last_dup = match;
+            /*
+             * To avoid allocate duplicated string in checking list
+             * dup_value, a variable last_dup is used to record whether
+             * last comparison is matching.
+             * However, cppchek print this:
+             *
+             * - style: Variable 'last_dup' is assigned a value that
+             * - is never used. [unreadVariable]
+             * -    last_dup = match;
+             *
+             * and prevent qtest.c from commiting.
+             * When using valgrind --tool=massif to see the memory usage,
+             * the version using last_dup is better than normal version,
+             * so it is clear that last_dup is not useless.
+             *
+             * Therefore, this function adds a if statement with no
+             * operation at the end of for loop to avoid cppcheck warning.
+             */
+            if (last_dup)  // do nothing
+                continue;
+        }
+    }
+    bool ok = true;
+    if (exception_setup(true))
+        ok = q_delete_dup(l_meta.l);
+    exception_cancel();
+
+    if (!ok) {
+        if (list_empty(dup_value)) {
+            free(dup_value);
+            return ok && !error_check();
+        }
+        element_t *cur, *safe;
+        list_for_each_entry_safe (cur, safe, dup_value, list) {
+            free(cur->value);
+            free(cur);
+        }
+        free(dup_value);
+
+        report(1, "ERROR: Calling delete duplicate on null queue");
+        return false;
+    }
+
+    item = NULL;
+    // Checking if there are duplicated string remain on queue.
+    // If the string is duplicated at beginning, and remain
+    // on the queue after call of q_dedup, return false.
+    if (l_meta.size && !list_empty(dup_value)) {
+        element_t *next_dup = list_first_entry(dup_value, element_t, list);
+        list_for_each_entry (item, l_meta.l, list) {
+            int cmp = strcmp(item->value, next_dup->value);
+
+            // assume queue has been sorted
+            while (cmp > 0 && next_dup->list.next != dup_value) {
+                next_dup = list_first_entry(&next_dup->list, element_t, list);
+                cmp = strcmp(item->value, next_dup->value);
+            }
+            if (!cmp) {
+                report(1, "ERROR: Duplicate string remain on queue");
                 ok = false;
                 break;
             }
+
+            if (&next_dup->list == dup_value)
+                break;
         }
     }
     show_queue(3);
+
+    if (list_empty(dup_value)) {
+        free(dup_value);
+        return ok && !error_check();
+    }
+    element_t *cur, *safe;
+    list_for_each_entry_safe (cur, safe, dup_value, list) {
+        free(cur->value);
+        free(cur);
+    }
+    free(dup_value);
 
     return ok && !error_check();
 }
