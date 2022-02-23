@@ -755,6 +755,7 @@ static bool do_dm(int argc, char *argv[])
         ok = q_delete_mid(l_meta.l);
     exception_cancel();
 
+    lcnt--;
     show_queue(3);
     return ok && !error_check();
 }
