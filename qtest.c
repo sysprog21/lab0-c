@@ -493,136 +493,87 @@ static bool do_dedup(int argc, char *argv[])
         return false;
     }
 
-    // establish checking list dup_value
-    struct list_head *dup_value = malloc(sizeof(*dup_value));
-    if (!dup_value) {
-        report(
-            1,
-            "INTERNAL ERROR.  Could not allocate space for duplicate checking");
-        return false;
-    }
-    INIT_LIST_HEAD(dup_value);
-    element_t *item = NULL;
+    LIST_HEAD(l_copy);
+    element_t *item, *tmp;
+
+    // Copy l_meta.l to l_copy
     if (l_meta.l && !list_empty(l_meta.l)) {
-        bool last_dup = false;
-
         list_for_each_entry (item, l_meta.l, list) {
-            element_t *next_item;
-            if (item->list.next == l_meta.l)
+            size_t slen;
+            tmp = malloc(sizeof(element_t));
+            if (!tmp)
                 break;
-            next_item = list_entry(item->list.next, element_t, list);
-
-            // assume queue has been sorted
-            bool match = !strcmp(item->value, next_item->value);
-            if (match && !last_dup) {
-                int n = strlen(item->value) + 1;
-                char *str = malloc(sizeof(*str) * n);
-                element_t *entry = malloc(sizeof(*entry));
-                if (!str || !entry) {
-                    report(1,
-                           "INTERNAL ERROR.  Could not allocate space for "
-                           "duplicate checking");
-                    free(str);
-
-                    if (list_empty(dup_value)) {
-                        free(dup_value);
-                        return false;
-                    }
-                    element_t *cur, *safe;
-                    list_for_each_entry_safe (cur, safe, dup_value, list) {
-                        free(cur->value);
-                        free(cur);
-                    }
-                    free(dup_value);
-
-                    return false;
-                }
-                strncpy(str, item->value, n);
-                entry->value = str;
-
-                list_add_tail(&entry->list, dup_value);
+            INIT_LIST_HEAD(&tmp->list);
+            slen = strlen(item->value) + 1;
+            tmp->value = malloc(slen);
+            if (!tmp->value) {
+                free(tmp);
+                break;
             }
-            last_dup = match;
-            /*
-             * To avoid allocate duplicated string in checking list
-             * dup_value, a variable last_dup is used to record whether
-             * last comparison is matching.
-             * However, cppchek print this:
-             *
-             * - style: Variable 'last_dup' is assigned a value that
-             * - is never used. [unreadVariable]
-             * -    last_dup = match;
-             *
-             * and prevent qtest.c from commiting.
-             * When using valgrind --tool=massif to see the memory usage,
-             * the version using last_dup is better than normal version,
-             * so it is clear that last_dup is not useless.
-             *
-             * Therefore, this function adds a if statement with no
-             * operation at the end of for loop to avoid cppcheck warning.
-             */
-            if (last_dup)  // do nothing
-                continue;
+            memcpy(tmp->value, item->value, slen);
+            list_add_tail(&tmp->list, &l_copy);
+        }
+        // Return false if the loop does not leave properly
+        if (&item->list != l_meta.l) {
+            list_for_each_entry_safe (item, tmp, &l_copy, list) {
+                free(item->value);
+                free(item);
+            }
+            report(1,
+                   "INTERNAL ERROR.  Could not allocate space for "
+                   "duplicate checking");
+            return false;
         }
     }
+
     bool ok = true;
     if (exception_setup(true))
         ok = q_delete_dup(l_meta.l);
     exception_cancel();
 
     if (!ok) {
-        if (list_empty(dup_value)) {
-            free(dup_value);
-            return ok && !error_check();
+        list_for_each_entry_safe (item, tmp, &l_copy, list) {
+            free(item->value);
+            free(item);
         }
-        element_t *cur, *safe;
-        list_for_each_entry_safe (cur, safe, dup_value, list) {
-            free(cur->value);
-            free(cur);
-        }
-        free(dup_value);
-
         report(1, "ERROR: Calling delete duplicate on null queue");
         return false;
     }
 
-    item = NULL;
-    // Checking if there are duplicated string remain on queue.
-    // If the string is duplicated at beginning, and remain
-    // on the queue after call of q_dedup, return false.
-    if (l_meta.size && !list_empty(dup_value)) {
-        element_t *next_dup = list_first_entry(dup_value, element_t, list);
-        list_for_each_entry (item, l_meta.l, list) {
-            int cmp = strcmp(item->value, next_dup->value);
-
-            // assume queue has been sorted
-            while (cmp > 0 && next_dup->list.next != dup_value) {
-                next_dup = list_first_entry(&next_dup->list, element_t, list);
-                cmp = strcmp(item->value, next_dup->value);
-            }
-            if (!cmp) {
-                report(1, "ERROR: Duplicate string remain on queue");
-                ok = false;
-                break;
-            }
-
-            if (&next_dup->list == dup_value)
-                break;
-        }
+    struct list_head *l_tmp = l_meta.l->next;
+    bool is_this_dup = false;
+    // Compare between new list and old one
+    list_for_each_entry (item, &l_copy, list) {
+        // Skip comparison with new list if the string is duplicate
+        bool is_next_dup =
+            item->list.next != &l_copy &&
+            strcmp(list_entry(item->list.next, element_t, list)->value,
+                   item->value) == 0;
+        if (is_this_dup || is_next_dup) {
+            // Update list size
+            lcnt--;
+            l_meta.size--;
+        } else if (l_tmp != l_meta.l &&
+                   strcmp(list_entry(l_tmp, element_t, list)->value,
+                          item->value) == 0)
+            l_tmp = l_tmp->next;
+        else
+            ok = false;
+        is_this_dup = is_next_dup;
     }
+    // All elements in new list should be traversed
+    ok = ok && l_tmp == l_meta.l;
+    if (!ok)
+        report(1,
+               "ERROR: Duplicate strings are in queue or distinct strings are "
+               "not in queue");
+
+    list_for_each_entry_safe (item, tmp, &l_copy, list) {
+        free(item->value);
+        free(item);
+    }
+
     show_queue(3);
-
-    if (list_empty(dup_value)) {
-        free(dup_value);
-        return ok && !error_check();
-    }
-    element_t *cur, *safe;
-    list_for_each_entry_safe (cur, safe, dup_value, list) {
-        free(cur->value);
-        free(cur);
-    }
-    free(dup_value);
-
     return ok && !error_check();
 }
 
