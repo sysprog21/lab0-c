@@ -24,6 +24,10 @@ Linux 20.04 or later:
 ```shell
 $ sudo apt install build-essential git clang-format cppcheck aspell colordiff valgrind
 ```
+Some distros like Arch Linux won't install `aspell-en` with `aspell`, and you must install it explicitly:
+```shell
+$ sudo pacman -S aspell-en
+```
 
 Note: [Cppcheck](http://cppcheck.sourceforge.net/) version must be at least 1.90, otherwise
 it might report errors with false positives. You can get its version by executing `$ cppcheck --version`.
