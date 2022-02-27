@@ -39,6 +39,10 @@ if [ $? -ne 0 ]; then
     echo "[!] aspell not installed. Unable to do spelling check." >&2
     exit 1
 fi
+if [ -z "$(aspell dump dicts | grep -E '^en$')" ]; then
+    echo "[!] aspell-en not installed. Unable to do spelling check." >&2
+    exit 1
+fi
 
 DIFF=$(which colordiff)
 if [ $? -ne 0 ]; then
