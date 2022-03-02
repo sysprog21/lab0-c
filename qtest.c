@@ -494,7 +494,7 @@ static bool do_dedup(int argc, char *argv[])
     }
 
     LIST_HEAD(l_copy);
-    element_t *item, *tmp;
+    element_t *item = NULL, *tmp = NULL;
 
     // Copy l_meta.l to l_copy
     if (l_meta.l && !list_empty(l_meta.l)) {
