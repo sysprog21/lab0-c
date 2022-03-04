@@ -1,5 +1,6 @@
 #ifndef LAB0_CONSOLE_H
 #define LAB0_CONSOLE_H
+
 #include <stdbool.h>
 #include <sys/select.h>
 #include "linenoise.h"
@@ -65,8 +66,7 @@ void set_echo(bool on);
 /* Return true if no errors occurred */
 bool finish_cmd();
 
-/*
- * Handle command processing in program that uses select as main
+/* Handle command processing in program that uses select as main
  * control loop.
  */
 int cmd_select(int nfds,

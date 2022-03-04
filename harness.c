@@ -29,8 +29,7 @@
 
 /* Data structures used by our code */
 
-/*
- * Represent allocated blocks as doubly-linked list, with
+/* Represent allocated blocks as doubly-linked list, with
  * next and prev pointers at beginning
  */
 typedef struct BELE {
@@ -54,16 +53,12 @@ static char *error_message = "";
 
 static int time_limit = 1;
 
-/*
- * Data for managing exceptions
- */
+/* Data for managing exceptions */
 static jmp_buf env;
 static volatile sig_atomic_t jmp_ready = false;
 static bool time_limited = false;
 
-/*
- * Internal functions
- */
+/* Internal functions */
 
 /* Should this allocation fail? */
 static bool fail_allocation()
@@ -72,8 +67,7 @@ static bool fail_allocation()
     return (weight < 0.01 * fail_probability);
 }
 
-/*
- * Find header of block, given its payload.
+/* Find header of block, given its payload.
  * Signal error if doesn't seem like legitimate block
  */
 static block_ele_t *find_header(void *p)
@@ -119,9 +113,8 @@ static size_t *find_footer(block_ele_t *b)
     return p;
 }
 
-/*
- * Implementation of application functions
- */
+/* Implementation of application functions */
+
 void *test_malloc(size_t size)
 {
     if (noallocate_mode) {
@@ -218,7 +211,7 @@ char *test_strdup(const char *s)
     if (!new)
         return NULL;
 
-    return (char *) memcpy(new, s, len);
+    return memcpy(new, s, len);
 }
 
 size_t allocation_check()
@@ -226,12 +219,9 @@ size_t allocation_check()
     return allocated_count;
 }
 
-/*
- * Implementation of functions for testing
- */
+/* Implementation of functions for testing */
 
-/*
- * Set/unset cautious mode.
+/* Set/unset cautious mode.
  * In this mode, makes extra sure any block to be freed is currently allocated.
  */
 void set_cautious_mode(bool cautious)
@@ -239,8 +229,7 @@ void set_cautious_mode(bool cautious)
     cautious_mode = cautious;
 }
 
-/*
- * Set/unset restricted allocation mode.
+/* Set/unset restricted allocation mode.
  * In this mode, calls to malloc and free are disallowed.
  */
 void set_noallocate_mode(bool noallocate)
@@ -248,9 +237,7 @@ void set_noallocate_mode(bool noallocate)
     noallocate_mode = noallocate;
 }
 
-/*
- * Return whether any errors have occurred since last time set error limit
- */
+/* Return whether any errors have occurred since last time set error limit */
 bool error_check()
 {
     bool e = error_occurred;
@@ -258,8 +245,7 @@ bool error_check()
     return e;
 }
 
-/*
- * Prepare for a risky operation using setjmp.
+/* Prepare for a risky operation using setjmp.
  * Function returns true for initial return, false for error return
  */
 bool exception_setup(bool limit_time)
@@ -287,9 +273,7 @@ bool exception_setup(bool limit_time)
     return true;
 }
 
-/*
- * Call once past risky code
- */
+/* Call once past risky code */
 void exception_cancel()
 {
     if (time_limited) {
@@ -301,9 +285,7 @@ void exception_cancel()
     error_message = "";
 }
 
-/*
- * Use longjmp to return to most recent exception setup
- */
+/* Use longjmp to return to most recent exception setup */
 void trigger_exception(char *msg)
 {
     error_occurred = true;

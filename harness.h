@@ -5,8 +5,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-/*
- * This test harness enables us to do stringent testing of code.
+/* This test harness enables us to do stringent testing of code.
  * It overloads the library versions of malloc and free with ones that
  * allow checking for common allocation errors.
  */
@@ -37,24 +36,18 @@ void set_cautious_mode(bool cautious);
  */
 void set_noallocate_mode(bool noallocate);
 
-/*
-  Return whether any errors have occurred since last time checked
- */
+/* Return whether any errors have occurred since last time checked */
 bool error_check();
 
-/*
- * Prepare for a risky operation using setjmp.
+/* Prepare for a risky operation using setjmp.
  * Function returns true for initial return, false for error return
  */
 bool exception_setup(bool limit_time);
 
-/*
- * Call once past risky code
- */
+/* Call once past risky code */
 void exception_cancel();
 
-/*
- * Use longjmp to return to most recent exception setup.  Include error message
+/* Use longjmp to return to most recent exception setup.  Include error message
  */
 void trigger_exception(char *msg);
 

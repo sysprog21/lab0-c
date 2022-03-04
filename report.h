@@ -44,13 +44,10 @@ void free_array(void *b, size_t cnt, size_t bytes);
 /* Free string saved by strsave_or_fail */
 void free_string(char *s);
 
-/** Time measurement.  **/
-
 /* Time counted as fp number in seconds */
 void init_time(double *timep);
 
-/* Compute time since last call with this timer
-   and reset timer */
+/* Compute time since last call with this timer and reset timer */
 double delta_time(double *timep);
 
 #endif /* LAB0_REPORT_H */
