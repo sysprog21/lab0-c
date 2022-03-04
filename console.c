@@ -28,11 +28,9 @@ static bool prompt_flag = true;
 static bool block_timing = false;
 
 /* Time of day */
-static double first_time;
-static double last_time;
+static double first_time, last_time;
 
-/*
- * Implement buffered I/O using variant of RIO package from CS:APP
+/* Implement buffered I/O using variant of RIO package from CS:APP
  * Must create stack of buffers to handle I/O with nested source commands.
  */
 
@@ -119,14 +117,15 @@ void add_param(char *name,
 /* Parse a string into a command line */
 static char **parse_args(char *line, int *argcp)
 {
-    /*
-     * Must first determine how many arguments there are.
+    /* Must first determine how many arguments there are.
      * Replace all white space with null characters
      */
     size_t len = strlen(line);
+
     /* First copy into buffer with each substring null-terminated */
     char *buf = malloc_or_fail(len + 1, "parse_args");
     buf[len] = '\0';
+
     char *src = line;
     char *dst = buf;
     bool skipping = true;
@@ -525,8 +524,7 @@ static bool cmd_done()
     return !buf_stack || quit_flag;
 }
 
-/*
- * Handle command processing in program that uses select as main control loop.
+/* Handle command processing in program that uses select as main control loop.
  * Like select, but checks whether command input either present in internal
  * buffer
  * or readable from command input.  If so, that command is executed.
