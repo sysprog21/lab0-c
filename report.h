@@ -4,11 +4,6 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-/* Default reporting level.  Must recompile when change */
-#ifndef RPT
-#define RPT 2
-#endif
-
 /* Ways to report interesting behavior and errors */
 
 /* Things to report */
