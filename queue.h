@@ -11,46 +11,63 @@
 #include <stddef.h>
 #include "list.h"
 
-/* Linked list element */
+/**
+ * element_t - Linked list element
+ * @value: pointer to array holding string
+ * @list: node of a doubly-linked list
+ *
+ * @value needs to be explicitly allocated and freed
+ */
 typedef struct {
-    /* Pointer to array holding string.
-     * This array needs to be explicitly allocated and freed
-     */
     char *value;
     struct list_head list;
 } element_t;
 
 /* Operations on queue */
 
-/* Create empty queue.
- * Return NULL if could not allocate space.
+/**
+ * q_new() - Create an empty queue whose next and prev pointer point to itself
+ *
+ * Return: NULL for allocation failed
  */
 struct list_head *q_new();
 
-/* Free ALL storage used by queue.
- * No effect if q is NULL
+/**
+ * q_free() - Free all storage used by queue, no effect if header is NULL
+ * @head: header of queue
  */
 void q_free(struct list_head *head);
 
-/* Attempt to insert element at head of queue.
- * Return true if successful.
- * Return false if q is NULL or could not allocate space.
+/**
+ * q_insert_head() - Insert an element in the head
+ * @head: header of queue
+ * @s: string would be inserted
+ *
  * Argument s points to the string to be stored.
  * The function must explicitly allocate space and copy the string into it.
+ *
+ * Return: true for success, false for allocation failed or queue is NULL
  */
 bool q_insert_head(struct list_head *head, char *s);
 
-/* Attempt to insert element at tail of queue.
- * Return true if successful.
- * Return false if q is NULL or could not allocate space.
+/**
+ * q_insert_tail() - Insert an element at the tail
+ * @head: header of queue
+ * @s: string would be inserted
+ *
  * Argument s points to the string to be stored.
  * The function must explicitly allocate space and copy the string into it.
+ *
+ * Return: true for success, false for allocation failed or queue is NULL
  */
 bool q_insert_tail(struct list_head *head, char *s);
 
-/* Attempt to remove element from head of queue.
- * Return target element.
- * Return NULL if queue is NULL or empty.
+/**
+ * q_remove_head() - Remove the element from head of queue
+ * @head: header of queue
+ * @sp: string would be inserted
+ * @bufsize: size of the string
+ *
  * If sp is non-NULL and an element is removed, copy the removed string to *sp
  * (up to a maximum of bufsize-1 characters, plus a null terminator.)
  *
@@ -58,64 +75,96 @@ bool q_insert_tail(struct list_head *head, char *s);
  * The space used by the list element and the string should not be freed.
  * The only thing "remove" need to do is unlink it.
  *
- * Referenceerence:
+ * Reference:
  * https://english.stackexchange.com/questions/52508/difference-between-delete-and-remove
+ *
+ * Return: the pointer to element, %NULL if queue is NULL or empty.
  */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize);
 
-/* Attempt to remove element from tail of queue.
- * Other attribute is as same as q_remove_head.
+/**
+ * q_remove_tail() - Remove the element from tail of queue
+ * @head: header of queue
+ * @sp: string would be inserted
+ * @bufsize: size of the string
+ *
+ * Return: the pointer to element, %NULL if queue is NULL or empty.
  */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize);
 
-/* Attempt to release element */
-void q_release_element(element_t *e);
+/**
+ * q_release_element() - Release the element
+ * @e: element would be released
+ *
+ * This function is intended for internal use only.
+ */
+static inline void q_release_element(element_t *e)
+{
+    free(e->value);
+    free(e);
+}
 
-/* Return number of elements in queue.
- * Return 0 if q is NULL or empty
+/**
+ * q_size() - Get the size of the queue
+ * @head: header of queue
+ *
+ * Return: the number of elements in queue, zero if queue is NULL or empty
  */
 int q_size(struct list_head *head);
 
-/* Delete the middle node in list.
+/**
+ * q_delete_mid() - Delete the middle node in queue
+ * @head: header of queue
+ *
  * The middle node of a linked list of size n is the
  * ⌊n / 2⌋th node from the start using 0-based indexing.
  * If there're six element, the third member should be return.
- * Return true if successful.
- * Return false if list is NULL or empty.
  *
  * Reference:
  * https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+ *
+ * Return: true for success, false if list is NULL or empty.
  */
 bool q_delete_mid(struct list_head *head);
 
-/* Delete all nodes that have duplicate string,
- * leaving only distinct strings from the original list.
- * Return true if successful.
- * Return false if list is NULL.
+/**
+ * q_delete_dup() - Delete all nodes that have duplicate string,
+ *                  leaving only distinct strings from the original queue.
+ * @head: header of queue
  *
  * Reference:
  * https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+ *
+ * Return: true for success, false if list is NULL.
  */
 bool q_delete_dup(struct list_head *head);
 
-/* Attempt to swap every two adjacent nodes.
+/**
+ * q_delete_dup() - Swap every two adjacent nodes
+ * @head: header of queue
  *
  * Reference:
  * https://leetcode.com/problems/swap-nodes-in-pairs/
  */
 void q_swap(struct list_head *head);
 
-/* Reverse elements in queue
- * No effect if q is NULL or empty
+/**
+ * q_reverse() - Reverse elements in queue
+ * @head: header of queue
+ *
+ * No effect if queue is NULL or empty.
  * This function should not allocate or free any list elements
  * (e.g., by calling q_insert_head, q_insert_tail, or q_remove_head).
  * It should rearrange the existing ones.
  */
 void q_reverse(struct list_head *head);
 
-/* Sort elements of queue in ascending order
- * No effect if q is NULL or empty. In addition, if q has only one
- * element, do nothing.
+/**
+ * q_sort() - Sort elements of queue in ascending order
+ * @head: header of queue
+ *
+ * No effect if queue is NULL or empty. If there has only one element, do
+ * nothing.
  */
 void q_sort(struct list_head *head);
 
