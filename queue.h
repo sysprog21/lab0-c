@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include "harness.h"
 #include "list.h"
 
 /**
@@ -100,8 +101,8 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize);
  */
 static inline void q_release_element(element_t *e)
 {
-    free(e->value);
-    free(e);
+    test_free(e->value);
+    test_free(e);
 }
 
 /**
