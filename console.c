@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include "report.h"
+#include "web.h"
 
 /* Some global values */
 int simulation = 0;
@@ -393,6 +394,29 @@ static bool do_time(int argc, char *argv[])
     return ok;
 }
 
+static bool use_linenoise = true;
+static int listenfd;
+
+static bool do_web(int argc, char *argv[])
+{
+    int port = 9999;
+    if (argc == 2) {
+        if (argv[1][0] >= '0' && argv[1][0] <= '9') {
+            port = atoi(argv[1]);
+        }
+    }
+
+    listenfd = open_listenfd(port);
+    if (listenfd > 0) {
+        printf("listen on port %d, fd is %d\n", port, listenfd);
+        use_linenoise = false;
+    } else {
+        perror("ERROR");
+        exit(listenfd);
+    }
+    return true;
+}
+
 /* Initialize interpreter */
 void init_cmd()
 {
@@ -407,6 +431,7 @@ void init_cmd()
     ADD_COMMAND(source, " file           | Read commands from source file");
     ADD_COMMAND(log, " file           | Copy output to file");
     ADD_COMMAND(time, " cmd arg ...    | Time command execution");
+    ADD_COMMAND(web, " [port]         | Read commands from a tiny-web-server");
     add_cmd("#", do_comment_cmd, " ...            | Display comment");
     add_param("simulation", &simulation, "Start/Stop simulation mode", NULL);
     add_param("verbose", &verblevel, "Verbosity level", NULL);
@@ -530,6 +555,7 @@ static bool cmd_done()
  * nfds should be set to the maximum file descriptor for network sockets.
  * If nfds == 0, this indicates that there is no pending network activity
  */
+int connfd;
 int cmd_select(int nfds,
                fd_set *readfds,
                fd_set *writefds,
@@ -549,7 +575,13 @@ int cmd_select(int nfds,
 
         /* Add input fd to readset for select */
         infd = buf_stack->fd;
+        FD_ZERO(readfds);
         FD_SET(infd, readfds);
+
+        /* If web not ready listen */
+        if (listenfd != -1)
+            FD_SET(listenfd, readfds);
+
         if (infd == STDIN_FILENO && prompt_flag) {
             printf("%s", prompt);
             fflush(stdout);
@@ -558,6 +590,8 @@ int cmd_select(int nfds,
 
         if (infd >= nfds)
             nfds = infd + 1;
+        if (listenfd >= nfds)
+            nfds = listenfd + 1;
     }
     if (nfds == 0)
         return 0;
@@ -571,12 +605,27 @@ int cmd_select(int nfds,
         /* Commandline input available */
         FD_CLR(infd, readfds);
         result--;
-        if (has_infile) {
-            char *cmdline;
-            cmdline = readline();
-            if (cmdline)
-                interpret_cmd(cmdline);
-        }
+
+        set_echo(0);
+        char *cmdline;
+        cmdline = readline();
+        if (cmdline)
+            interpret_cmd(cmdline);
+    } else if (readfds && FD_ISSET(listenfd, readfds)) {
+        FD_CLR(listenfd, readfds);
+        result--;
+        struct sockaddr_in clientaddr;
+        socklen_t clientlen = sizeof(clientaddr);
+        connfd = accept(listenfd, (SA *) &clientaddr, &clientlen);
+
+        char *p = process_connection(connfd, &clientaddr);
+        char *buffer = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+        send_response(connfd, buffer);
+
+        if (p)
+            interpret_cmd(p);
+        free(p);
+        close(connfd);
     }
     return result;
 }
@@ -640,7 +689,7 @@ bool run_console(char *infile_name)
 
     if (!has_infile) {
         char *cmdline;
-        while ((cmdline = linenoise(prompt)) != NULL) {
+        while (use_linenoise && (cmdline = linenoise(prompt))) {
             interpret_cmd(cmdline);
             linenoiseHistoryAdd(cmdline);       /* Add to the history. */
             linenoiseHistorySave(HISTORY_FILE); /* Save the history on disk. */
@@ -648,6 +697,10 @@ bool run_console(char *infile_name)
             while (buf_stack && buf_stack->fd != STDIN_FILENO)
                 cmd_select(0, NULL, NULL, NULL, NULL);
             has_infile = false;
+        }
+        if (!use_linenoise) {
+            while (!cmd_done())
+                cmd_select(0, NULL, NULL, NULL, NULL);
         }
     } else {
         while (!cmd_done())

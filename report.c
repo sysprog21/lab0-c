@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "report.h"
+#include "web.h"
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 
@@ -90,11 +91,14 @@ void report_event(message_t msg, char *fmt, ...)
     }
 }
 
+#define BUF_SIZE 4096
+extern int connfd;
 void report(int level, char *fmt, ...)
 {
     if (!verbfile)
         init_files(stdout, stdout);
 
+    char buffer[BUF_SIZE];
     if (level <= verblevel) {
         va_list ap;
         va_start(ap, fmt);
@@ -110,6 +114,15 @@ void report(int level, char *fmt, ...)
             fflush(logfile);
             va_end(ap);
         }
+        va_start(ap, fmt);
+        vsnprintf(buffer, BUF_SIZE, fmt, ap);
+        va_end(ap);
+    }
+    if (connfd) {
+        int len = strlen(buffer);
+        buffer[len] = '\n';
+        buffer[len + 1] = '\0';
+        send_response(connfd, buffer);
     }
 }
 
@@ -118,6 +131,7 @@ void report_noreturn(int level, char *fmt, ...)
     if (!verbfile)
         init_files(stdout, stdout);
 
+    char buffer[BUF_SIZE];
     if (level <= verblevel) {
         va_list ap;
         va_start(ap, fmt);
@@ -131,6 +145,12 @@ void report_noreturn(int level, char *fmt, ...)
             fflush(logfile);
             va_end(ap);
         }
+        va_start(ap, fmt);
+        vsnprintf(buffer, BUF_SIZE, fmt, ap);
+        va_end(ap);
+    }
+    if (connfd) {
+        send_response(connfd, buffer);
     }
 }
 

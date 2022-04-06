@@ -165,6 +165,26 @@ cmd>
 * Get previous or next command typed before by up and down key
 * Auto completion by TAB
 
+## Built-in web server
+
+A small web server is already integrated within the `qtest` command line interpreter,
+and you may use it by running the `web` command in its prompt.
+```
+$ ./qtest
+cmd> web
+listen on port 9999, fd is 3
+```
+
+Run the following commands in another terminal after the built-in web server is ready.
+```shell
+$ curl http://localhost:9999/new
+$ curl http://localhost:9999/ih/1
+$ curl http://localhost:9999/ih/2
+$ curl http://localhost:9999/ih/3
+$ curl http://localhost:9999/sort
+$ curl http://localhost:9999/quit
+```
+
 ## License
 
 `lab0-c` is released under the BSD 2 clause license. Use of this source code is governed by
@@ -174,3 +194,4 @@ External source code:
 * [dudect](https://github.com/oreparaz/dudect): public domain
 * [git-good-commit](https://github.com/tommarshall/git-good-commit): MIT License
 * [linenoise](https://github.com/antirez/linenoise): BSD 2-Clause "Simplified" License
+* [tiny-web-server](https://github.com/7890/tiny-web-server): MIT License
