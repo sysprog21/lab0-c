@@ -672,7 +672,7 @@ bool do_sort(int argc, char *argv[])
             element_t *item, *next_item;
             item = list_entry(cur_l, element_t, list);
             next_item = list_entry(cur_l->next, element_t, list);
-            if (strcasecmp(item->value, next_item->value) > 0) {
+            if (strcmp(item->value, next_item->value) > 0) {
                 report(1, "ERROR: Not sorted in ascending order");
                 ok = false;
                 break;
