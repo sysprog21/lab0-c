@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 # Date:   Wed Jan 22 14:13:06 2020 +0000
 #
 #     Bump copyright year
-commit=`git rev-list -n 1 --grep '^Bump copyright' e1036247e836ff8d71c286b71b02b00e65635afa...HEAD`
+commit=$(git rev-list -n 1 --grep '^Bump copyright' e1036247e836ff8d71c286b71b02b00e65635afa...HEAD)
 if [ x"$commit" != x"6b6c22dabb952d1dfbf4976c9ad5a883b8cb8cbd" ] ; then
     echo -e "${RED}ERROR${NC}: This repository is insane."
     echo -e "Make sure you did fork from https://github.com/sysprog21/lab0-c recently."

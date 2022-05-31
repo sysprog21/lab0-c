@@ -54,12 +54,12 @@ if [ $? -ne 0 ]; then
     SHA1SUM=shasum
 fi
 
-FILES=`git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h)$"`
+FILES=$(shell git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h)$")
 for FILE in $FILES; do
-    nf=`git checkout-index --temp $FILE | cut -f 1`
-    tempdir=`mktemp -d` || exit 1
-    newfile=`mktemp ${tempdir}/${nf}.XXXXXX` || exit 1
-    basename=`basename $FILE`
+    nf=$(git checkout-index --temp $FILE | cut -f 1)
+    tempdir=$(mktemp -d) || exit 1
+    newfile=$(mktemp ${tempdir}/${nf}.XXXXXX) || exit 1
+    basename=$(basename $FILE)
 
     source="${tempdir}/${basename}"
     mv $nf $source
