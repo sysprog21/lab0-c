@@ -29,8 +29,8 @@ extern "C" {
  * both member variables point to the head.
  *
  * The list nodes are usually embedded in a container structure which holds the
- * actual data. Such an container object is called entry. The helper list_entry
- * can be used to calculate the object address from the address of the node.
+ * actual data. Such container structure is called entry. The helper list_entry
+ * can be used to calculate the structure address from the address of the node.
  */
 struct list_head {
     struct list_head *prev;
@@ -38,12 +38,12 @@ struct list_head {
 };
 
 /**
- * container_of() - Calculate address of object that contains address ptr
+ * container_of() - Calculate address of structure that contains address ptr
  * @ptr: pointer to member variable
  * @type: type of the structure containing ptr
  * @member: name of the member variable in struct @type
  *
- * Return: @type pointer of object containing ptr
+ * Return: @type pointer of structure containing ptr
  */
 #ifndef container_of
 #ifdef __LIST_HAVE_TYPEOF
@@ -60,7 +60,7 @@ struct list_head {
 
 /**
  * LIST_HEAD - Declare list head and initialize it
- * @head: name of the new object
+ * @head: name of the new list
  */
 #define LIST_HEAD(head) struct list_head head = {&(head), &(head)}
 
@@ -335,7 +335,7 @@ static inline void list_move_tail(struct list_head *node,
 }
 
 /**
- * list_entry() - Calculate address of entry that contains list node
+ * list_entry() - Get the entry for this node
  * @node: pointer to list node
  * @type: type of the entry containing the list node
  * @member: name of the list_head member variable in struct @type
@@ -345,7 +345,7 @@ static inline void list_move_tail(struct list_head *node,
 #define list_entry(node, type, member) container_of(node, type, member)
 
 /**
- * list_first_entry() - get first entry of the list
+ * list_first_entry() - Get first entry of the list
  * @head: pointer to the head of the list
  * @type: type of the entry containing the list node
  * @member: name of the list_head member variable in struct @type
@@ -356,7 +356,7 @@ static inline void list_move_tail(struct list_head *node,
     list_entry((head)->next, type, member)
 
 /**
- * list_last_entry() - get last entry of the list
+ * list_last_entry() - Get last entry of the list
  * @head: pointer to the head of the list
  * @type: type of the entry containing the list node
  * @member: name of the list_head member variable in struct @type
@@ -367,7 +367,7 @@ static inline void list_move_tail(struct list_head *node,
     list_entry((head)->prev, type, member)
 
 /**
- * list_for_each - iterate over list nodes
+ * list_for_each - Iterate over list nodes
  * @node: list_head pointer used as iterator
  * @head: pointer to the head of the list
  *
@@ -379,7 +379,7 @@ static inline void list_move_tail(struct list_head *node,
     for (node = (head)->next; node != (head); node = node->next)
 
 /**
- * list_for_each_entry - iterate over list entries
+ * list_for_each_entry - Iterate over list entries
  * @entry: pointer used as iterator
  * @head: pointer to the head of the list
  * @member: name of the list_head member variable in struct type of @entry
@@ -398,7 +398,7 @@ static inline void list_move_tail(struct list_head *node,
 #endif
 
 /**
- * list_for_each_safe - iterate over list nodes and allow deletes
+ * list_for_each_safe - Iterate over list nodes and allow deletions
  * @node: list_head pointer used as iterator
  * @safe: list_head pointer used to store info for next entry in list
  * @head: pointer to the head of the list
@@ -411,7 +411,7 @@ static inline void list_move_tail(struct list_head *node,
          node = safe, safe = node->next)
 
 /**
- * list_for_each_entry_safe - iterate over list entries and allow deletes
+ * list_for_each_entry_safe - Iterate over list entries and allow deletes
  * @entry: pointer used as iterator
  * @safe: @type pointer used to store info for next entry in list
  * @head: pointer to the head of the list
