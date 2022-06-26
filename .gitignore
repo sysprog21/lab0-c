@@ -24,3 +24,5 @@ GPATH
 GRTAGS
 GSYMS
 GTAGS
+
+.ycm_extra_conf.py
