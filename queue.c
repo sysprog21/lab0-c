@@ -11,7 +11,6 @@
  *   cppcheck-suppress nullPointer
  */
 
-
 /* Create an empty queue */
 struct list_head *q_new()
 {
@@ -294,9 +293,9 @@ void q_reverse(struct list_head *head)
 
 struct list_head *split(struct list_head *head)
 {
-    struct list_head *fast = head, *slow = head;
+    struct list_head *fast = head->next, *slow = head;
 
-    while (fast->next && fast->next->next) {
+    while (fast && fast->next) {
         fast = fast->next->next;
         slow = slow->next;
     }
@@ -307,33 +306,62 @@ struct list_head *split(struct list_head *head)
 
 struct list_head *merge(struct list_head *first, struct list_head *second)
 {
-    if (first == NULL)
-        return second;
-    //if (second == NULL)
+    if (!second)
         return first;
+    if (!first) {
+        return second;
+    }
+    //  printf("merge");
+    element_t *ele_first = container_of(first, element_t, list);
+    element_t *ele_second = container_of(second, element_t, list);
 
-    //    element_t *ele_first = container_of(first, element_t, list);
-    //  element_t *ele_second = container_of(second, element_t, list);
-
-    //    if()
+    if (strcmp(ele_first->value, ele_second->value) < 0) {
+        first->next = merge(first->next, second);
+        // first->next->prev = first;
+        // first->prev = NULL;
+        // printf("first");
+        return first;
+    } else {
+        second->next = merge(first, second->next);
+        // second->next->prev = second;
+        // second->prev = NULL;
+        // printf("second");
+        return second;
+    }
 }
 
 struct list_head *merge_sort(struct list_head *head)
 {
     if (head == NULL || head->next == NULL) {
-        return NULL;
+        return head;
     }
 
     struct list_head *second = split(head);
+
     head = merge_sort(head);
     second = merge_sort(second);
+
     return merge(head, second);
 }
 
 /* Sort elements of queue in ascending order */
 void q_sort(struct list_head *head)
 {
-    if (head == NULL) {
+    if (head == NULL || head->next == head) {
         return;
     }
+    struct list_head *list = head->next;
+    head->prev->next = NULL;
+    list = merge_sort(head->next);
+    head->next = list;
+
+    struct list_head *i = head;
+    while (i->next != NULL) {
+        i->next->prev = i;
+        i = i->next;
+    }
+    head->prev = i;
+    i->next = head;
 }
+
+
