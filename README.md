@@ -10,6 +10,8 @@ of the skills tested are:
 * Enhancing the performance of key operations by storing redundant information in data structures.
 * Implementing robust code that operates correctly with invalid arguments, including NULL pointers.
 
+aloha
+
 The lab involves implementing a queue, supporting both last-in, first-out (LIFO) and first-in-first-out (FIFO)
 queueing disciplines. The underlying data structure is a circular doubly-linked list, enhanced to make some of
 the operations more efficient.
@@ -39,8 +41,8 @@ $ export PATH=/snap/bin:$PATH
 ```
 
 ## Integrate `clang-format` to `vim`
-If you want to run `clang-format` automatically after saving with vim, 
-clang-format supports integration for vim according to [Clang 11 documentation](https://clang.llvm.org/docs/ClangFormat.html). 
+If you want to run `clang-format` automatically after saving with vim,
+clang-format supports integration for vim according to [Clang 11 documentation](https://clang.llvm.org/docs/ClangFormat.html).
 
 By adding the following into `$HOME/.vimrc`
 ```shell
@@ -50,7 +52,7 @@ function! Formatonsave()
 endfunction
 autocmd BufWritePre *.h,*.hpp,*.c,*.cc,*.cpp call Formatonsave()
 ```
-Note: on Ubuntu Linux 18.04, the path to `clang-format.py` is `/usr/share/vim/addons/syntax/`.  
+Note: on Ubuntu Linux 18.04, the path to `clang-format.py` is `/usr/share/vim/addons/syntax/`.
 
 ## Running the autograders
 
@@ -118,7 +120,7 @@ Trace files
 
 ## Debugging Facilities
 
-Before using GDB debug `qtest`, there are some routine instructions need to do. The script `scripts/debug.py` covers these instructions and provides basic debug function. 
+Before using GDB debug `qtest`, there are some routine instructions need to do. The script `scripts/debug.py` covers these instructions and provides basic debug function.
 ```
 $ scripts/debug.py -h
 usage: debug.py [-h] [-d | -a]
@@ -134,8 +136,8 @@ $ scripts/debug.py -d
 Reading symbols from lab0-c/qtest...done.
 Signal        Stop	Print	Pass to program	Description
 SIGALRM       No	No	No		Alarm clock
-Starting program: lab0-c/qtest 
-cmd> 
+Starting program: lab0-c/qtest
+cmd>
 ```
 * When `qtest` encountered **Segmentation fault** while it ran outside GDB, we could invoke GDB in the post-mortem debugging mode to figure out the bug.
 
@@ -156,7 +158,7 @@ cmd>
   #0 ...
   #1 ... (backtrace information)
   #2 ...
-  (gdb) 
+  (gdb)
   ```
 
 ## User-friendly command line
