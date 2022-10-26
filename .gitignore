@@ -8,6 +8,7 @@ core*
 .cmd_history
 
 # ctags files
+ID
 TAGS
 .TAGS
 !TAGS/
