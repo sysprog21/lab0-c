@@ -142,3 +142,11 @@ verifier
 CI
 foreach
 backtick
+leetcode
+perf
+gprof
+typeof
+offsetof
+rbtree
+vfprintf
+vla
