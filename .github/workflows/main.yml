@@ -4,9 +4,9 @@ on: [push, pull_request]
 
 jobs:
   lab0-c:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2.4.0
+    - uses: actions/checkout@v3.3.0
     - name: install-dependencies
       run: |
             .ci/check-sanity.sh
@@ -24,12 +24,12 @@ jobs:
             cat scripts/pikachu.raw
 
   coding-style:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2.4.0
+    - uses: actions/checkout@v3.3.0
     - name: coding convention
       run: |
-            sudo apt-get install -q -y clang-format-12
+            sudo apt-get install -q -y clang-format-14
             sh .ci/check-format.sh
             cat scripts/pikachu.raw
       shell: bash
