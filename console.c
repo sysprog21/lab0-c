@@ -85,7 +85,7 @@ void add_cmd(char *name, cmd_function operation, char *documentation)
         next_cmd = next_cmd->next;
     }
 
-    cmd_ptr ele = (cmd_ptr) malloc_or_fail(sizeof(cmd_ele), "add_cmd");
+    cmd_ptr ele = malloc_or_fail(sizeof(cmd_ele), "add_cmd");
     ele->name = name;
     ele->operation = operation;
     ele->documentation = documentation;
@@ -106,7 +106,7 @@ void add_param(char *name,
         next_param = next_param->next;
     }
 
-    param_ptr ele = (param_ptr) malloc_or_fail(sizeof(param_ele), "add_param");
+    param_ptr ele = malloc_or_fail(sizeof(param_ele), "add_param");
     ele->name = name;
     ele->valp = valp;
     ele->documentation = documentation;
