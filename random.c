@@ -1,8 +1,9 @@
-#include "random.h"
 #include <assert.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <unistd.h>
+
+#include "random.h"
 
 /* shameless stolen from ebacs */
 void randombytes(uint8_t *x, size_t how_much)

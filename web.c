@@ -26,9 +26,6 @@ typedef struct {
     char buf[BUFSIZE]; /* internal buffer */
 } rio_t;
 
-/* Simplifies calls to bind(), connect(), and accept() */
-typedef struct sockaddr SA;
-
 typedef struct {
     char filename[512];
     off_t offset; /* for support Range */
@@ -148,7 +145,7 @@ int open_listenfd(int port)
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
     serveraddr.sin_port = htons((unsigned short) port);
-    if (bind(listenfd, (SA *) &serveraddr, sizeof(serveraddr)) < 0)
+    if (bind(listenfd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0)
         return -1;
 
     /* Make it a listening socket ready to accept connection requests */

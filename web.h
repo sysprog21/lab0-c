@@ -3,8 +3,6 @@
 
 #include <netinet/in.h>
 
-typedef struct sockaddr SA;
-
 int open_listenfd(int port);
 
 char *process_connection(int fd, struct sockaddr_in *clientaddr);

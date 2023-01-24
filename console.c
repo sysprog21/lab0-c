@@ -1,10 +1,7 @@
 /* Implementation of simple command-line interface */
 
-#include "console.h"
-
 #include <ctype.h>
 #include <fcntl.h>
-#include <inttypes.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -12,9 +9,9 @@
 #include <string.h>
 #include <sys/select.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
+#include "console.h"
 #include "report.h"
 #include "web.h"
 
@@ -616,7 +613,7 @@ int cmd_select(int nfds,
         result--;
         struct sockaddr_in clientaddr;
         socklen_t clientlen = sizeof(clientaddr);
-        connfd = accept(listenfd, (SA *) &clientaddr, &clientlen);
+        connfd = accept(listenfd, (struct sockaddr *) &clientaddr, &clientlen);
 
         char *p = process_connection(connfd, &clientaddr);
         char *buffer = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
