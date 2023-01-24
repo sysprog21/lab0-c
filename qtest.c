@@ -1,5 +1,6 @@
 /* Implementation of testing code for queue code */
 
+#include <assert.h>
 #include <errno.h>
 #include <getopt.h>
 #include <signal.h>
@@ -851,9 +852,11 @@ static void console_init()
 /* Signal handlers */
 static void sigsegvhandler(int sig)
 {
-    report(1,
-           "Segmentation fault occurred.  You dereferenced a NULL or invalid "
-           "pointer");
+    /* Avoid possible non-reentrant signal function be used in signal handler */
+    assert(write(1,
+                 "Segmentation fault occurred.  You dereferenced a NULL or "
+                 "invalid pointer",
+                 73) == 73);
     /* Raising a SIGABRT signal to produce a core dump for debugging. */
     abort();
 }
