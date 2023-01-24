@@ -1,6 +1,9 @@
 CC = gcc
 CFLAGS = -O1 -g -Wall -Werror -Idudect -I.
 
+# Emit a warning should any variable-length array be found within the code.
+CFLAGS += -Wvla
+
 GIT_HOOKS := .git/hooks/applied
 DUT_DIR := dudect
 all: $(GIT_HOOKS) qtest
