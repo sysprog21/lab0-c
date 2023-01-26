@@ -119,4 +119,18 @@ if [ $? -ne 0 ]; then
     echo
 fi
 
+# non-ASCII filenames are not allowed.
+# Cross platform projects tend to avoid non-ASCII filenames; prevent
+# them from being added to the repository.
+if test $(git diff --cached --name-only --diff-filter=A -z $against |
+        LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
+then
+    cat <<\EOF
+ERROR: Attempt to add a non-ASCII file name.
+This can cause problems if you want to work with people on other platforms.
+To be portable it is advisable to rename the file.
+EOF
+    RETURN=1
+fi
+
 exit $RETURN
