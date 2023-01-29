@@ -170,4 +170,16 @@ void q_reverse(struct list_head *head);
  */
 void q_sort(struct list_head *head);
 
+/**
+ * q_descend() - Remove every node which has a node with a strictly greater
+ * value anywhere to the right side of it.
+ * @head: header of queue
+ *
+ * No effect if queue is NULL or empty. If there has only one element, do
+ * nothing.
+ *
+ * Reference:
+ * https://leetcode.com/problems/remove-nodes-from-linked-list/description/
+ */
+void q_descend(struct list_head *head);
 #endif /* LAB0_QUEUE_H */
