@@ -75,3 +75,10 @@ void q_reverse(struct list_head *head) {}
 
 /* Sort elements of queue in ascending order */
 void q_sort(struct list_head *head) {}
+
+/* Remove every node which has a node with a strictly greater value anywhere to
+ * the right side of it */
+void q_descend(struct list_head *head)
+{
+    // https://leetcode.com/problems/remove-nodes-from-linked-list/description/
+}

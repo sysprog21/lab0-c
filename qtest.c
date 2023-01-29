@@ -729,6 +729,47 @@ static bool do_swap(int argc, char *argv[])
     return !error_check();
 }
 
+static bool do_descend(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "%s takes too much arguments", argv[0]);
+        return false;
+    }
+
+    if (!l_meta.l)
+        report(3, "Warning: Calling ascend on null queue");
+    error_check();
+
+
+    int cnt = q_size(l_meta.l);
+    if (cnt < 2)
+        report(3, "Warning: Calling ascend on single node");
+    error_check();
+
+    if (exception_setup(true))
+        q_descend(l_meta.l);
+    set_noallocate_mode(false);
+
+    bool ok = true;
+
+    if (l_meta.size) {
+        for (struct list_head *cur_l = l_meta.l->next;
+             cur_l != l_meta.l && --cnt; cur_l = cur_l->next) {
+            element_t *item, *next_item;
+            item = list_entry(cur_l, element_t, list);
+            next_item = list_entry(cur_l->next, element_t, list);
+            if (strcmp(item->value, next_item->value) < 0) {
+                report(1, "ERROR: The queue is not in strictly greater order");
+                ok = false;
+                break;
+            }
+        }
+    }
+
+    show_queue(3);
+    return ok && !error_check();
+}
+
 static bool is_circular()
 {
     struct list_head *cur = l_meta.l->next;
@@ -842,6 +883,9 @@ static void console_init()
         dedup, "                | Delete all nodes that have duplicate string");
     ADD_COMMAND(swap,
                 "                | Swap every two adjacent nodes in queue");
+    ADD_COMMAND(descend,
+                "                | Remove every node which has a node with a "
+                "strictly greater value anywhere to the right side of it");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",
