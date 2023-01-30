@@ -83,3 +83,8 @@ int q_descend(struct list_head *head)
     // https://leetcode.com/problems/remove-nodes-from-linked-list/description/
     return 0;
 }
+
+void q_reverseK(struct list_head *head, int k)
+{
+    // https://leetcode.com/problems/reverse-nodes-in-k-group/
+}
