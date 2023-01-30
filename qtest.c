@@ -773,6 +773,34 @@ static bool do_descend(int argc, char *argv[])
     return ok && !error_check();
 }
 
+static bool do_reverseK(int argc, char *argv[])
+{
+    int k = 0;
+
+    if (!l_meta.l)
+        report(3, "Warning: Calling reverseK on null queue");
+    error_check();
+
+    if (argc == 2) {
+        if (!get_int(argv[1], &k)) {
+            report(1, "Invalid number of K");
+            return false;
+        }
+    } else {
+        report(1, "Invalid number of arguments for reverseK");
+        return false;
+    }
+
+    set_noallocate_mode(true);
+    if (exception_setup(true))
+        q_reverseK(l_meta.l, k);
+    exception_cancel();
+
+    set_noallocate_mode(false);
+    show_queue(3);
+    return !error_check();
+}
+
 static bool is_circular()
 {
     struct list_head *cur = l_meta.l->next;
@@ -889,6 +917,9 @@ static void console_init()
     ADD_COMMAND(descend,
                 "                | Remove every node which has a node with a "
                 "strictly greater value anywhere to the right side of it");
+    ADD_COMMAND(
+        reverseK,
+        " [K]            | Reverse the nodes of the queue `K` at a time");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",

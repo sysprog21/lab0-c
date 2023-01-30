@@ -184,4 +184,19 @@ void q_sort(struct list_head *head);
  * Return: the number of elements in queue after performing operation
  */
 int q_descend(struct list_head *head);
+
+/**
+ * q_reverseK() - Given the head of a linked list, reverse the nodes of the list
+ * k at a time, and return the modified list.
+ * @head: header of queue
+ * @k: is a positive integer and is less than or equal to the length of the
+ * linked list.
+ *
+ * No effect if queue is NULL or empty. If there has only one element, do
+ * nothing.
+ *
+ * Reference:
+ * https://leetcode.com/problems/reverse-nodes-in-k-group/
+ */
+void q_reverseK(struct list_head *head, int k);
 #endif /* LAB0_QUEUE_H */
