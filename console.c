@@ -256,13 +256,13 @@ static bool do_help(int argc, char *argv[])
     cmd_ptr clist = cmd_list;
     report(1, "Commands:", argv[0]);
     while (clist) {
-        report(1, "\t%s\t%s", clist->name, clist->documentation);
+        report(1, "  %s\t%s", clist->name, clist->documentation);
         clist = clist->next;
     }
     param_ptr plist = param_list;
     report(1, "Options:");
     while (plist) {
-        report(1, "\t%s\t%d\t%s", plist->name, *plist->valp,
+        report(1, "  %s\t%d\t%s", plist->name, *plist->valp,
                plist->documentation);
         plist = plist->next;
     }
