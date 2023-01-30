@@ -78,7 +78,8 @@ void q_sort(struct list_head *head) {}
 
 /* Remove every node which has a node with a strictly greater value anywhere to
  * the right side of it */
-void q_descend(struct list_head *head)
+int q_descend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/description/
+    return 0;
 }
