@@ -747,11 +747,12 @@ static bool do_descend(int argc, char *argv[])
     error_check();
 
     if (exception_setup(true))
-        q_descend(l_meta.l);
+        lcnt = q_descend(l_meta.l);
     set_noallocate_mode(false);
 
     bool ok = true;
 
+    cnt = l_meta.size = lcnt;
     if (l_meta.size) {
         for (struct list_head *cur_l = l_meta.l->next;
              cur_l != l_meta.l && --cnt; cur_l = cur_l->next) {
@@ -759,7 +760,9 @@ static bool do_descend(int argc, char *argv[])
             item = list_entry(cur_l, element_t, list);
             next_item = list_entry(cur_l->next, element_t, list);
             if (strcmp(item->value, next_item->value) < 0) {
-                report(1, "ERROR: The queue is not in strictly greater order");
+                report(1,
+                       "ERROR: There is at least on nodes did not follow the "
+                       "ordering rule");
                 ok = false;
                 break;
             }
