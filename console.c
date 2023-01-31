@@ -73,7 +73,7 @@ static void pop_file();
 static bool interpret_cmda(int argc, char *argv[]);
 
 /* Add a new command */
-void add_cmd(char *name, cmd_function operation, char *documentation)
+void add_cmd(char *name, cmd_function operation, char *summary, char *param)
 {
     cmd_ptr next_cmd = cmd_list;
     cmd_ptr *last_loc = &cmd_list;
@@ -85,7 +85,8 @@ void add_cmd(char *name, cmd_function operation, char *documentation)
     cmd_ptr ele = malloc_or_fail(sizeof(cmd_ele), "add_cmd");
     ele->name = name;
     ele->operation = operation;
-    ele->documentation = documentation;
+    ele->summary = summary;
+    ele->param = param;
     ele->next = next_cmd;
     *last_loc = ele;
 }
@@ -256,7 +257,8 @@ static bool do_help(int argc, char *argv[])
     cmd_ptr clist = cmd_list;
     report(1, "Commands:", argv[0]);
     while (clist) {
-        report(1, "  %s\t%s", clist->name, clist->documentation);
+        report(1, "  %-12s%-12s | %s", clist->name, clist->param,
+               clist->summary);
         clist = clist->next;
     }
     param_ptr plist = param_list;
@@ -422,14 +424,14 @@ void init_cmd()
     err_cnt = 0;
     quit_flag = false;
 
-    ADD_COMMAND(help, "                | Show documentation");
-    ADD_COMMAND(option, " [name val]     | Display or set options");
-    ADD_COMMAND(quit, "                | Exit program");
-    ADD_COMMAND(source, " file           | Read commands from source file");
-    ADD_COMMAND(log, " file           | Copy output to file");
-    ADD_COMMAND(time, " cmd arg ...    | Time command execution");
-    ADD_COMMAND(web, " [port]         | Read commands from a tiny-web-server");
-    add_cmd("#", do_comment_cmd, " ...            | Display comment");
+    ADD_COMMAND(help, "Show documentation", "");
+    ADD_COMMAND(option, "Display or set options", "[name val]");
+    ADD_COMMAND(quit, "Exit program", "");
+    ADD_COMMAND(source, "Read commands from source file", "");
+    ADD_COMMAND(log, "Copy output to file", "file");
+    ADD_COMMAND(time, "Time command execution", "cmd arg ...");
+    ADD_COMMAND(web, "Read commands from a tiny-web-server", "[port]");
+    add_cmd("#", do_comment_cmd, "Display comment", "...");
     add_param("simulation", &simulation, "Start/Stop simulation mode", NULL);
     add_param("verbose", &verblevel, "Verbosity level", NULL);
     add_param("error", &err_limit, "Number of errors until exit", NULL);
