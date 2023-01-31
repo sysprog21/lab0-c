@@ -883,43 +883,38 @@ static bool do_show(int argc, char *argv[])
 
 static void console_init()
 {
-    ADD_COMMAND(new, "                | Create new queue");
-    ADD_COMMAND(free, "                | Delete queue");
-    ADD_COMMAND(
-        ih,
-        " str [n]        | Insert string str at head of queue n times. "
-        "Generate random string(s) if str equals RAND. (default: n == 1)");
-    ADD_COMMAND(
-        it,
-        " str [n]        | Insert string str at tail of queue n times. "
-        "Generate random string(s) if str equals RAND. (default: n == 1)");
+    ADD_COMMAND(new, "Create new queue", "");
+    ADD_COMMAND(free, "Delete queue", "");
+    ADD_COMMAND(ih,
+                "Insert string str at head of queue n times. Generate random "
+                "string(s) if str equals RAND. (default: n == 1)",
+                "str [n]");
+    ADD_COMMAND(it,
+                "Insert string str at tail of queue n times. Generate random "
+                "string(s) if str equals RAND. (default: n == 1)",
+                "str [n]");
     ADD_COMMAND(
         rh,
-        " [str]          | Remove from head of queue.  Optionally compare "
-        "to expected value str");
+        "Remove from head of queue. Optionally compare to expected value str",
+        "[str]");
     ADD_COMMAND(
         rt,
-        " [str]          | Remove from tail of queue.  Optionally compare "
-        "to expected value str");
-    ADD_COMMAND(
-        rhq,
-        "                | Remove from head of queue without reporting value.");
-    ADD_COMMAND(reverse, "                | Reverse queue");
-    ADD_COMMAND(sort, "                | Sort queue in ascending order");
-    ADD_COMMAND(
-        size, " [n]            | Compute queue size n times (default: n == 1)");
-    ADD_COMMAND(show, "                | Show queue contents");
-    ADD_COMMAND(dm, "                | Delete middle node in queue");
-    ADD_COMMAND(
-        dedup, "                | Delete all nodes that have duplicate string");
-    ADD_COMMAND(swap,
-                "                | Swap every two adjacent nodes in queue");
+        "Remove from tail of queue. Optionally compare to expected value str",
+        "[str]");
+    ADD_COMMAND(rhq, "Remove from head of queue without reporting value.", "");
+    ADD_COMMAND(reverse, "Reverse queue", "");
+    ADD_COMMAND(sort, "Sort queue in ascending order", "");
+    ADD_COMMAND(size, "Compute queue size n times (default: n == 1)", "[n]");
+    ADD_COMMAND(show, "Show queue contents", "");
+    ADD_COMMAND(dm, "Delete middle node in queue", "");
+    ADD_COMMAND(dedup, "Delete all nodes that have duplicate string", "");
+    ADD_COMMAND(swap, "Swap every two adjacent nodes in queue", "");
     ADD_COMMAND(descend,
-                "                | Remove every node which has a node with a "
-                "strictly greater value anywhere to the right side of it");
-    ADD_COMMAND(
-        reverseK,
-        " [K]            | Reverse the nodes of the queue `K` at a time");
+                "Remove every node which has a node with a strictly greater "
+                "value anywhere to the right side of it",
+                "");
+    ADD_COMMAND(reverseK, "Reverse the nodes of the queue 'K' at a time",
+                "[K]");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",

@@ -23,7 +23,8 @@ typedef struct CELE cmd_ele, *cmd_ptr;
 struct CELE {
     char *name;
     cmd_function operation;
-    char *documentation;
+    char *summary;
+    char *param;
     cmd_ptr next;
 };
 
@@ -45,8 +46,11 @@ struct PELE {
 void init_cmd();
 
 /* Add a new command */
-void add_cmd(char *name, cmd_function operation, char *documentation);
-#define ADD_COMMAND(cmd, msg) add_cmd(#cmd, do_##cmd, msg)
+void add_cmd(char *name,
+             cmd_function operation,
+             char *documentation,
+             char *parameter);
+#define ADD_COMMAND(cmd, msg, param) add_cmd(#cmd, do_##cmd, msg, param)
 
 /* Add a new parameter */
 void add_param(char *name,
