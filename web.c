@@ -19,6 +19,10 @@
 #define DEFAULT_PORT 9999 /* use this port if none given as arg to main() */
 #endif
 
+#if defined(__APPLE__) || defined(__FreeBSD__)
+#define TCP_CORK TCP_NOPUSH
+#endif
+
 typedef struct {
     int fd;            /* descriptor for this buf */
     int count;         /* unread byte in this buf */
