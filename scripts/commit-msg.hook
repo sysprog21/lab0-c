@@ -191,7 +191,7 @@ validate_commit_message() {
   # 5. Use the imperative mood in the subject line
   # ------------------------------------------------------------------------------
 
-  IMPERATIVE_MOOD_BLACKLIST=(
+  IMPERATIVE_MOOD_DENYLIST=(
     added          adds          adding
     adjusted       adjusts       adjusting
     amended        amends        amending
@@ -238,8 +238,8 @@ validate_commit_message() {
   # enable case insensitive match
   shopt -s nocasematch
 
-  for BLACKLISTED_WORD in "${IMPERATIVE_MOOD_BLACKLIST[@]}"; do
-    [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ ^[[:blank:]]*$BLACKLISTED_WORD ]]
+  for DENYLISTED_WORD in "${IMPERATIVE_MOOD_DENYLIST[@]}"; do
+    [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ ^[[:blank:]]*$DENYLISTED_WORD ]]
     test $? -eq 0 && add_warning 1 "Use the imperative mood in the subject line, e.g., 'fix' not 'fixes'" && break
   done
 
