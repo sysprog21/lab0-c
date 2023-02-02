@@ -17,8 +17,8 @@
 
 /* Some global values */
 int simulation = 0;
-static cmd_ptr cmd_list = NULL;
-static param_ptr param_list = NULL;
+static cmd_element_t *cmd_list = NULL;
+static struct __param_element *param_list = NULL;
 static bool block_flag = false;
 static bool prompt_flag = true;
 
@@ -62,7 +62,7 @@ static bool has_infile = false;
 /* Maximum number of quit functions */
 
 #define MAXQUIT 10
-static cmd_function quit_helpers[MAXQUIT];
+static cmd_func_t quit_helpers[MAXQUIT];
 static int quit_helper_cnt = 0;
 
 static void init_in();
@@ -73,16 +73,16 @@ static void pop_file();
 static bool interpret_cmda(int argc, char *argv[]);
 
 /* Add a new command */
-void add_cmd(char *name, cmd_function operation, char *summary, char *param)
+void add_cmd(char *name, cmd_func_t operation, char *summary, char *param)
 {
-    cmd_ptr next_cmd = cmd_list;
-    cmd_ptr *last_loc = &cmd_list;
+    cmd_element_t *next_cmd = cmd_list;
+    cmd_element_t **last_loc = &cmd_list;
     while (next_cmd && strcmp(name, next_cmd->name) > 0) {
         last_loc = &next_cmd->next;
         next_cmd = next_cmd->next;
     }
 
-    cmd_ptr ele = malloc_or_fail(sizeof(cmd_ele), "add_cmd");
+    cmd_element_t *ele = malloc_or_fail(sizeof(cmd_element_t), "add_cmd");
     ele->name = name;
     ele->operation = operation;
     ele->summary = summary;
@@ -92,22 +92,20 @@ void add_cmd(char *name, cmd_function operation, char *summary, char *param)
 }
 
 /* Add a new parameter */
-void add_param(char *name,
-               int *valp,
-               char *documentation,
-               setter_function setter)
+void add_param(char *name, int *valp, char *summary, setter_func_t setter)
 {
-    param_ptr next_param = param_list;
-    param_ptr *last_loc = &param_list;
+    struct __param_element *next_param = param_list;
+    struct __param_element **last_loc = &param_list;
     while (next_param && strcmp(name, next_param->name) > 0) {
         last_loc = &next_param->next;
         next_param = next_param->next;
     }
 
-    param_ptr ele = malloc_or_fail(sizeof(param_ele), "add_param");
+    struct __param_element *ele =
+        malloc_or_fail(sizeof(param_element_t), "add_param");
     ele->name = name;
     ele->valp = valp;
-    ele->documentation = documentation;
+    ele->summary = summary;
     ele->setter = setter;
     ele->next = next_param;
     *last_loc = ele;
@@ -175,7 +173,7 @@ static bool interpret_cmda(int argc, char *argv[])
     if (argc == 0)
         return true;
     /* Try to find matching command */
-    cmd_ptr next_cmd = cmd_list;
+    cmd_element_t *next_cmd = cmd_list;
     bool ok = true;
     while (next_cmd && strcmp(argv[0], next_cmd->name) != 0)
         next_cmd = next_cmd->next;
@@ -209,7 +207,7 @@ static bool interpret_cmd(char *cmdline)
 }
 
 /* Set function to be executed as part of program exit */
-void add_quit_helper(cmd_function qf)
+void add_quit_helper(cmd_func_t qf)
 {
     if (quit_helper_cnt < MAXQUIT)
         quit_helpers[quit_helper_cnt++] = qf;
@@ -226,19 +224,19 @@ void set_echo(bool on)
 /* Built-in commands */
 static bool do_quit(int argc, char *argv[])
 {
-    cmd_ptr c = cmd_list;
+    cmd_element_t *c = cmd_list;
     bool ok = true;
     while (c) {
-        cmd_ptr ele = c;
+        cmd_element_t *ele = c;
         c = c->next;
-        free_block(ele, sizeof(cmd_ele));
+        free_block(ele, sizeof(cmd_element_t));
     }
 
-    param_ptr p = param_list;
+    struct __param_element *p = param_list;
     while (p) {
-        param_ptr ele = p;
+        struct __param_element *ele = p;
         p = p->next;
-        free_block(ele, sizeof(param_ele));
+        free_block(ele, sizeof(param_element_t));
     }
 
     while (buf_stack)
@@ -254,18 +252,17 @@ static bool do_quit(int argc, char *argv[])
 
 static bool do_help(int argc, char *argv[])
 {
-    cmd_ptr clist = cmd_list;
+    cmd_element_t *clist = cmd_list;
     report(1, "Commands:", argv[0]);
     while (clist) {
         report(1, "  %-12s%-12s | %s", clist->name, clist->param,
                clist->summary);
         clist = clist->next;
     }
-    param_ptr plist = param_list;
+    struct __param_element *plist = param_list;
     report(1, "Options:");
     while (plist) {
-        report(1, "  %s\t%d\t%s", plist->name, *plist->valp,
-               plist->documentation);
+        report(1, "  %s\t%d\t%s", plist->name, *plist->valp, plist->summary);
         plist = plist->next;
     }
     return true;
@@ -300,11 +297,11 @@ bool get_int(char *vname, int *loc)
 static bool do_option(int argc, char *argv[])
 {
     if (argc == 1) {
-        param_ptr plist = param_list;
+        struct __param_element *plist = param_list;
         report(1, "Options:");
         while (plist) {
             report(1, "\t%s\t%d\t%s", plist->name, *plist->valp,
-                   plist->documentation);
+                   plist->summary);
             plist = plist->next;
         }
         return true;
@@ -323,7 +320,7 @@ static bool do_option(int argc, char *argv[])
             return false;
         }
         /* Find parameter in list */
-        param_ptr plist = param_list;
+        struct __param_element *plist = param_list;
         while (!found && plist) {
             if (strcmp(plist->name, name) == 0) {
                 int oldval = *plist->valp;
@@ -424,7 +421,7 @@ void init_cmd()
     err_cnt = 0;
     quit_flag = false;
 
-    ADD_COMMAND(help, "Show documentation", "");
+    ADD_COMMAND(help, "Show summary", "");
     ADD_COMMAND(option, "Display or set options", "[name val]");
     ADD_COMMAND(quit, "Exit program", "");
     ADD_COMMAND(source, "Read commands from source file", "");
@@ -652,7 +649,7 @@ static bool cmd_maybe(const char *target, const char *src)
 void completion(const char *buf, linenoiseCompletions *lc)
 {
     if (strncmp("option ", buf, 7) == 0) {
-        param_ptr plist = param_list;
+        struct __param_element *plist = param_list;
 
         while (plist) {
             char str[128] = "";
@@ -670,7 +667,7 @@ void completion(const char *buf, linenoiseCompletions *lc)
         return;
     }
 
-    cmd_ptr clist = cmd_list;
+    cmd_element_t *clist = cmd_list;
     while (clist) {
         if (cmd_maybe(clist->name, buf))
             linenoiseAddCompletion(lc, clist->name);

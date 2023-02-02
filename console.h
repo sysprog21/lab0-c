@@ -14,55 +14,47 @@
 extern int simulation;
 
 /* Each command defined in terms of a function */
-typedef bool (*cmd_function)(int argc, char *argv[]);
+typedef bool (*cmd_func_t)(int argc, char *argv[]);
 
 /* Information about each command */
 
 /* Organized as linked list in alphabetical order */
-typedef struct CELE cmd_ele, *cmd_ptr;
-struct CELE {
+typedef struct __cmd_element {
     char *name;
-    cmd_function operation;
+    cmd_func_t operation;
     char *summary;
     char *param;
-    cmd_ptr next;
-};
+    struct __cmd_element *next;
+} cmd_element_t;
 
 /* Optionally supply function that gets invoked when parameter changes */
-typedef void (*setter_function)(int oldval);
+typedef void (*setter_func_t)(int oldval);
 
 /* Integer-valued parameters */
-typedef struct PELE param_ele, *param_ptr;
-struct PELE {
+typedef struct __param_element {
     char *name;
     int *valp;
-    char *documentation;
+    char *summary;
     /* Function that gets called whenever parameter changes */
-    setter_function setter;
-    param_ptr next;
-};
+    setter_func_t setter;
+    struct __param_element *next;
+} param_element_t;
 
 /* Initialize interpreter */
 void init_cmd();
 
 /* Add a new command */
-void add_cmd(char *name,
-             cmd_function operation,
-             char *documentation,
-             char *parameter);
+void add_cmd(char *name, cmd_func_t operation, char *summary, char *parameter);
 #define ADD_COMMAND(cmd, msg, param) add_cmd(#cmd, do_##cmd, msg, param)
 
 /* Add a new parameter */
-void add_param(char *name,
-               int *valp,
-               char *doccumentation,
-               setter_function setter);
+void add_param(char *name, int *valp, char *summary, setter_func_t setter);
 
 /* Extract integer from text and store at loc */
 bool get_int(char *vname, int *loc);
 
 /* Add function to be executed as part of program exit */
-void add_quit_helper(cmd_function qf);
+void add_quit_helper(cmd_func_t qf);
 
 /* Turn echoing on/off */
 void set_echo(bool on);

@@ -44,7 +44,7 @@
 extern const int drop_size;
 extern const size_t chunk_size;
 extern const size_t n_measure;
-static t_ctx *t;
+static t_context_t *t;
 
 /* threshold values for Welch's t-test */
 enum {
@@ -155,7 +155,7 @@ static void init_once(void)
 static bool TEST_CONST(char *text, int mode)
 {
     bool result = false;
-    t = malloc(sizeof(t_ctx));
+    t = malloc(sizeof(t_context_t));
 
     for (int cnt = 0; cnt < test_tries; ++cnt) {
         printf("Testing %s...(%d/%d)\n\n", text, cnt, test_tries);

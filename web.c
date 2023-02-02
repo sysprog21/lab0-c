@@ -34,7 +34,7 @@ typedef struct {
     char filename[512];
     off_t offset; /* for support Range */
     size_t end;
-} http_request;
+} http_request_t;
 
 static void rio_readinitb(rio_t *rp, int fd)
 {
@@ -174,7 +174,7 @@ static void url_decode(char *src, char *dest, int max)
     *dest = '\0';
 }
 
-static void parse_request(int fd, http_request *req)
+static void parse_request(int fd, http_request_t *req)
 {
     rio_t rio;
     char buf[MAXLINE], method[MAXLINE], uri[MAXLINE];
@@ -216,7 +216,7 @@ static void parse_request(int fd, http_request *req)
 
 char *process_connection(int fd, struct sockaddr_in *clientaddr)
 {
-    http_request req;
+    http_request_t req;
     parse_request(fd, &req);
 
     char *p = req.filename;
