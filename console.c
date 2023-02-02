@@ -18,7 +18,7 @@
 /* Some global values */
 int simulation = 0;
 static cmd_element_t *cmd_list = NULL;
-static struct __param_element *param_list = NULL;
+static param_element_t *param_list = NULL;
 static bool block_flag = false;
 static bool prompt_flag = true;
 
@@ -82,33 +82,33 @@ void add_cmd(char *name, cmd_func_t operation, char *summary, char *param)
         next_cmd = next_cmd->next;
     }
 
-    cmd_element_t *ele = malloc_or_fail(sizeof(cmd_element_t), "add_cmd");
-    ele->name = name;
-    ele->operation = operation;
-    ele->summary = summary;
-    ele->param = param;
-    ele->next = next_cmd;
-    *last_loc = ele;
+    cmd_element_t *cmd = malloc_or_fail(sizeof(cmd_element_t), "add_cmd");
+    cmd->name = name;
+    cmd->operation = operation;
+    cmd->summary = summary;
+    cmd->param = param;
+    cmd->next = next_cmd;
+    *last_loc = cmd;
 }
 
 /* Add a new parameter */
 void add_param(char *name, int *valp, char *summary, setter_func_t setter)
 {
-    struct __param_element *next_param = param_list;
-    struct __param_element **last_loc = &param_list;
+    param_element_t *next_param = param_list;
+    param_element_t **last_loc = &param_list;
     while (next_param && strcmp(name, next_param->name) > 0) {
         last_loc = &next_param->next;
         next_param = next_param->next;
     }
 
-    struct __param_element *ele =
+    param_element_t *param =
         malloc_or_fail(sizeof(param_element_t), "add_param");
-    ele->name = name;
-    ele->valp = valp;
-    ele->summary = summary;
-    ele->setter = setter;
-    ele->next = next_param;
-    *last_loc = ele;
+    param->name = name;
+    param->valp = valp;
+    param->summary = summary;
+    param->setter = setter;
+    param->next = next_param;
+    *last_loc = param;
 }
 
 /* Parse a string into a command line */
@@ -232,9 +232,9 @@ static bool do_quit(int argc, char *argv[])
         free_block(ele, sizeof(cmd_element_t));
     }
 
-    struct __param_element *p = param_list;
+    param_element_t *p = param_list;
     while (p) {
-        struct __param_element *ele = p;
+        param_element_t *ele = p;
         p = p->next;
         free_block(ele, sizeof(param_element_t));
     }
@@ -259,7 +259,7 @@ static bool do_help(int argc, char *argv[])
                clist->summary);
         clist = clist->next;
     }
-    struct __param_element *plist = param_list;
+    param_element_t *plist = param_list;
     report(1, "Options:");
     while (plist) {
         report(1, "  %s\t%d\t%s", plist->name, *plist->valp, plist->summary);
@@ -297,7 +297,7 @@ bool get_int(char *vname, int *loc)
 static bool do_option(int argc, char *argv[])
 {
     if (argc == 1) {
-        struct __param_element *plist = param_list;
+        param_element_t *plist = param_list;
         report(1, "Options:");
         while (plist) {
             report(1, "\t%s\t%d\t%s", plist->name, *plist->valp,
@@ -320,7 +320,7 @@ static bool do_option(int argc, char *argv[])
             return false;
         }
         /* Find parameter in list */
-        struct __param_element *plist = param_list;
+        param_element_t *plist = param_list;
         while (!found && plist) {
             if (strcmp(plist->name, name) == 0) {
                 int oldval = *plist->valp;
@@ -649,11 +649,11 @@ static bool cmd_maybe(const char *target, const char *src)
 void completion(const char *buf, linenoiseCompletions *lc)
 {
     if (strncmp("option ", buf, 7) == 0) {
-        struct __param_element *plist = param_list;
+        param_element_t *plist = param_list;
 
         while (plist) {
             char str[128] = "";
-            // if parameter is too long, now we just ignore it
+            /* if parameter is too long, now we just ignore it */
             if (strlen(plist->name) > 120)
                 continue;
 
