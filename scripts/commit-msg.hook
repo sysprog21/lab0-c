@@ -240,7 +240,7 @@ validate_commit_message() {
 
   for BLACKLISTED_WORD in "${IMPERATIVE_MOOD_BLACKLIST[@]}"; do
     [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ ^[[:blank:]]*$BLACKLISTED_WORD ]]
-    test $? -eq 0 && add_warning 1 "Use the imperative mood in the subject line, e.g 'fix' not 'fixes'" && break
+    test $? -eq 0 && add_warning 1 "Use the imperative mood in the subject line, e.g., 'fix' not 'fixes'" && break
   done
 
   # disable case insensitive match
@@ -268,6 +268,10 @@ validate_commit_message() {
   COMMIT_SUBJECT_WORDS=(${COMMIT_SUBJECT_TO_PROCESS})
   test "${#COMMIT_SUBJECT_WORDS[@]}" -gt 1
   test $? -eq 0 || add_warning 1 "Do no write single worded commits"
+
+  # 8a. Do not mention C source filenames
+  [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ [_a-zA-Z0-9]+\.[ch]$ ]]
+  test $? -eq 1 || add_warning 1 "Avoid mentioning C source filenames"
 
   # 9. Do not start the subject line with whitespace
   # ------------------------------------------------------------------------------
