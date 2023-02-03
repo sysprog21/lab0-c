@@ -261,7 +261,8 @@ static bool do_help(int argc, char *argv[])
     param_element_t *plist = param_list;
     report(1, "Options:");
     while (plist) {
-        report(1, "  %s\t%d\t%s", plist->name, *plist->valp, plist->summary);
+        report(1, "  %-12s%-12d | %s", plist->name, *plist->valp,
+               plist->summary);
         plist = plist->next;
     }
     return true;
@@ -299,7 +300,7 @@ static bool do_option(int argc, char *argv[])
         param_element_t *plist = param_list;
         report(1, "Options:");
         while (plist) {
-            report(1, "\t%s\t%d\t%s", plist->name, *plist->valp,
+            report(1, "  %-12s%-12d | %s", plist->name, *plist->valp,
                    plist->summary);
             plist = plist->next;
         }
