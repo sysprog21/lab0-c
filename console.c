@@ -33,17 +33,16 @@ static double first_time, last_time;
  */
 
 #define RIO_BUFSIZE 8192
-typedef struct RIO_ELE rio_t, *rio_ptr;
 
-struct RIO_ELE {
+typedef struct __rio {
     int fd;                /* File descriptor */
-    int cnt;               /* Unread bytes in internal buffer */
+    int count;             /* Unread bytes in internal buffer */
     char *bufptr;          /* Next unread byte in internal buffer */
     char buf[RIO_BUFSIZE]; /* Internal buffer */
-    rio_ptr prev;          /* Next element in stack */
-};
+    struct __rio *prev;    /* Next element in stack */
+} rio_t;
 
-static rio_ptr buf_stack;
+static rio_t *buf_stack;
 static char linebuf[RIO_BUFSIZE];
 
 /* Maximum file descriptor */
@@ -453,9 +452,9 @@ static bool push_file(char *fname)
     if (fd > fd_max)
         fd_max = fd;
 
-    rio_ptr rnew = malloc_or_fail(sizeof(rio_t), "push_file");
+    rio_t *rnew = malloc_or_fail(sizeof(rio_t), "push_file");
     rnew->fd = fd;
-    rnew->cnt = 0;
+    rnew->count = 0;
     rnew->bufptr = rnew->buf;
     rnew->prev = buf_stack;
     buf_stack = rnew;
@@ -467,7 +466,7 @@ static bool push_file(char *fname)
 static void pop_file()
 {
     if (buf_stack) {
-        rio_ptr rsave = buf_stack;
+        rio_t *rsave = buf_stack;
         buf_stack = rsave->prev;
         close(rsave->fd);
         free_block(rsave, sizeof(rio_t));
@@ -493,11 +492,11 @@ static char *readline()
         return NULL;
 
     for (cnt = 0; cnt < RIO_BUFSIZE - 2; cnt++) {
-        if (buf_stack->cnt <= 0) {
+        if (buf_stack->count <= 0) {
             /* Need to read from input file */
-            buf_stack->cnt = read(buf_stack->fd, buf_stack->buf, RIO_BUFSIZE);
+            buf_stack->count = read(buf_stack->fd, buf_stack->buf, RIO_BUFSIZE);
             buf_stack->bufptr = buf_stack->buf;
-            if (buf_stack->cnt <= 0) {
+            if (buf_stack->count <= 0) {
                 /* Encountered EOF */
                 pop_file();
                 if (cnt > 0) {
@@ -518,7 +517,7 @@ static char *readline()
         /* Have text in buffer */
         c = *buf_stack->bufptr++;
         *lptr++ = c;
-        buf_stack->cnt--;
+        buf_stack->count--;
         if (c == '\n')
             break;
     }
