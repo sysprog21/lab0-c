@@ -484,14 +484,13 @@ static void init_in()
  */
 static char *readline()
 {
-    int cnt;
     char c;
     char *lptr = linebuf;
 
     if (!buf_stack)
         return NULL;
 
-    for (cnt = 0; cnt < RIO_BUFSIZE - 2; cnt++) {
+    for (int cnt = 0; cnt < RIO_BUFSIZE - 2; cnt++) {
         if (buf_stack->count <= 0) {
             /* Need to read from input file */
             buf_stack->count = read(buf_stack->fd, buf_stack->buf, RIO_BUFSIZE);
@@ -551,11 +550,11 @@ static bool cmd_done()
  * If nfds == 0, this indicates that there is no pending network activity
  */
 int connfd;
-int cmd_select(int nfds,
-               fd_set *readfds,
-               fd_set *writefds,
-               fd_set *exceptfds,
-               struct timeval *timeout)
+static int cmd_select(int nfds,
+                      fd_set *readfds,
+                      fd_set *writefds,
+                      fd_set *exceptfds,
+                      struct timeval *timeout)
 {
     int infd;
     fd_set local_readset;
