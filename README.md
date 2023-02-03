@@ -41,10 +41,12 @@ By adding the following into `$HOME/.vimrc`
 ```shell
 function! Formatonsave()
   let l:formatdiff = 1
-  py3f <path to your clang-format.py>/clang-format.py
+  py3f <path-to-clang-format.py>/clang-format.py
 endfunction
 autocmd BufWritePre *.h,*.hpp,*.c,*.cc,*.cpp call Formatonsave()
 ```
+
+Then, it has zero-effort integration into the coding workflow since it can handle formatting changes while saving a file.
 Note: on Ubuntu Linux 18.04, the path to `clang-format.py` is `/usr/share/vim/addons/syntax/`.  
 
 ## Running the autograders
