@@ -73,6 +73,12 @@ void q_swap(struct list_head *head)
 /* Reverse elements in queue */
 void q_reverse(struct list_head *head) {}
 
+/* Reverse the nodes of the list k at a time */
+void q_reverseK(struct list_head *head, int k)
+{
+    // https://leetcode.com/problems/reverse-nodes-in-k-group/
+}
+
 /* Sort elements of queue in ascending order */
 void q_sort(struct list_head *head) {}
 
@@ -82,9 +88,4 @@ int q_descend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/description/
     return 0;
-}
-
-void q_reverseK(struct list_head *head, int k)
-{
-    // https://leetcode.com/problems/reverse-nodes-in-k-group/
 }
