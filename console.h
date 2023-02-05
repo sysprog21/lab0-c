@@ -69,6 +69,6 @@ bool finish_cmd();
 bool run_console(char *infile_name);
 
 /* Callback function to complete command by linenoise */
-void completion(const char *buf, linenoiseCompletions *lc);
+void completion(const char *buf, line_completions_t *lc);
 
 #endif /* LAB0_CONSOLE_H */

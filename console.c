@@ -645,7 +645,7 @@ static bool cmd_maybe(const char *target, const char *src)
     return true;
 }
 
-void completion(const char *buf, linenoiseCompletions *lc)
+void completion(const char *buf, line_completions_t *lc)
 {
     if (strncmp("option ", buf, 7) == 0) {
         param_element_t *plist = param_list;
@@ -659,7 +659,7 @@ void completion(const char *buf, linenoiseCompletions *lc)
             strcat(str, "option ");
             strcat(str, plist->name);
             if (cmd_maybe(str, buf))
-                linenoiseAddCompletion(lc, str);
+                line_add_completion(lc, str);
 
             plist = plist->next;
         }
@@ -669,7 +669,7 @@ void completion(const char *buf, linenoiseCompletions *lc)
     cmd_element_t *clist = cmd_list;
     while (clist) {
         if (cmd_maybe(clist->name, buf))
-            linenoiseAddCompletion(lc, clist->name);
+            line_add_completion(lc, clist->name);
 
         clist = clist->next;
     }
@@ -686,9 +686,9 @@ bool run_console(char *infile_name)
         char *cmdline;
         while (use_linenoise && (cmdline = linenoise(prompt))) {
             interpret_cmd(cmdline);
-            linenoiseHistoryAdd(cmdline);       /* Add to the history. */
-            linenoiseHistorySave(HISTORY_FILE); /* Save the history on disk. */
-            linenoiseFree(cmdline);
+            line_history_add(cmdline);       /* Add to the history. */
+            line_history_save(HISTORY_FILE); /* Save the history on disk. */
+            line_free(cmdline);
             while (buf_stack && buf_stack->fd != STDIN_FILENO)
                 cmd_select(0, NULL, NULL, NULL, NULL);
             has_infile = false;

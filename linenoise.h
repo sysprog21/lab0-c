@@ -36,7 +36,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stddef.h>
 #ifndef __LINENOISE_H
 #define __LINENOISE_H
 
@@ -44,32 +43,33 @@
 extern "C" {
 #endif
 
-typedef struct linenoiseCompletions {
+#include <stddef.h>
+
+typedef struct {
     size_t len;
     char **cvec;
-} linenoiseCompletions;
+} line_completions_t;
 
 /* clang-format off */
-typedef void(linenoiseCompletionCallback)(const char *, linenoiseCompletions *);
-typedef char *(linenoiseHintsCallback)(const char *, int *color, int *bold);
-typedef void(linenoiseFreeHintsCallback)(void *);
-void linenoiseSetCompletionCallback(linenoiseCompletionCallback *);
-void linenoiseSetHintsCallback(linenoiseHintsCallback *);
-void linenoiseSetFreeHintsCallback(linenoiseFreeHintsCallback *);
-void linenoiseAddCompletion(linenoiseCompletions *, const char *);
+typedef void(line_completion_callback_t)(const char *, line_completions_t *);
+typedef char *(line_hints_callback_t)(const char *, int *color, int *bold);
+typedef void(line_free_hints_callback_t)(void *);
+void line_set_completion_callback(line_completion_callback_t *);
+void line_set_hints_callback(line_hints_callback_t *);
+void line_set_free_hints_callback(line_free_hints_callback_t *);
+void line_add_completion(line_completions_t *, const char *);
 /* clang-format on */
 
 char *linenoise(const char *prompt);
-void linenoiseFree(void *ptr);
-int linenoiseHistoryAdd(const char *line);
-int linenoiseHistorySetMaxLen(int len);
-int linenoiseHistorySave(const char *filename);
-int linenoiseHistoryLoad(const char *filename);
-void linenoiseClearScreen(void);
-void linenoiseSetMultiLine(int ml);
-void linenoisePrintKeyCodes(void);
-void linenoiseMaskModeEnable(void);
-void linenoiseMaskModeDisable(void);
+void line_free(void *ptr);
+int line_history_add(const char *line);
+int line_history_set_max_len(int len);
+int line_history_save(const char *filename);
+int line_hostory_load(const char *filename);
+void line_clear_screen(void);
+void line_set_multi_line(int ml);
+void line_mask_mode_enable(void);
+void line_mask_mode_disable(void);
 #ifdef __cplusplus
 }
 #endif
