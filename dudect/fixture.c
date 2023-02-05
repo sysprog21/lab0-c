@@ -170,22 +170,12 @@ static bool test_const(char *text, int mode)
     return result;
 }
 
-bool is_insert_head_const(void)
-{
-    return test_const("insert_head", 0);
-}
+#define DUT_FUNC_IMPL(op)                \
+    bool is_##op##_const(void)           \
+    {                                    \
+        return test_const(#op, DUT(op)); \
+    }
 
-bool is_insert_tail_const(void)
-{
-    return test_const("insert_tail", 1);
-}
-
-bool is_remove_head_const(void)
-{
-    return test_const("remove_head", 2);
-}
-
-bool is_remove_tail_const(void)
-{
-    return test_const("remove_tail", 3);
-}
+#define _(x) DUT_FUNC_IMPL(x)
+DUT_FUNCS
+#undef _

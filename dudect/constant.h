@@ -11,29 +11,19 @@
 
 #define DROP_SIZE 20
 
-#define dut_new() ((void) (l = q_new()))
+#define DUT_FUNCS  \
+    _(insert_head) \
+    _(insert_tail) \
+    _(remove_head) \
+    _(remove_tail)
 
-#define dut_size(n)                                \
-    do {                                           \
-        for (int __iter = 0; __iter < n; ++__iter) \
-            q_size(l);                             \
-    } while (0)
+#define DUT(x) DUT_##x
 
-#define dut_insert_head(s, n)    \
-    do {                         \
-        int j = n;               \
-        while (j--)              \
-            q_insert_head(l, s); \
-    } while (0)
-
-#define dut_insert_tail(s, n)    \
-    do {                         \
-        int j = n;               \
-        while (j--)              \
-            q_insert_tail(l, s); \
-    } while (0)
-
-#define dut_free() ((void) (q_free(l)))
+enum {
+#define _(x) DUT(x),
+    DUT_FUNCS
+#undef _
+};
 
 void init_dut();
 void prepare_inputs(uint8_t *input_data, uint8_t *classes);

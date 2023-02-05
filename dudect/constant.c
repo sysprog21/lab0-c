@@ -12,15 +12,32 @@
  */
 static struct list_head *l = NULL;
 
+#define dut_new() ((void) (l = q_new()))
+
+#define dut_size(n)                                \
+    do {                                           \
+        for (int __iter = 0; __iter < n; ++__iter) \
+            q_size(l);                             \
+    } while (0)
+
+#define dut_insert_head(s, n)    \
+    do {                         \
+        int j = n;               \
+        while (j--)              \
+            q_insert_head(l, s); \
+    } while (0)
+
+#define dut_insert_tail(s, n)    \
+    do {                         \
+        int j = n;               \
+        while (j--)              \
+            q_insert_tail(l, s); \
+    } while (0)
+
+#define dut_free() ((void) (q_free(l)))
+
 static char random_string[N_MEASURES][8];
 static int random_string_iter = 0;
-
-enum {
-    test_insert_head,
-    test_insert_tail,
-    test_remove_head,
-    test_remove_tail,
-};
 
 /* Implement the necessary queue interface to simulation */
 void init_dut(void)
@@ -55,11 +72,11 @@ void measure(int64_t *before_ticks,
              uint8_t *input_data,
              int mode)
 {
-    assert(mode == test_insert_head || mode == test_insert_tail ||
-           mode == test_remove_head || mode == test_remove_tail);
+    assert(mode == DUT(insert_head) || mode == DUT(insert_tail) ||
+           mode == DUT(remove_head) || mode == DUT(remove_tail));
 
     switch (mode) {
-    case test_insert_head:
+    case DUT(insert_head):
         for (size_t i = DROP_SIZE; i < N_MEASURES - DROP_SIZE; i++) {
             char *s = get_random_string();
             dut_new();
@@ -72,7 +89,7 @@ void measure(int64_t *before_ticks,
             dut_free();
         }
         break;
-    case test_insert_tail:
+    case DUT(insert_tail):
         for (size_t i = DROP_SIZE; i < N_MEASURES - DROP_SIZE; i++) {
             char *s = get_random_string();
             dut_new();
@@ -85,7 +102,7 @@ void measure(int64_t *before_ticks,
             dut_free();
         }
         break;
-    case test_remove_head:
+    case DUT(remove_head):
         for (size_t i = DROP_SIZE; i < N_MEASURES - DROP_SIZE; i++) {
             dut_new();
             dut_insert_head(
@@ -99,7 +116,7 @@ void measure(int64_t *before_ticks,
             dut_free();
         }
         break;
-    case test_remove_tail:
+    case DUT(remove_tail):
         for (size_t i = DROP_SIZE; i < N_MEASURES - DROP_SIZE; i++) {
             dut_new();
             dut_insert_head(
