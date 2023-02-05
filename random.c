@@ -135,24 +135,23 @@ static int randombytes_linux_wait_for_entropy(int device)
 {
     /* We will block on /dev/random, because any increase in the OS' entropy
      * level will unblock the request. I use poll here (as does libsodium),
-     * because we don't *actually* want to read from the device. */
+     * because we don't *actually* want to read from the device.
+     */
     enum { IOCTL, PROC } strategy = IOCTL;
     const int bits = 128;
-    struct pollfd pfd;
-    int fd;
     FILE *proc_file;
-    int retcode, retcode_error = 0; /* Used as return codes */
+    int retcode_error = 0; /* Used as return codes */
     int entropy = 0;
 
     /* If the device has enough entropy already, we will want to return early */
-    retcode = randombytes_linux_read_entropy_ioctl(device, &entropy);
+    int retcode = randombytes_linux_read_entropy_ioctl(device, &entropy);
     if (retcode != 0 && (errno == ENOTTY || errno == ENOSYS)) {
         /* The ioctl call on /dev/urandom has failed due to a
          *   - ENOTTY (unsupported action), or
-         *   - ENOSYS (invalid ioctl; this happens on MIPS, see #22).
+         *   - ENOSYS (invalid ioctl; this happens on MIPS).
          *
          * We will fall back to reading from
-         * `/proc/sys/kernel/random/entropy_avail`.  This less ideal,
+         * /proc/sys/kernel/random/entropy_avail . This is less ideal,
          * because it allocates a file descriptor, and it may not work
          * in a chroot.  But at this point it seems we have no better
          * options left.
@@ -169,6 +168,7 @@ static int randombytes_linux_wait_for_entropy(int device)
     if (entropy >= bits)
         return 0;
 
+    int fd;
     do {
         fd = open("/dev/random", O_RDONLY);
     } while (fd == -1 && errno == EINTR); /* EAGAIN will not occur */
@@ -177,8 +177,7 @@ static int randombytes_linux_wait_for_entropy(int device)
         return -1;
     }
 
-    pfd.fd = fd;
-    pfd.events = POLLIN;
+    struct pollfd pfd = {.fd = fd, .events = POLLIN};
     for (;;) {
         retcode = poll(&pfd, 1, -1);
         if (retcode == -1 && (errno == EINTR || errno == EAGAIN)) {
@@ -224,8 +223,6 @@ static int randombytes_linux_wait_for_entropy(int device)
 static int randombytes_linux_randombytes_urandom(void *buf, size_t n)
 {
     int fd;
-    size_t offset = 0, count;
-    ssize_t tmp;
     do {
         fd = open("/dev/urandom", O_RDONLY);
     } while (fd == -1 && errno == EINTR);
@@ -236,12 +233,12 @@ static int randombytes_linux_randombytes_urandom(void *buf, size_t n)
         return -1;
 #endif
 
+    size_t offset = 0;
     while (n > 0) {
-        count = n <= SSIZE_MAX ? n : SSIZE_MAX;
-        tmp = read(fd, (char *) buf + offset, count);
-        if (tmp == -1 && (errno == EAGAIN || errno == EINTR)) {
+        size_t count = n <= SSIZE_MAX ? n : SSIZE_MAX;
+        ssize_t tmp = read(fd, (char *) buf + offset, count);
+        if (tmp == -1 && (errno == EAGAIN || errno == EINTR))
             continue;
-        }
         if (tmp == -1)
             return -1; /* Unrecoverable IO error */
         offset += tmp;

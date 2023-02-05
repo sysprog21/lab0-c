@@ -154,3 +154,8 @@ vla
 ctrl
 randombyte
 randombit
+ioctl
+syscall
+getrandom
+dev
+urandom
