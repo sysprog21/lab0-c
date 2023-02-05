@@ -2,6 +2,15 @@
 #define DUDECT_CONSTANT_H
 
 #include <stdint.h>
+
+/* Number of measurements per test */
+#define N_MEASURES 150
+
+/* Allow random number range from 0 to 65535 */
+#define CHUNK_SIZE 16
+
+#define DROP_SIZE 20
+
 #define dut_new() ((void) (l = q_new()))
 
 #define dut_size(n)                                \

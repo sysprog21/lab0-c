@@ -26,24 +26,23 @@
  *    variable time.
  */
 
-#include "fixture.h"
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "../console.h"
 #include "../random.h"
+
 #include "constant.h"
+#include "fixture.h"
 #include "ttest.h"
 
-#define enough_measure 10000
-#define test_tries 10
+#define ENOUGH_MEASURE 10000
+#define TEST_TRIES 10
 
-extern const int drop_size;
-extern const size_t chunk_size;
-extern const size_t n_measure;
 static t_context_t *t;
 
 /* threshold values for Welch's t-test */
@@ -61,13 +60,13 @@ static void differentiate(int64_t *exec_times,
                           const int64_t *before_ticks,
                           const int64_t *after_ticks)
 {
-    for (size_t i = 0; i < n_measure; i++)
+    for (size_t i = 0; i < N_MEASURES; i++)
         exec_times[i] = after_ticks[i] - before_ticks[i];
 }
 
 static void update_statistics(const int64_t *exec_times, uint8_t *classes)
 {
-    for (size_t i = 0; i < n_measure; i++) {
+    for (size_t i = 0; i < N_MEASURES; i++) {
         int64_t difference = exec_times[i];
         /* CPU cycle counter overflowed or dropped measurement */
         if (difference <= 0)
@@ -86,9 +85,9 @@ static bool report(void)
 
     printf("\033[A\033[2K");
     printf("meas: %7.2lf M, ", (number_traces_max_t / 1e6));
-    if (number_traces_max_t < enough_measure) {
+    if (number_traces_max_t < ENOUGH_MEASURE) {
         printf("not enough measurements (%.0f still to go).\n",
-               enough_measure - number_traces_max_t);
+               ENOUGH_MEASURE - number_traces_max_t);
         return false;
     }
 
@@ -119,11 +118,11 @@ static bool report(void)
 
 static bool doit(int mode)
 {
-    int64_t *before_ticks = calloc(n_measure + 1, sizeof(int64_t));
-    int64_t *after_ticks = calloc(n_measure + 1, sizeof(int64_t));
-    int64_t *exec_times = calloc(n_measure, sizeof(int64_t));
-    uint8_t *classes = calloc(n_measure, sizeof(uint8_t));
-    uint8_t *input_data = calloc(n_measure * chunk_size, sizeof(uint8_t));
+    int64_t *before_ticks = calloc(N_MEASURES + 1, sizeof(int64_t));
+    int64_t *after_ticks = calloc(N_MEASURES + 1, sizeof(int64_t));
+    int64_t *exec_times = calloc(N_MEASURES, sizeof(int64_t));
+    uint8_t *classes = calloc(N_MEASURES, sizeof(uint8_t));
+    uint8_t *input_data = calloc(N_MEASURES * CHUNK_SIZE, sizeof(uint8_t));
 
     if (!before_ticks || !after_ticks || !exec_times || !classes ||
         !input_data) {
@@ -152,19 +151,19 @@ static void init_once(void)
     t_init(t);
 }
 
-static bool TEST_CONST(char *text, int mode)
+static bool test_const(char *text, int mode)
 {
     bool result = false;
     t = malloc(sizeof(t_context_t));
 
-    for (int cnt = 0; cnt < test_tries; ++cnt) {
-        printf("Testing %s...(%d/%d)\n\n", text, cnt, test_tries);
+    for (int cnt = 0; cnt < TEST_TRIES; ++cnt) {
+        printf("Testing %s...(%d/%d)\n\n", text, cnt, TEST_TRIES);
         init_once();
-        for (int i = 0; i < enough_measure / (n_measure - drop_size * 2) + 1;
+        for (int i = 0; i < ENOUGH_MEASURE / (N_MEASURES - DROP_SIZE * 2) + 1;
              ++i)
             result = doit(mode);
         printf("\033[A\033[2K\033[A\033[2K");
-        if (result == true)
+        if (result)
             break;
     }
     free(t);
@@ -173,20 +172,20 @@ static bool TEST_CONST(char *text, int mode)
 
 bool is_insert_head_const(void)
 {
-    return TEST_CONST("insert_head", 0);
+    return test_const("insert_head", 0);
 }
 
 bool is_insert_tail_const(void)
 {
-    return TEST_CONST("insert_tail", 1);
+    return test_const("insert_tail", 1);
 }
 
 bool is_remove_head_const(void)
 {
-    return TEST_CONST("remove_head", 2);
+    return test_const("remove_head", 2);
 }
 
 bool is_remove_tail_const(void)
 {
-    return TEST_CONST("remove_tail", 3);
+    return test_const("remove_tail", 3);
 }
