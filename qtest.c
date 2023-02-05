@@ -441,47 +441,6 @@ static inline bool do_rt(int argc, char *argv[])
     return do_remove(1, argc, argv);
 }
 
-/* remove head quietly */
-static bool do_rhq(int argc, char *argv[])
-{
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-
-    bool ok = true;
-    if (!l_meta.size)
-        report(3, "Warning: Calling remove head on empty queue");
-    error_check();
-
-    element_t *re = NULL;
-
-    if (exception_setup(true))
-        re = q_remove_head(l_meta.l, NULL, 0);
-    exception_cancel();
-
-    if (re) {
-        // q_remove_head and q_remove_tail are not responsible for releasing
-        // node
-        q_release_element(re);
-
-        report(2, "Removed element from queue");
-        lcnt--;
-        l_meta.size--;
-    } else {
-        fail_count++;
-        if (fail_count < fail_limit)
-            report(2, "Removal failed");
-        else {
-            report(1, "ERROR: Removal failed (%d failures total)", fail_count);
-            ok = false;
-        }
-    }
-
-    show_queue(3);
-    return ok && !error_check();
-}
-
 static bool do_dedup(int argc, char *argv[])
 {
     if (argc != 1) {
@@ -901,7 +860,6 @@ static void console_init()
         rt,
         "Remove from tail of queue. Optionally compare to expected value str",
         "[str]");
-    ADD_COMMAND(rhq, "Remove from head of queue without reporting value.", "");
     ADD_COMMAND(reverse, "Reverse queue", "");
     ADD_COMMAND(sort, "Sort queue in ascending order", "");
     ADD_COMMAND(size, "Compute queue size n times (default: n == 1)", "[n]");
