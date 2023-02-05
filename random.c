@@ -267,8 +267,7 @@ static int randombytes_bsd_randombytes(void *buf, size_t n)
 #if defined(MAC_OS_X_VERSION_10_15) && \
     MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_15
     /* We prefere CCRandomGenerateBytes as it returns an error code while
-     * arc4random_buf may fail silently on macOS. See PR #390, and
-     * <https://opensource.apple.com/source/Libc/Libc-1439.40.11/gen/FreeBSD/arc4random.c.auto.html>
+     * arc4random_buf may fail silently on macOS.
      */
     return (CCRandomGenerateBytes(buf, n) == kCCSuccess);
 #else
