@@ -5,6 +5,3 @@ new
 ih jaguar 20
 option malloc 25
 it gerbil 20
-
-
-
