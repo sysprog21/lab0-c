@@ -422,7 +422,9 @@ void init_cmd()
     quit_flag = false;
 
     ADD_COMMAND(help, "Show summary", "");
-    ADD_COMMAND(option, "Display or set options", "[name val]");
+    ADD_COMMAND(option,
+                "Display or set options. See 'Options' section for details",
+                "[name val]");
     ADD_COMMAND(quit, "Exit program", "");
     ADD_COMMAND(source, "Read commands from source file", "");
     ADD_COMMAND(log, "Copy output to file", "file");
