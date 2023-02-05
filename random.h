@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-void randombytes(uint8_t *x, size_t xlen);
+extern int randombytes(uint8_t *buf, size_t len);
 
 static inline uint8_t randombit(void)
 {
