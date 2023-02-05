@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2023 National Cheng Kung University, Taiwan.
  * Copyright (c) 2017 Daan Sprenkels <daan@dsprenkels.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -253,10 +254,27 @@ static int randombytes_linux_randombytes_urandom(void *buf, size_t n)
 #endif /* defined(__linux__) && !defined(SYS_getrandom) */
 
 #if defined(BSD)
+#if defined(__APPLE__)
+#include <AvailabilityMacros.h>
+#if defined(MAC_OS_X_VERSION_10_10) && \
+    MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_10
+#include <CommonCrypto/CommonCryptoError.h>
+#include <CommonCrypto/CommonRandom.h>
+#endif
+#endif
 static int randombytes_bsd_randombytes(void *buf, size_t n)
 {
+#if defined(MAC_OS_X_VERSION_10_15) && \
+    MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_15
+    /* We prefere CCRandomGenerateBytes as it returns an error code while
+     * arc4random_buf may fail silently on macOS. See PR #390, and
+     * <https://opensource.apple.com/source/Libc/Libc-1439.40.11/gen/FreeBSD/arc4random.c.auto.html>
+     */
+    return (CCRandomGenerateBytes(buf, n) == kCCSuccess);
+#else
     arc4random_buf(buf, n);
     return 0;
+#endif
 }
 #endif
 
@@ -274,7 +292,6 @@ int randombytes(uint8_t *buf, size_t n)
     return randombytes_linux_randombytes_urandom(buf, n);
 #endif
 #elif defined(BSD)
-    /* Use arc4random system call */
     return randombytes_bsd_randombytes(buf, n);
 #else
 #error "randombytes(...) is not supported on this platform"
