@@ -152,8 +152,9 @@ static void fill_rand_string(char *buf, size_t buf_size)
     while (len < MIN_RANDSTR_LEN)
         len = rand() % buf_size;
 
+    randombytes((uint8_t *) buf, len);
     for (size_t n = 0; n < len; n++)
-        buf[n] = charset[rand() % (sizeof charset - 1)];
+        buf[n] = charset[buf[n] % (sizeof(charset) - 1)];
     buf[len] = '\0';
 }
 
