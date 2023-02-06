@@ -56,8 +56,7 @@ static int big_list_size = BIG_LIST;
 
 /* List being tested */
 typedef struct {
-    struct list_head *l;
-    /* meta data of list */
+    struct list_head *l; /**< meta data of list */
     int size;
 } list_head_meta_t;
 
@@ -572,9 +571,8 @@ static bool do_size(int argc, char *argv[])
     }
 
     if (argc == 2) {
-        if (!get_int(argv[1], &reps)) {
+        if (!get_int(argv[1], &reps))
             report(1, "Invalid number of calls to size '%s'", argv[2]);
-        }
     }
 
     int cnt = 0;
@@ -892,7 +890,7 @@ static void console_init()
 }
 
 /* Signal handlers */
-static void sigsegvhandler(int sig)
+static void sigsegv_handler(int sig)
 {
     /* Avoid possible non-reentrant signal function be used in signal handler */
     assert(write(1,
@@ -903,7 +901,7 @@ static void sigsegvhandler(int sig)
     abort();
 }
 
-static void sigalrmhandler(int sig)
+static void sigalrm_handler(int sig)
 {
     trigger_exception(
         "Time limit exceeded.  Either you are in an infinite loop, or your "
@@ -914,8 +912,8 @@ static void queue_init()
 {
     fail_count = 0;
     l_meta.l = NULL;
-    signal(SIGSEGV, sigsegvhandler);
-    signal(SIGALRM, sigalrmhandler);
+    signal(SIGSEGV, sigsegv_handler);
+    signal(SIGALRM, sigalrm_handler);
 }
 
 static bool queue_quit(int argc, char *argv[])
@@ -980,7 +978,6 @@ static bool sanity_check()
     }
     return true;
 }
-
 
 #define BUFSIZE 256
 int main(int argc, char *argv[])
