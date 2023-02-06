@@ -17,6 +17,10 @@
 #include "dudect/fixture.h"
 #include "list.h"
 
+/* Shannon entropy */
+extern double shannon_entropy(const uint8_t *input_data);
+extern int show_entropy;
+
 /* Our program needs to use regular malloc/free */
 #define INTERNAL 1
 #include "harness.h"
@@ -803,8 +807,14 @@ static bool show_queue(int vlevel)
     if (exception_setup(true)) {
         while (ok && ori != cur && cnt < lcnt) {
             element_t *e = list_entry(cur, element_t, list);
-            if (cnt < big_list_size)
+            if (cnt < big_list_size) {
                 report_noreturn(vlevel, cnt == 0 ? "%s" : " %s", e->value);
+                if (show_entropy) {
+                    report_noreturn(
+                        vlevel, "(%3.2f%%)",
+                        shannon_entropy((const uint8_t *) e->value));
+                }
+            }
             cnt++;
             cur = cur->next;
             ok = ok && !error_check();
