@@ -159,3 +159,6 @@ syscall
 getrandom
 dev
 urandom
+aarch
+risc
+riscv
