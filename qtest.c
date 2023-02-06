@@ -11,11 +11,17 @@
 #include <strings.h> /* strcasecmp */
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <time.h>
 #include <unistd.h>
+
+#if defined(__APPLE__)
+#include <mach/mach_time.h>
+#else /* Assume POSIX environments */
+#include <time.h>
+#endif
 
 #include "dudect/fixture.h"
 #include "list.h"
+#include "random.h"
 
 /* Shannon entropy */
 extern double shannon_entropy(const uint8_t *input_data);
@@ -979,6 +985,26 @@ static bool sanity_check()
     return true;
 }
 
+uintptr_t os_random(uintptr_t seed)
+{
+    /* ASLR makes the address random */
+    uintptr_t x = (uintptr_t) &os_random ^ seed;
+#if defined(__APPLE__)
+    x ^= (uintptr_t) mach_absolute_time();
+#else
+    struct timespec time;
+    clock_gettime(CLOCK_MONOTONIC, &time);
+    x ^= (uintptr_t) time.tv_sec;
+    x ^= (uintptr_t) time.tv_nsec;
+#endif
+    /* Do a few randomization steps */
+    uintptr_t max = ((x ^ (x >> 17)) & 0x0F) + 1;
+    for (uintptr_t i = 0; i < max; i++)
+        x = random_shuffle(x);
+    assert(x);
+    return x;
+}
+
 #define BUFSIZE 256
 int main(int argc, char *argv[])
 {
@@ -1026,7 +1052,11 @@ int main(int argc, char *argv[])
         }
     }
 
-    srand((unsigned int) (time(NULL)));
+    /* A better seed can be obtained by combining getpid() and its parent ID
+     * with the Unix time.
+     */
+    srand(os_random(getpid() ^ getppid()));
+
     queue_init();
     init_cmd();
     console_init();
