@@ -93,9 +93,7 @@ static ssize_t writen(int fd, void *usrbuf, size_t n)
     return n;
 }
 
-/*
- * rio_readlineb - robustly read a text line (buffered)
- */
+/* robustly read a text line (buffered) */
 static ssize_t rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen)
 {
     char c, *bufp = usrbuf;
@@ -118,12 +116,12 @@ static ssize_t rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen)
     return n;
 }
 
-void send_response(int out_fd, char *buf)
+void web_send(int out_fd, char *buf)
 {
     writen(out_fd, buf, strlen(buf));
 }
 
-int open_listenfd(int port)
+int web_open(int port)
 {
     int listenfd, optval = 1;
     struct sockaddr_in serveraddr;
@@ -202,8 +200,7 @@ static void parse_request(int fd, http_request_t *req)
         if (length == 0) {
             filename = ".";
         } else {
-            int i = 0;
-            for (; i < length; ++i) {
+            for (int i = 0; i < length; ++i) {
                 if (filename[i] == '?') {
                     filename[i] = '\0';
                     break;
@@ -214,7 +211,7 @@ static void parse_request(int fd, http_request_t *req)
     url_decode(filename, req->filename, MAXLINE);
 }
 
-char *process_connection(int fd, struct sockaddr_in *clientaddr)
+char *web_recv(int fd, struct sockaddr_in *clientaddr)
 {
     http_request_t req;
     parse_request(fd, &req);

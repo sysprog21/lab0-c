@@ -3,10 +3,10 @@
 
 #include <netinet/in.h>
 
-int open_listenfd(int port);
+int web_open(int port);
 
-char *process_connection(int fd, struct sockaddr_in *clientaddr);
+char *web_recv(int fd, struct sockaddr_in *clientaddr);
 
-void send_response(int out_fd, char *buffer);
+void web_send(int out_fd, char *buffer);
 
 #endif

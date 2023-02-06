@@ -92,7 +92,7 @@ void report_event(message_t msg, char *fmt, ...)
 }
 
 #define BUF_SIZE 4096
-extern int connfd;
+extern int web_connfd;
 void report(int level, char *fmt, ...)
 {
     if (!verbfile)
@@ -118,11 +118,11 @@ void report(int level, char *fmt, ...)
         vsnprintf(buffer, BUF_SIZE, fmt, ap);
         va_end(ap);
     }
-    if (connfd) {
+    if (web_connfd) {
         int len = strlen(buffer);
         buffer[len] = '\n';
         buffer[len + 1] = '\0';
-        send_response(connfd, buffer);
+        web_send(web_connfd, buffer);
     }
 }
 
@@ -149,9 +149,9 @@ void report_noreturn(int level, char *fmt, ...)
         vsnprintf(buffer, BUF_SIZE, fmt, ap);
         va_end(ap);
     }
-    if (connfd) {
-        send_response(connfd, buffer);
-    }
+
+    if (web_connfd)
+        web_send(web_connfd, buffer);
 }
 
 /* Functions denoting failures */

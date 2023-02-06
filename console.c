@@ -392,24 +392,23 @@ static bool do_time(int argc, char *argv[])
 }
 
 static bool use_linenoise = true;
-static int listenfd;
+static int web_fd;
 
 static bool do_web(int argc, char *argv[])
 {
     int port = 9999;
     if (argc == 2) {
-        if (argv[1][0] >= '0' && argv[1][0] <= '9') {
+        if (argv[1][0] >= '0' && argv[1][0] <= '9')
             port = atoi(argv[1]);
-        }
     }
 
-    listenfd = open_listenfd(port);
-    if (listenfd > 0) {
-        printf("listen on port %d, fd is %d\n", port, listenfd);
+    web_fd = web_open(port);
+    if (web_fd > 0) {
+        printf("listen on port %d, fd is %d\n", port, web_fd);
         use_linenoise = false;
     } else {
         perror("ERROR");
-        exit(listenfd);
+        exit(web_fd);
     }
     return true;
 }
@@ -430,7 +429,7 @@ void init_cmd()
     ADD_COMMAND(source, "Read commands from source file", "");
     ADD_COMMAND(log, "Copy output to file", "file");
     ADD_COMMAND(time, "Time command execution", "cmd arg ...");
-    ADD_COMMAND(web, "Read commands from a tiny-web-server", "[port]");
+    ADD_COMMAND(web, "Read commands from builtin web server", "[port]");
     add_cmd("#", do_comment_cmd, "Display comment", "...");
     add_param("simulation", &simulation, "Start/Stop simulation mode", NULL);
     add_param("verbose", &verblevel, "Verbosity level", NULL);
@@ -554,7 +553,7 @@ static bool cmd_done()
  * nfds should be set to the maximum file descriptor for network sockets.
  * If nfds == 0, this indicates that there is no pending network activity
  */
-int connfd;
+int web_connfd;
 static int cmd_select(int nfds,
                       fd_set *readfds,
                       fd_set *writefds,
@@ -578,8 +577,8 @@ static int cmd_select(int nfds,
         FD_SET(infd, readfds);
 
         /* If web not ready listen */
-        if (listenfd != -1)
-            FD_SET(listenfd, readfds);
+        if (web_fd != -1)
+            FD_SET(web_fd, readfds);
 
         if (infd == STDIN_FILENO && prompt_flag) {
             printf("%s", prompt);
@@ -589,8 +588,8 @@ static int cmd_select(int nfds,
 
         if (infd >= nfds)
             nfds = infd + 1;
-        if (listenfd >= nfds)
-            nfds = listenfd + 1;
+        if (web_fd >= nfds)
+            nfds = web_fd + 1;
     }
     if (nfds == 0)
         return 0;
@@ -606,25 +605,25 @@ static int cmd_select(int nfds,
         result--;
 
         set_echo(0);
-        char *cmdline;
-        cmdline = readline();
+        char *cmdline = readline();
         if (cmdline)
             interpret_cmd(cmdline);
-    } else if (readfds && FD_ISSET(listenfd, readfds)) {
-        FD_CLR(listenfd, readfds);
+    } else if (readfds && FD_ISSET(web_fd, readfds)) {
+        FD_CLR(web_fd, readfds);
         result--;
         struct sockaddr_in clientaddr;
         socklen_t clientlen = sizeof(clientaddr);
-        connfd = accept(listenfd, (struct sockaddr *) &clientaddr, &clientlen);
+        web_connfd =
+            accept(web_fd, (struct sockaddr *) &clientaddr, &clientlen);
 
-        char *p = process_connection(connfd, &clientaddr);
+        char *p = web_recv(web_connfd, &clientaddr);
         char *buffer = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
-        send_response(connfd, buffer);
+        web_send(web_connfd, buffer);
 
         if (p)
             interpret_cmd(p);
         free(p);
-        close(connfd);
+        close(web_connfd);
     }
     return result;
 }
