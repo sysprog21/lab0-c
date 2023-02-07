@@ -60,16 +60,21 @@ static int big_list_size = BIG_LIST;
 
 /* Global variables */
 
-/* List being tested */
+/* The context managing a chain of queues */
 typedef struct {
-    struct list_head *l; /**< meta data of list */
+    struct list_head *q;
+    struct list_head chain;
     int size;
-} list_head_meta_t;
+    int id;
+} qcontext_t;
 
-static list_head_meta_t l_meta;
+typedef struct {
+    struct list_head head;
+    int size;
+} queue_chain_t;
 
-/* Number of elements in queue */
-static size_t lcnt = 0;
+static queue_chain_t chain = {.size = 0};
+static qcontext_t *current = NULL;
 
 /* How many times can queue operations fail */
 static int fail_limit = BIG_LIST;
@@ -92,20 +97,38 @@ static bool do_free(int argc, char *argv[])
     }
 
     bool ok = true;
-    if (!l_meta.l)
-        report(3, "Warning: Calling free on null queue");
+    if (!chain.size || !current || !current->q) {
+        report(3,
+               "Warning: There is no available queue or calling free on null "
+               "queue");
+    }
     error_check();
 
-    if (lcnt > big_list_size)
+    if (current && current->size > big_list_size)
         set_cautious_mode(false);
-    if (exception_setup(true))
-        q_free(l_meta.l);
-    exception_cancel();
-    set_cautious_mode(true);
 
-    l_meta.size = 0;
-    l_meta.l = NULL;
-    lcnt = 0;
+    struct list_head *qnext = NULL;
+    if (chain.size > 1) {
+        qnext = ((uintptr_t) &current->chain.next == (uintptr_t) &chain.head)
+                    ? chain.head.next
+                    : current->chain.next;
+    }
+
+    if (current) {
+        list_del(&current->chain);
+
+        if (exception_setup(true))
+            q_free(current->q);
+        exception_cancel();
+        set_cautious_mode(true);
+    }
+
+    if (current) {
+        free(current);
+        chain.size--;
+        current = qnext ? list_entry(qnext, qcontext_t, chain) : NULL;
+    }
+
     show_queue(3);
 
     size_t bcnt = allocation_check();
@@ -126,18 +149,19 @@ static bool do_new(int argc, char *argv[])
     }
 
     bool ok = true;
-    if (l_meta.l) {
-        report(3, "Freeing old queue");
-        ok = do_free(argc, argv);
-    }
-    error_check();
 
     if (exception_setup(true)) {
-        l_meta.l = q_new();
-        l_meta.size = 0;
+        qcontext_t *qctx = malloc(sizeof(qcontext_t));
+
+        list_add_tail(&qctx->chain, &chain.head);
+
+        qctx->size = 0;
+        qctx->q = q_new();
+        qctx->id = chain.size++;
+
+        current = qctx;
     }
     exception_cancel();
-    lcnt = 0;
     show_queue(3);
 
     return ok && !error_check();
@@ -197,20 +221,19 @@ static bool do_ih(int argc, char *argv[])
         inserts = randstr_buf;
     }
 
-    if (!l_meta.l)
+    if (!current || !current->q)
         report(3, "Warning: Calling insert head on null queue");
     error_check();
 
-    if (exception_setup(true)) {
+    if (current && exception_setup(true)) {
         for (int r = 0; ok && r < reps; r++) {
             if (need_rand)
                 fill_rand_string(randstr_buf, sizeof(randstr_buf));
-            bool rval = q_insert_head(l_meta.l, inserts);
+            bool rval = q_insert_head(current->q, inserts);
             if (rval) {
-                lcnt++;
-                l_meta.size++;
+                current->size++;
                 char *cur_inserts =
-                    list_entry(l_meta.l->next, element_t, list)->value;
+                    list_entry(current->q->next, element_t, list)->value;
                 if (!cur_inserts) {
                     report(1, "ERROR: Failed to save copy of string in queue");
                     ok = false;
@@ -286,20 +309,19 @@ static bool do_it(int argc, char *argv[])
         inserts = randstr_buf;
     }
 
-    if (!l_meta.l)
+    if (!current || !current->q)
         report(3, "Warning: Calling insert tail on null queue");
     error_check();
 
-    if (exception_setup(true)) {
+    if (current && exception_setup(true)) {
         for (int r = 0; ok && r < reps; r++) {
             if (need_rand)
                 fill_rand_string(randstr_buf, sizeof(randstr_buf));
-            bool rval = q_insert_tail(l_meta.l, inserts);
+            bool rval = q_insert_tail(current->q, inserts);
             if (rval) {
-                lcnt++;
-                l_meta.size++;
+                current->size++;
                 char *cur_inserts =
-                    list_entry(l_meta.l->prev, element_t, list)->value;
+                    list_entry(current->q->prev, element_t, list)->value;
                 if (!cur_inserts) {
                     report(1, "ERROR: Failed to save copy of string in queue");
                     ok = false;
@@ -378,14 +400,14 @@ static bool do_remove(int option, int argc, char *argv[])
     memset(removes + 1, 'X', string_length + STRINGPAD - 1);
     removes[string_length + STRINGPAD] = '\0';
 
-    if (!l_meta.size)
+    if (!current || !current->size)
         report(3, "Warning: Calling remove head on empty queue");
     error_check();
 
     element_t *re = NULL;
-    if (exception_setup(true))
-        re = option ? q_remove_tail(l_meta.l, removes, string_length + 1)
-                    : q_remove_head(l_meta.l, removes, string_length + 1);
+    if (current && exception_setup(true))
+        re = option ? q_remove_tail(current->q, removes, string_length + 1)
+                    : q_remove_head(current->q, removes, string_length + 1);
     exception_cancel();
 
     bool is_null = re ? false : true;
@@ -415,8 +437,7 @@ static bool do_remove(int option, int argc, char *argv[])
         } else {
             report(2, "Removed %s from queue", removes);
         }
-        lcnt--;
-        l_meta.size--;
+        current->size--;
     } else {
         fail_count++;
         if (!check && fail_count < fail_limit) {
@@ -461,9 +482,9 @@ static bool do_dedup(int argc, char *argv[])
     LIST_HEAD(l_copy);
     element_t *item = NULL, *tmp = NULL;
 
-    // Copy l_meta.l to l_copy
-    if (l_meta.l && !list_empty(l_meta.l)) {
-        list_for_each_entry (item, l_meta.l, list) {
+    // Copy current->q to l_copy
+    if (current->q && !list_empty(current->q)) {
+        list_for_each_entry (item, current->q, list) {
             size_t slen;
             tmp = malloc(sizeof(element_t));
             if (!tmp)
@@ -479,7 +500,7 @@ static bool do_dedup(int argc, char *argv[])
             list_add_tail(&tmp->list, &l_copy);
         }
         // Return false if the loop does not leave properly
-        if (&item->list != l_meta.l) {
+        if (&item->list != current->q) {
             list_for_each_entry_safe (item, tmp, &l_copy, list) {
                 free(item->value);
                 free(item);
@@ -493,7 +514,7 @@ static bool do_dedup(int argc, char *argv[])
 
     bool ok = true;
     if (exception_setup(true))
-        ok = q_delete_dup(l_meta.l);
+        ok = q_delete_dup(current->q);
     exception_cancel();
 
     if (!ok) {
@@ -505,7 +526,7 @@ static bool do_dedup(int argc, char *argv[])
         return false;
     }
 
-    struct list_head *l_tmp = l_meta.l->next;
+    struct list_head *l_tmp = current->q->next;
     bool is_this_dup = false;
     // Compare between new list and old one
     list_for_each_entry (item, &l_copy, list) {
@@ -516,9 +537,8 @@ static bool do_dedup(int argc, char *argv[])
                    item->value) == 0;
         if (is_this_dup || is_next_dup) {
             // Update list size
-            lcnt--;
-            l_meta.size--;
-        } else if (l_tmp != l_meta.l &&
+            current->size--;
+        } else if (l_tmp != current->q &&
                    strcmp(list_entry(l_tmp, element_t, list)->value,
                           item->value) == 0)
             l_tmp = l_tmp->next;
@@ -527,7 +547,7 @@ static bool do_dedup(int argc, char *argv[])
         is_this_dup = is_next_dup;
     }
     // All elements in new list should be traversed
-    ok = ok && l_tmp == l_meta.l;
+    ok = ok && l_tmp == current->q;
     if (!ok)
         report(1,
                "ERROR: Duplicate strings are in queue or distinct strings are "
@@ -549,13 +569,13 @@ static bool do_reverse(int argc, char *argv[])
         return false;
     }
 
-    if (!l_meta.l)
+    if (!current || !current->q)
         report(3, "Warning: Calling reverse on null queue");
     error_check();
 
     set_noallocate_mode(true);
-    if (exception_setup(true))
-        q_reverse(l_meta.l);
+    if (current && exception_setup(true))
+        q_reverse(current->q);
     exception_cancel();
 
     set_noallocate_mode(false);
@@ -583,25 +603,25 @@ static bool do_size(int argc, char *argv[])
     }
 
     int cnt = 0;
-    if (!l_meta.l)
+    if (!current || !current->q)
         report(3, "Warning: Calling size on null queue");
     error_check();
 
-    if (exception_setup(true)) {
+    if (current && exception_setup(true)) {
         for (int r = 0; ok && r < reps; r++) {
-            cnt = q_size(l_meta.l);
+            cnt = q_size(current->q);
             ok = ok && !error_check();
         }
     }
     exception_cancel();
 
-    if (ok) {
-        if (lcnt == cnt) {
+    if (current && ok) {
+        if (current->size == cnt) {
             report(2, "Queue size = %d", cnt);
         } else {
             report(1,
                    "ERROR: Computed queue size as %d, but correct value is %d",
-                   cnt, (int) lcnt);
+                   cnt, (int) current->size);
             ok = false;
         }
     }
@@ -618,25 +638,27 @@ bool do_sort(int argc, char *argv[])
         return false;
     }
 
-    if (!l_meta.l)
+    int cnt = 0;
+    if (!current || !current->q)
         report(3, "Warning: Calling sort on null queue");
+    else
+        cnt = q_size(current->q);
     error_check();
 
-    int cnt = q_size(l_meta.l);
     if (cnt < 2)
         report(3, "Warning: Calling sort on single node");
     error_check();
 
     set_noallocate_mode(true);
-    if (exception_setup(true))
-        q_sort(l_meta.l);
+    if (current && exception_setup(true))
+        q_sort(current->q);
     exception_cancel();
     set_noallocate_mode(false);
 
     bool ok = true;
-    if (l_meta.size) {
-        for (struct list_head *cur_l = l_meta.l->next;
-             cur_l != l_meta.l && --cnt; cur_l = cur_l->next) {
+    if (current && current->size) {
+        for (struct list_head *cur_l = current->q->next;
+             cur_l != current->q && --cnt; cur_l = cur_l->next) {
             /* Ensure each element in ascending order */
             /* FIXME: add an option to specify sorting order */
             element_t *item, *next_item;
@@ -661,16 +683,16 @@ static bool do_dm(int argc, char *argv[])
         return false;
     }
 
-    if (!l_meta.l)
+    if (!current || !current->q)
         report(3, "Warning: Try to access null queue");
     error_check();
 
     bool ok = true;
     if (exception_setup(true))
-        ok = q_delete_mid(l_meta.l);
+        ok = q_delete_mid(current->q);
     exception_cancel();
 
-    lcnt--;
+    current->size--;
     show_queue(3);
     return ok && !error_check();
 }
@@ -682,13 +704,13 @@ static bool do_swap(int argc, char *argv[])
         return false;
     }
 
-    if (!l_meta.l)
+    if (!current || !current->q)
         report(3, "Warning: Try to access null queue");
     error_check();
 
     set_noallocate_mode(true);
     if (exception_setup(true))
-        q_swap(l_meta.l);
+        q_swap(current->q);
     exception_cancel();
 
     set_noallocate_mode(false);
@@ -704,26 +726,26 @@ static bool do_descend(int argc, char *argv[])
         return false;
     }
 
-    if (!l_meta.l)
+    if (!current || !current->q)
         report(3, "Warning: Calling ascend on null queue");
     error_check();
 
 
-    int cnt = q_size(l_meta.l);
+    int cnt = q_size(current->q);
     if (cnt < 2)
         report(3, "Warning: Calling ascend on single node");
     error_check();
 
     if (exception_setup(true))
-        lcnt = q_descend(l_meta.l);
+        current->size = q_descend(current->q);
     set_noallocate_mode(false);
 
     bool ok = true;
 
-    cnt = l_meta.size = lcnt;
-    if (l_meta.size) {
-        for (struct list_head *cur_l = l_meta.l->next;
-             cur_l != l_meta.l && --cnt; cur_l = cur_l->next) {
+    cnt = current->size;
+    if (current->size) {
+        for (struct list_head *cur_l = current->q->next;
+             cur_l != current->q && --cnt; cur_l = cur_l->next) {
             element_t *item, *next_item;
             item = list_entry(cur_l, element_t, list);
             next_item = list_entry(cur_l->next, element_t, list);
@@ -745,7 +767,7 @@ static bool do_reverseK(int argc, char *argv[])
 {
     int k = 0;
 
-    if (!l_meta.l)
+    if (!current || !current->q)
         report(3, "Warning: Calling reverseK on null queue");
     error_check();
 
@@ -761,7 +783,7 @@ static bool do_reverseK(int argc, char *argv[])
 
     set_noallocate_mode(true);
     if (exception_setup(true))
-        q_reverseK(l_meta.l, k);
+        q_reverseK(current->q, k);
     exception_cancel();
 
     set_noallocate_mode(false);
@@ -771,15 +793,15 @@ static bool do_reverseK(int argc, char *argv[])
 
 static bool is_circular()
 {
-    struct list_head *cur = l_meta.l->next;
-    while (cur != l_meta.l) {
+    struct list_head *cur = current->q->next;
+    while (cur != current->q) {
         if (!cur)
             return false;
         cur = cur->next;
     }
 
-    cur = l_meta.l->prev;
-    while (cur != l_meta.l) {
+    cur = current->q->prev;
+    while (cur != current->q) {
         if (!cur)
             return false;
         cur = cur->prev;
@@ -794,7 +816,7 @@ static bool show_queue(int vlevel)
         return true;
 
     int cnt = 0;
-    if (!l_meta.l) {
+    if (!current || !current->q) {
         report(vlevel, "l = NULL");
         return true;
     }
@@ -806,11 +828,11 @@ static bool show_queue(int vlevel)
 
     report_noreturn(vlevel, "l = [");
 
-    struct list_head *ori = l_meta.l;
-    struct list_head *cur = l_meta.l->next;
+    struct list_head *ori = current->q;
+    struct list_head *cur = current->q->next;
 
     if (exception_setup(true)) {
-        while (ok && ori != cur && cnt < lcnt) {
+        while (ok && ori != cur && cnt < current->size) {
             element_t *e = list_entry(cur, element_t, list);
             if (cnt < big_list_size) {
                 report_noreturn(vlevel, cnt == 0 ? "%s" : " %s", e->value);
@@ -839,7 +861,8 @@ static bool show_queue(int vlevel)
             report(vlevel, " ... ]");
     } else {
         report(vlevel, " ... ]");
-        report(vlevel, "ERROR:  Queue has more than %d elements", lcnt);
+        report(vlevel, "ERROR:  Queue has more than %d elements",
+               current->size);
         ok = false;
     }
 
@@ -852,6 +875,56 @@ static bool do_show(int argc, char *argv[])
         report(1, "%s takes no arguments", argv[0]);
         return false;
     }
+
+    if (current)
+        report(1, "Current queue ID: %d", current->id);
+
+    return show_queue(0);
+}
+
+static bool do_prev(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "%s takes no arguments", argv[0]);
+        return false;
+    }
+
+    if (!current) {
+        report(3, "Warning: Try to operate null queue");
+        return false;
+    }
+
+    struct list_head *prev;
+    if (chain.size > 1) {
+        prev = ((uintptr_t) chain.head.next == (uintptr_t) &current->chain)
+                   ? chain.head.prev
+                   : current->chain.prev;
+        current = prev ? list_entry(prev, qcontext_t, chain) : NULL;
+    }
+
+    return show_queue(0);
+}
+
+static bool do_next(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "%s takes no arguments", argv[0]);
+        return false;
+    }
+
+    if (!current) {
+        report(3, "Warning: Try to operate null queue");
+        return false;
+    }
+
+    struct list_head *next;
+    if (chain.size > 1) {
+        next = ((uintptr_t) chain.head.prev == (uintptr_t) &current->chain)
+                   ? chain.head.next
+                   : current->chain.next;
+        current = next ? list_entry(next, qcontext_t, chain) : NULL;
+    }
+
     return show_queue(0);
 }
 
@@ -859,6 +932,8 @@ static void console_init()
 {
     ADD_COMMAND(new, "Create new queue", "");
     ADD_COMMAND(free, "Delete queue", "");
+    ADD_COMMAND(prev, "Switch to previous queue", "");
+    ADD_COMMAND(next, "Switch to next queue", "");
     ADD_COMMAND(ih,
                 "Insert string str at head of queue n times. Generate random "
                 "string(s) if str equals RAND. (default: n == 1)",
@@ -918,19 +993,30 @@ static void sigalrm_handler(int sig)
 static void queue_init()
 {
     fail_count = 0;
-    l_meta.l = NULL;
+    INIT_LIST_HEAD(&chain.head);
     signal(SIGSEGV, sigsegv_handler);
     signal(SIGALRM, sigalrm_handler);
 }
 
 static bool queue_quit(int argc, char *argv[])
 {
+    return true;
     report(3, "Freeing queue");
-    if (lcnt > big_list_size)
+    if (current && current->size > big_list_size)
         set_cautious_mode(false);
 
-    if (exception_setup(true))
-        q_free(l_meta.l);
+    if (exception_setup(true)) {
+        struct list_head *_cur = chain.head.next;
+        while (chain.size > 0) {
+            qcontext_t *_lm, *tmp;
+            tmp = _lm = list_entry(_cur, qcontext_t, chain);
+            _cur = _cur->next;
+            q_free(_lm->q);
+            free(tmp);
+            chain.size--;
+        }
+    }
+
     exception_cancel();
     set_cautious_mode(true);
 
