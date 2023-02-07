@@ -55,8 +55,7 @@ extern int show_entropy;
  * This affects how it gets printed
  * and whether cautious mode is used when freeing the queue
  */
-#define BIG_LIST 30
-static int big_list_size = BIG_LIST;
+#define BIG_LIST_SIZE 30
 
 /* Global variables */
 
@@ -66,7 +65,7 @@ typedef struct {
     struct list_head chain;
     int size;
     int id;
-} qcontext_t;
+} queue_contex_t;
 
 typedef struct {
     struct list_head head;
@@ -74,10 +73,10 @@ typedef struct {
 } queue_chain_t;
 
 static queue_chain_t chain = {.size = 0};
-static qcontext_t *current = NULL;
+static queue_contex_t *current = NULL;
 
 /* How many times can queue operations fail */
-static int fail_limit = BIG_LIST;
+static int fail_limit = BIG_LIST_SIZE;
 static int fail_count = 0;
 
 static int string_length = MAXSTRING;
@@ -87,7 +86,7 @@ static int string_length = MAXSTRING;
 static const char charset[] = "abcdefghijklmnopqrstuvwxyz";
 
 /* Forward declarations */
-static bool show_queue(int vlevel);
+static bool q_show(int vlevel);
 
 static bool do_free(int argc, char *argv[])
 {
@@ -104,7 +103,7 @@ static bool do_free(int argc, char *argv[])
     }
     error_check();
 
-    if (current && current->size > big_list_size)
+    if (current && current->size > BIG_LIST_SIZE)
         set_cautious_mode(false);
 
     struct list_head *qnext = NULL;
@@ -126,10 +125,10 @@ static bool do_free(int argc, char *argv[])
     if (current) {
         free(current);
         chain.size--;
-        current = qnext ? list_entry(qnext, qcontext_t, chain) : NULL;
+        current = qnext ? list_entry(qnext, queue_contex_t, chain) : NULL;
     }
 
-    show_queue(3);
+    q_show(3);
 
     size_t bcnt = allocation_check();
     if (bcnt > 0) {
@@ -151,8 +150,7 @@ static bool do_new(int argc, char *argv[])
     bool ok = true;
 
     if (exception_setup(true)) {
-        qcontext_t *qctx = malloc(sizeof(qcontext_t));
-
+        queue_contex_t *qctx = malloc(sizeof(queue_contex_t));
         list_add_tail(&qctx->chain, &chain.head);
 
         qctx->size = 0;
@@ -162,7 +160,7 @@ static bool do_new(int argc, char *argv[])
         current = qctx;
     }
     exception_cancel();
-    show_queue(3);
+    q_show(3);
 
     return ok && !error_check();
 }
@@ -267,7 +265,7 @@ static bool do_ih(int argc, char *argv[])
     }
     exception_cancel();
 
-    show_queue(3);
+    q_show(3);
     return ok;
 }
 
@@ -341,7 +339,7 @@ static bool do_it(int argc, char *argv[])
         }
     }
     exception_cancel();
-    show_queue(3);
+    q_show(3);
     return ok;
 }
 
@@ -455,7 +453,7 @@ static bool do_remove(int option, int argc, char *argv[])
         ok = false;
     }
 
-    show_queue(3);
+    q_show(3);
 
     free(removes);
     free(checks);
@@ -558,7 +556,7 @@ static bool do_dedup(int argc, char *argv[])
         free(item);
     }
 
-    show_queue(3);
+    q_show(3);
     return ok && !error_check();
 }
 
@@ -579,7 +577,7 @@ static bool do_reverse(int argc, char *argv[])
     exception_cancel();
 
     set_noallocate_mode(false);
-    show_queue(3);
+    q_show(3);
     return !error_check();
 }
 
@@ -626,7 +624,7 @@ static bool do_size(int argc, char *argv[])
         }
     }
 
-    show_queue(3);
+    q_show(3);
 
     return ok && !error_check();
 }
@@ -672,7 +670,7 @@ bool do_sort(int argc, char *argv[])
         }
     }
 
-    show_queue(3);
+    q_show(3);
     return ok && !error_check();
 }
 
@@ -693,7 +691,7 @@ static bool do_dm(int argc, char *argv[])
     exception_cancel();
 
     current->size--;
-    show_queue(3);
+    q_show(3);
     return ok && !error_check();
 }
 
@@ -715,7 +713,7 @@ static bool do_swap(int argc, char *argv[])
 
     set_noallocate_mode(false);
 
-    show_queue(3);
+    q_show(3);
     return !error_check();
 }
 
@@ -759,7 +757,7 @@ static bool do_descend(int argc, char *argv[])
         }
     }
 
-    show_queue(3);
+    q_show(3);
     return ok && !error_check();
 }
 
@@ -787,7 +785,7 @@ static bool do_reverseK(int argc, char *argv[])
     exception_cancel();
 
     set_noallocate_mode(false);
-    show_queue(3);
+    q_show(3);
     return !error_check();
 }
 
@@ -809,7 +807,7 @@ static bool is_circular()
     return true;
 }
 
-static bool show_queue(int vlevel)
+static bool q_show(int vlevel)
 {
     bool ok = true;
     if (verblevel < vlevel)
@@ -834,7 +832,7 @@ static bool show_queue(int vlevel)
     if (exception_setup(true)) {
         while (ok && ori != cur && cnt < current->size) {
             element_t *e = list_entry(cur, element_t, list);
-            if (cnt < big_list_size) {
+            if (cnt < BIG_LIST_SIZE) {
                 report_noreturn(vlevel, cnt == 0 ? "%s" : " %s", e->value);
                 if (show_entropy) {
                     report_noreturn(
@@ -855,7 +853,7 @@ static bool show_queue(int vlevel)
     }
 
     if (cur == ori) {
-        if (cnt <= big_list_size)
+        if (cnt <= BIG_LIST_SIZE)
             report(vlevel, "]");
         else
             report(vlevel, " ... ]");
@@ -879,7 +877,7 @@ static bool do_show(int argc, char *argv[])
     if (current)
         report(1, "Current queue ID: %d", current->id);
 
-    return show_queue(0);
+    return q_show(0);
 }
 
 static bool do_prev(int argc, char *argv[])
@@ -899,10 +897,10 @@ static bool do_prev(int argc, char *argv[])
         prev = ((uintptr_t) chain.head.next == (uintptr_t) &current->chain)
                    ? chain.head.prev
                    : current->chain.prev;
-        current = prev ? list_entry(prev, qcontext_t, chain) : NULL;
+        current = prev ? list_entry(prev, queue_contex_t, chain) : NULL;
     }
 
-    return show_queue(0);
+    return q_show(0);
 }
 
 static bool do_next(int argc, char *argv[])
@@ -922,10 +920,10 @@ static bool do_next(int argc, char *argv[])
         next = ((uintptr_t) chain.head.prev == (uintptr_t) &current->chain)
                    ? chain.head.next
                    : current->chain.next;
-        current = next ? list_entry(next, qcontext_t, chain) : NULL;
+        current = next ? list_entry(next, queue_contex_t, chain) : NULL;
     }
 
-    return show_queue(0);
+    return q_show(0);
 }
 
 static void console_init()
@@ -990,7 +988,7 @@ static void sigalrm_handler(int sig)
         "code is too inefficient");
 }
 
-static void queue_init()
+static void q_init()
 {
     fail_count = 0;
     INIT_LIST_HEAD(&chain.head);
@@ -998,20 +996,20 @@ static void queue_init()
     signal(SIGALRM, sigalrm_handler);
 }
 
-static bool queue_quit(int argc, char *argv[])
+static bool q_quit(int argc, char *argv[])
 {
     return true;
     report(3, "Freeing queue");
-    if (current && current->size > big_list_size)
+    if (current && current->size > BIG_LIST_SIZE)
         set_cautious_mode(false);
 
     if (exception_setup(true)) {
-        struct list_head *_cur = chain.head.next;
+        struct list_head *cur = chain.head.next;
         while (chain.size > 0) {
-            qcontext_t *_lm, *tmp;
-            tmp = _lm = list_entry(_cur, qcontext_t, chain);
-            _cur = _cur->next;
-            q_free(_lm->q);
+            queue_contex_t *qctx, *tmp;
+            tmp = qctx = list_entry(cur, queue_contex_t, chain);
+            cur = cur->next;
+            q_free(qctx->q);
             free(tmp);
             chain.size--;
         }
@@ -1144,7 +1142,7 @@ int main(int argc, char *argv[])
      */
     srand(os_random(getpid() ^ getppid()));
 
-    queue_init();
+    q_init();
     init_cmd();
     console_init();
 
@@ -1163,7 +1161,7 @@ int main(int argc, char *argv[])
     if (logfile_name)
         set_logfile(logfile_name);
 
-    add_quit_helper(queue_quit);
+    add_quit_helper(q_quit);
 
     bool ok = true;
     ok = ok && run_console(infile_name);
