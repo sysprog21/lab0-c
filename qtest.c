@@ -59,14 +59,6 @@ extern int show_entropy;
 
 /* Global variables */
 
-/* The context managing a chain of queues */
-typedef struct {
-    struct list_head *q;
-    struct list_head chain;
-    int size;
-    int id;
-} queue_contex_t;
-
 typedef struct {
     struct list_head head;
     int size;
@@ -789,6 +781,66 @@ static bool do_reverseK(int argc, char *argv[])
     return !error_check();
 }
 
+static bool do_merge(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "%s takes no arguments", argv[0]);
+        return false;
+    }
+
+    if (!current || !current->q) {
+        report(3, "Warning: Calling merge on null queue");
+        return false;
+    }
+    error_check();
+
+    int len = 0;
+    set_noallocate_mode(true);
+    if (current && exception_setup(true))
+        len = q_merge(&chain.head);
+    exception_cancel();
+    set_noallocate_mode(false);
+
+    if (q_size(&chain.head) > 1) {
+        chain.size = 1;
+        current = list_entry(chain.head.next, queue_contex_t, chain);
+        current->size = len;
+
+        struct list_head *cur = chain.head.next->next;
+        while ((uintptr_t) cur != (uintptr_t) &chain.head) {
+            queue_contex_t *ctx = list_entry(cur, queue_contex_t, chain);
+            cur = cur->next;
+            q_free(ctx->q);
+            free(ctx);
+        }
+
+        chain.head.prev = &current->chain;
+        current->chain.next = &chain.head;
+    }
+
+    bool ok = true;
+    if (current && current->size) {
+        for (struct list_head *cur_l = current->q->next;
+             cur_l != current->q && --len; cur_l = cur_l->next) {
+            /* Ensure each element in ascending order */
+            element_t *item, *next_item;
+            item = list_entry(cur_l, element_t, list);
+            next_item = list_entry(cur_l->next, element_t, list);
+            if (strcmp(item->value, next_item->value) > 0) {
+                report(1,
+                       "ERROR: Not sorted in ascending order (It might because "
+                       "of unsorted queues are merged or there're some flaws "
+                       "in 'q_merge')");
+                ok = false;
+                break;
+            }
+        }
+    }
+
+    q_show(3);
+    return ok && !error_check();
+}
+
 static bool is_circular()
 {
     struct list_head *cur = current->q->next;
@@ -954,6 +1006,7 @@ static void console_init()
     ADD_COMMAND(show, "Show queue contents", "");
     ADD_COMMAND(dm, "Delete middle node in queue", "");
     ADD_COMMAND(dedup, "Delete all nodes that have duplicate string", "");
+    ADD_COMMAND(merge, "Merge all the queues into one sorted queue", "");
     ADD_COMMAND(swap, "Swap every two adjacent nodes in queue", "");
     ADD_COMMAND(descend,
                 "Remove every node which has a node with a strictly greater "

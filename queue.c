@@ -89,3 +89,10 @@ int q_descend(struct list_head *head)
     // https://leetcode.com/problems/remove-nodes-from-linked-list/description/
     return 0;
 }
+
+/* Merge all the queues into one sorted queue, which is in ascending order */
+int q_merge(struct list_head *head)
+{
+    // https://leetcode.com/problems/merge-k-sorted-lists/
+    return 0;
+}

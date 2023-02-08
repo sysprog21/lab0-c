@@ -1,24 +1,24 @@
-# Test of insert_head, insert_tail, reverse, and remove_head
+# Test of insert_head, insert_tail, remove_head, reverse and merge
 option fail 0
 option malloc 0
 new
-ih dolphin
-ih bear
-ih gerbil
+ih a
+ih r
+ih b
+sort
+new
+ih m
+ih n
+ih a
+sort
+new
+ih r
+ih c
+ih z
+sort
+merge
 reverse
-it meerkat
-it bear
-it gerbil
-reverse
-it squirrel
-reverse
-rh squirrel
-ih vulture
-reverse
-rh gerbil
-rh bear
-rh meerkat
-rh gerbil
-rh bear
-rh dolphin
-rh vulture
+rh z
+rh r
+rh r
+rh n
