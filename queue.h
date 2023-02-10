@@ -208,7 +208,7 @@ void q_sort(struct list_head *head);
  * nothing.
  *
  * Reference:
- * https://leetcode.com/problems/remove-nodes-from-linked-list/description/
+ * https://leetcode.com/problems/remove-nodes-from-linked-list/
  *
  * Return: the number of elements in queue after performing operation
  */
