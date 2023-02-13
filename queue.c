@@ -86,7 +86,7 @@ void q_sort(struct list_head *head) {}
  * the right side of it */
 int q_descend(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-nodes-from-linked-list/description/
+    // https://leetcode.com/problems/remove-nodes-from-linked-list/
     return 0;
 }
 
