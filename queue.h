@@ -156,7 +156,7 @@ bool q_delete_mid(struct list_head *head);
 bool q_delete_dup(struct list_head *head);
 
 /**
- * q_delete_dup() - Swap every two adjacent nodes
+ * q_swap() - Swap every two adjacent nodes
  * @head: header of queue
  *
  * Reference:
