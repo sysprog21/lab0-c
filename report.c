@@ -55,7 +55,7 @@ void report_event(message_t msg, char *fmt, ...)
 {
     va_list ap;
     bool fatal = msg == MSG_FATAL;
-    static const char *const msg_name_text[N_MSG] = {
+    static char *msg_name_text[N_MSG] = {
         "WARNING",
         "ERROR",
         "FATAL ERROR",
