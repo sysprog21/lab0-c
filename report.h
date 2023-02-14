@@ -7,7 +7,7 @@
 /* Ways to report interesting behavior and errors */
 
 /* Things to report */
-typedef enum { MSG_WARN, MSG_ERROR, MSG_FATAL } message_t;
+typedef enum { MSG_WARN, MSG_ERROR, MSG_FATAL, N_MSG } message_t;
 
 /* Buffer sizes */
 #define MAX_CHAR 512
