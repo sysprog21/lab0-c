@@ -182,7 +182,8 @@ static bool do_ih(int argc, char *argv[])
         }
         bool ok = is_insert_head_const();
         if (!ok) {
-            report(1, "ERROR: Probably not constant time");
+            report(1,
+                   "ERROR: Probably not constant time or wrong implementation");
             return false;
         }
         report(1, "Probably constant time");
@@ -271,7 +272,8 @@ static bool do_it(int argc, char *argv[])
         }
         bool ok = is_insert_tail_const();
         if (!ok) {
-            report(1, "ERROR: Probably not constant time");
+            report(1,
+                   "ERROR: Probably not constant time or wrong implementation");
             return false;
         }
         report(1, "Probably constant time");
@@ -351,7 +353,8 @@ static bool do_remove(int option, int argc, char *argv[])
         }
         bool ok = option ? is_remove_tail_const() : is_remove_head_const();
         if (!ok) {
-            report(1, "ERROR: Probably not constant time");
+            report(1,
+                   "ERROR: Probably not constant time or wrong implementation");
             return false;
         }
         report(1, "Probably constant time");

@@ -131,10 +131,10 @@ static bool doit(int mode)
 
     prepare_inputs(input_data, classes);
 
-    measure(before_ticks, after_ticks, input_data, mode);
+    bool ret = measure(before_ticks, after_ticks, input_data, mode);
     differentiate(exec_times, before_ticks, after_ticks);
     update_statistics(exec_times, classes);
-    bool ret = report();
+    ret &= report();
 
     free(before_ticks);
     free(after_ticks);
@@ -170,11 +170,8 @@ static bool test_const(char *text, int mode)
     return result;
 }
 
-#define DUT_FUNC_IMPL(op)                \
-    bool is_##op##_const(void)           \
-    {                                    \
-        return test_const(#op, DUT(op)); \
-    }
+#define DUT_FUNC_IMPL(op) \
+    bool is_##op##_const(void) { return test_const(#op, DUT(op)); }
 
 #define _(x) DUT_FUNC_IMPL(x)
 DUT_FUNCS
