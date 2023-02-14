@@ -1,6 +1,7 @@
 #ifndef DUDECT_CONSTANT_H
 #define DUDECT_CONSTANT_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /* Number of measurements per test */
@@ -27,7 +28,7 @@ enum {
 
 void init_dut();
 void prepare_inputs(uint8_t *input_data, uint8_t *classes);
-void measure(int64_t *before_ticks,
+bool measure(int64_t *before_ticks,
              int64_t *after_ticks,
              uint8_t *input_data,
              int mode);
