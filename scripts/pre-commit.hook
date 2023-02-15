@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 
-CPPCHECK_suppresses="--inline-suppr harness.c --suppress=unmatchedSuppression:harness.c \
+CPPCHECK_unmatched=
+for f in *.c; do
+    CPPCHECK_unmatched="$CPPCHECK_unmatched --suppress=unmatchedSuppression:$f"
+done
+
+CPPCHECK_suppresses="--inline-suppr harness.c \
 --suppress=missingIncludeSystem \
 --suppress=noValidConfiguration \
 --suppress=unusedFunction \
---suppress=unmatchedSuppression:qtest.c \
 --suppress=identicalInnerCondition:log2_lshift16.h \
 --suppress=nullPointerRedundantCheck:report.c \
 --suppress=nullPointerRedundantCheck:harness.c \
 --suppress=nullPointer:queue.c \
---suppress=nullPointer:qtest.c \
---suppress=unmatchedSuppression:queue.c"
-CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1 --force $CPPCHECK_suppresses ."
+--suppress=nullPointer:qtest.c"
+CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1 --force $CPPCHECK_suppresses $CPPCHECK_unmatched ."
 
 RETURN=0
 CLANG_FORMAT=$(which clang-format)
