@@ -39,7 +39,17 @@ fi
 
 if [ ${TOTAL_COUNT} -eq "0" ]; then
     echo "Fatal: GitHub Actions MUST be activated."
-    open https://github.com/${ACCOUNT}/lab0-c/actions
+    case ${OSTYPE} in
+        "linux"*)
+            xdg-open https://github.com/${ACCOUNT}/lab0-c/actions > /dev/null 2>&1
+            ;;
+        "darwin"*)
+            open https://github.com/${ACCOUNT}/lab0-c/actions
+            ;;
+        *)
+            echo "Please activate at https://github.com/${ACCOUNT}/lab0-c/actions"
+            ;;
+    esac
     echo "Check this article: https://docs.github.com/en/actions/managing-workflow-runs/disabling-and-enabling-a-workflow"
     echo "Then, execute 'make' again."
     exit 1
