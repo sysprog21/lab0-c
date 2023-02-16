@@ -775,7 +775,7 @@ static bool do_reverseK(int argc, char *argv[])
     }
 
     set_noallocate_mode(true);
-    if (exception_setup(true))
+    if (current && exception_setup(true))
         q_reverseK(current->q, k);
     exception_cancel();
 
