@@ -100,7 +100,7 @@ static bool do_free(int argc, char *argv[])
 
     struct list_head *qnext = NULL;
     if (chain.size > 1) {
-        qnext = ((uintptr_t) &current->chain.next == (uintptr_t) &chain.head)
+        qnext = ((uintptr_t) current->chain.next == (uintptr_t) &chain.head)
                     ? chain.head.next
                     : current->chain.next;
     }
@@ -123,8 +123,9 @@ static bool do_free(int argc, char *argv[])
     q_show(3);
 
     size_t bcnt = allocation_check();
-    if (bcnt > 0) {
-        report(1, "ERROR: Freed queue, but %lu blocks are still allocated",
+    if (!chain.size && bcnt > 0) {
+        report(1,
+               "ERROR: There is no queue, but %lu blocks are still allocated",
                bcnt);
         ok = false;
     }
