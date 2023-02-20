@@ -243,10 +243,6 @@ static int enable_raw_mode(int fd)
 {
     if (!isatty(STDIN_FILENO))
         goto fatal;
-    if (!atexit_registered) {
-        atexit(line_atexit);
-        atexit_registered = true;
-    }
     if (tcgetattr(fd, &orig_termios) == -1)
         goto fatal;
 
@@ -1188,6 +1184,11 @@ static char *line_no_tty(void)
 char *linenoise(const char *prompt)
 {
     char buf[LINENOISE_MAX_LINE];
+
+    if (!atexit_registered) {
+        atexit(line_atexit);
+        atexit_registered = true;
+    }
 
     if (!isatty(STDIN_FILENO)) {
         /* Not a tty: read from file / pipe. In this mode we don't want any
