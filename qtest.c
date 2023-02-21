@@ -477,7 +477,7 @@ static bool do_dedup(int argc, char *argv[])
     element_t *item = NULL, *tmp = NULL;
 
     // Copy current->q to l_copy
-    if (current->q && !list_empty(current->q)) {
+    if (current && current->q && !list_empty(current->q)) {
         list_for_each_entry (item, current->q, list) {
             size_t slen;
             tmp = malloc(sizeof(element_t));
@@ -507,8 +507,10 @@ static bool do_dedup(int argc, char *argv[])
     }
 
     bool ok = true;
-    if (exception_setup(true))
+    if (current && exception_setup(true))
         ok = q_delete_dup(current->q);
+    else
+        ok = false;
     exception_cancel();
 
     if (!ok) {
@@ -520,7 +522,7 @@ static bool do_dedup(int argc, char *argv[])
         return false;
     }
 
-    struct list_head *l_tmp = current->q->next;
+    struct list_head *l_tmp = (current) ? current->q->next : NULL;
     bool is_this_dup = false;
     // Compare between new list and old one
     list_for_each_entry (item, &l_copy, list) {
@@ -682,7 +684,7 @@ static bool do_dm(int argc, char *argv[])
     error_check();
 
     bool ok = true;
-    if (exception_setup(true))
+    if (current && exception_setup(true))
         ok = q_delete_mid(current->q);
     exception_cancel();
 
@@ -707,7 +709,7 @@ static bool do_swap(int argc, char *argv[])
     error_check();
 
     set_noallocate_mode(true);
-    if (exception_setup(true))
+    if (current && exception_setup(true))
         q_swap(current->q);
     exception_cancel();
 
@@ -723,25 +725,27 @@ static bool do_descend(int argc, char *argv[])
         report(1, "%s takes too much arguments", argv[0]);
         return false;
     }
-
+    int cnt = 0;
     if (!current || !current->q)
         report(3, "Warning: Calling ascend on null queue");
+    else
+        cnt = q_size(current->q);
     error_check();
 
 
-    int cnt = q_size(current->q);
-    if (cnt < 2)
+
+    if (cnt == 1)
         report(3, "Warning: Calling ascend on single node");
     error_check();
 
-    if (exception_setup(true))
+    if (current && exception_setup(true))
         current->size = q_descend(current->q);
     set_noallocate_mode(false);
 
     bool ok = true;
 
-    cnt = current->size;
-    if (current->size) {
+    if (current && current->size) {
+        cnt = current->size;
         for (struct list_head *cur_l = current->q->next;
              cur_l != current->q && --cnt; cur_l = cur_l->next) {
             element_t *item, *next_item;
@@ -779,7 +783,7 @@ static bool do_reverseK(int argc, char *argv[])
     }
 
     set_noallocate_mode(true);
-    if (exception_setup(true))
+    if (current && exception_setup(true))
         q_reverseK(current->q, k);
     exception_cancel();
 
