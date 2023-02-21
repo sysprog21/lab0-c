@@ -749,8 +749,7 @@ static bool do_descend(int argc, char *argv[])
             next_item = list_entry(cur_l->next, element_t, list);
             if (strcmp(item->value, next_item->value) < 0) {
                 report(1,
-                       "ERROR: There is at least on nodes did not follow the "
-                       "ordering rule");
+                       "ERROR: At least one node violated the ordering rule");
                 ok = false;
                 break;
             }
