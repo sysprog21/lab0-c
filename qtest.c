@@ -473,6 +473,11 @@ static bool do_dedup(int argc, char *argv[])
         return false;
     }
 
+    if (!current || !current->q) {
+        report(3, "Warning: Try to access null queue");
+        return false;
+    }
+
     LIST_HEAD(l_copy);
     element_t *item = NULL, *tmp = NULL;
 
@@ -677,8 +682,10 @@ static bool do_dm(int argc, char *argv[])
         return false;
     }
 
-    if (!current || !current->q)
+    if (!current || !current->q) {
         report(3, "Warning: Try to access null queue");
+        return false;
+    }
     error_check();
 
     bool ok = true;
@@ -702,8 +709,10 @@ static bool do_swap(int argc, char *argv[])
         return false;
     }
 
-    if (!current || !current->q)
+    if (!current || !current->q) {
         report(3, "Warning: Try to access null queue");
+        return false;
+    }
     error_check();
 
     set_noallocate_mode(true);
@@ -724,8 +733,10 @@ static bool do_descend(int argc, char *argv[])
         return false;
     }
 
-    if (!current || !current->q)
+    if (!current || !current->q) {
         report(3, "Warning: Calling ascend on null queue");
+        return false;
+    }
     error_check();
 
 
@@ -764,8 +775,10 @@ static bool do_reverseK(int argc, char *argv[])
 {
     int k = 0;
 
-    if (!current || !current->q)
+    if (!current || !current->q) {
         report(3, "Warning: Calling reverseK on null queue");
+        return false;
+    }
     error_check();
 
     if (argc == 2) {
