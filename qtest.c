@@ -76,7 +76,7 @@ static int string_length = MAXSTRING;
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
 static const char charset[] = "abcdefghijklmnopqrstuvwxyz";
-/* For do_insert and do_remove */
+/* For queue_insert and queue_remove */
 typedef enum {
     POS_TAIL,
     POS_HEAD,
@@ -178,7 +178,7 @@ static void fill_rand_string(char *buf, size_t buf_size)
 }
 
 /* insertion */
-static bool do_insert(position_t pos, int argc, char *argv[])
+static bool queue_insert(position_t pos, int argc, char *argv[])
 {
     if (simulation) {
         if (argc != 1) {
@@ -276,16 +276,16 @@ static bool do_insert(position_t pos, int argc, char *argv[])
 /* insert head */
 static bool do_ih(int argc, char *argv[])
 {
-    return do_insert(POS_HEAD, argc, argv);
+    return queue_insert(POS_HEAD, argc, argv);
 }
 
 /* insert tail */
 static bool do_it(int argc, char *argv[])
 {
-    return do_insert(POS_TAIL, argc, argv);
+    return queue_insert(POS_TAIL, argc, argv);
 }
 
-static bool do_remove(position_t pos, int argc, char *argv[])
+static bool queue_remove(position_t pos, int argc, char *argv[])
 {
     /* FIXME: It is known that both functions is_remove_tail_const() and
      * is_remove_head_const() can not pass dudect on Apple M1 (based on Arm64).
@@ -406,12 +406,12 @@ static bool do_remove(position_t pos, int argc, char *argv[])
 
 static inline bool do_rh(int argc, char *argv[])
 {
-    return do_remove(POS_HEAD, argc, argv);
+    return queue_remove(POS_HEAD, argc, argv);
 }
 
 static inline bool do_rt(int argc, char *argv[])
 {
-    return do_remove(POS_TAIL, argc, argv);
+    return queue_remove(POS_TAIL, argc, argv);
 }
 
 static bool do_dedup(int argc, char *argv[])
