@@ -395,7 +395,8 @@ static bool do_remove(int option, int argc, char *argv[])
     removes[string_length + STRINGPAD] = '\0';
 
     if (!current || !current->size)
-        report(3, "Warning: Calling remove head on empty queue");
+        report(3, option ? "Warning: Calling remove tail on empty queue"
+                         : "Warning: Calling remove head on empty queue");
     error_check();
 
     element_t *re = NULL;
