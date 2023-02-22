@@ -1172,7 +1172,7 @@ int main(int argc, char *argv[])
         line_set_completion_callback(completion);
 
         line_history_set_max_len(HISTORY_LEN);
-        line_hostory_load(HISTORY_FILE); /* Load the history at startup */
+        line_history_load(HISTORY_FILE); /* Load the history at startup */
     }
 
     set_verblevel(level);

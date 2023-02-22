@@ -1345,7 +1345,7 @@ int line_history_save(const char *filename)
  * If the file exists and the operation succeeded 0 is returned, otherwise
  * on error -1 is returned.
  */
-int line_hostory_load(const char *filename)
+int line_history_load(const char *filename)
 {
     FILE *fp = fopen(filename, "r");
     if (!fp)
