@@ -682,15 +682,17 @@ static bool do_descend(int argc, char *argv[])
     }
 
     if (!current || !current->q) {
-        report(3, "Warning: Calling ascend on null queue");
+        report(3, "Warning: Calling descend on null queue");
         return false;
     }
     error_check();
 
 
     int cnt = q_size(current->q);
-    if (cnt < 2)
-        report(3, "Warning: Calling ascend on single node");
+    if (!cnt)
+        report(3, "Warning: Calling descend on empty queue");
+    else if (cnt < 2)
+        report(3, "Warning: Calling descend on single node");
     error_check();
 
     if (exception_setup(true))
