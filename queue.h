@@ -177,7 +177,7 @@ void q_reverse(struct list_head *head);
 
 /**
  * q_reverseK() - Given the head of a linked list, reverse the nodes of the list
- * k at a time, and return the modified list.
+ * k at a time.
  * @head: header of queue
  * @k: is a positive integer and is less than or equal to the length of the
  * linked list.
