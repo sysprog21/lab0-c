@@ -65,7 +65,7 @@ void line_free(void *ptr);
 int line_history_add(const char *line);
 int line_history_set_max_len(int len);
 int line_history_save(const char *filename);
-int line_hostory_load(const char *filename);
+int line_history_load(const char *filename);
 void line_clear_screen(void);
 void line_set_multi_line(int ml);
 void line_mask_mode_enable(void);
