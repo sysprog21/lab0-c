@@ -10,7 +10,6 @@
  *   cppcheck-suppress nullPointer
  */
 
-
 /* Create an empty queue */
 struct list_head *q_new()
 {
@@ -70,6 +69,7 @@ bool q_insert_tail(struct list_head *head, char *s)
     return true;
 }
 
+
 /* Remove an element from head of queue */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
@@ -112,6 +112,23 @@ int q_size(struct list_head *head)
 bool q_delete_mid(struct list_head *head)
 {
     // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+    if (!head || list_empty(head)) {
+        return false;
+    }
+    struct list_head *h = head->next;
+    struct list_head *t = head->prev;
+    while (true) {
+        if (h == t || h->next == t) {
+            list_del(h);
+            q_release_element(list_entry(h, element_t, list));
+            break;
+        } else {
+            puts("del tail case.");
+            break;
+        }
+        h = h->next;
+        t = t->prev;
+    }
     return true;
 }
 
