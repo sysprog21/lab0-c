@@ -67,7 +67,7 @@ valgrind: valgrind_existence
 	$(MAKE) clean SANITIZER=0 qtest
 	$(eval patched_file := $(shell mktemp /tmp/qtest.XXXXXX))
 	cp qtest $(patched_file)
-	chmod u+x $(patched_file)
+	sudo chmod u+x $(patched_file)
 	sed -i "s/alarm/isnan/g" $(patched_file)
 	scripts/driver.py -p $(patched_file) --valgrind $(TCASE)
 	@echo
