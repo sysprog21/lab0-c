@@ -79,8 +79,16 @@ void q_reverseK(struct list_head *head, int k)
     // https://leetcode.com/problems/reverse-nodes-in-k-group/
 }
 
-/* Sort elements of queue in ascending order */
-void q_sort(struct list_head *head) {}
+/* Sort elements of queue in ascending/descending order */
+void q_sort(struct list_head *head, bool descend) {}
+
+/* Remove every node which has a node with a strictly less value anywhere to
+ * the right side of it */
+int q_ascend(struct list_head *head)
+{
+    // https://leetcode.com/problems/remove-nodes-from-linked-list/
+    return 0;
+}
 
 /* Remove every node which has a node with a strictly greater value anywhere to
  * the right side of it */
@@ -90,8 +98,9 @@ int q_descend(struct list_head *head)
     return 0;
 }
 
-/* Merge all the queues into one sorted queue, which is in ascending order */
-int q_merge(struct list_head *head)
+/* Merge all the queues into one sorted queue, which is in ascending/descending
+ * order */
+int q_merge(struct list_head *head, bool descend)
 {
     // https://leetcode.com/problems/merge-k-sorted-lists/
     return 0;
