@@ -73,6 +73,8 @@ static int fail_count = 0;
 
 static int string_length = MAXSTRING;
 
+static int descend = 0;
+
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
 static const char charset[] = "abcdefghijklmnopqrstuvwxyz";
@@ -598,7 +600,7 @@ bool do_sort(int argc, char *argv[])
 
     set_noallocate_mode(true);
     if (current && exception_setup(true))
-        q_sort(current->q);
+        q_sort(current->q, descend);
     exception_cancel();
     set_noallocate_mode(false);
 
@@ -606,13 +608,18 @@ bool do_sort(int argc, char *argv[])
     if (current && current->size) {
         for (struct list_head *cur_l = current->q->next;
              cur_l != current->q && --cnt; cur_l = cur_l->next) {
-            /* Ensure each element in ascending order */
-            /* FIXME: add an option to specify sorting order */
+            /* Ensure each element in ascending/descending order */
             element_t *item, *next_item;
             item = list_entry(cur_l, element_t, list);
             next_item = list_entry(cur_l->next, element_t, list);
-            if (strcmp(item->value, next_item->value) > 0) {
+            if (!descend && strcmp(item->value, next_item->value) > 0) {
                 report(1, "ERROR: Not sorted in ascending order");
+                ok = false;
+                break;
+            }
+
+            if (descend && strcmp(item->value, next_item->value) < 0) {
+                report(1, "ERROR: Not sorted in descending order");
                 ok = false;
                 break;
             }
@@ -672,6 +679,54 @@ static bool do_swap(int argc, char *argv[])
 
     q_show(3);
     return !error_check();
+}
+
+
+static bool do_ascend(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "%s takes too much arguments", argv[0]);
+        return false;
+    }
+
+    if (!current || !current->q) {
+        report(3, "Warning: Calling ascend on null queue");
+        return false;
+    }
+    error_check();
+
+
+    int cnt = q_size(current->q);
+    if (!cnt)
+        report(3, "Warning: Calling ascend on empty queue");
+    else if (cnt < 2)
+        report(3, "Warning: Calling ascend on single node");
+    error_check();
+
+    if (exception_setup(true))
+        current->size = q_ascend(current->q);
+    set_noallocate_mode(false);
+
+    bool ok = true;
+
+    cnt = current->size;
+    if (current->size) {
+        for (struct list_head *cur_l = current->q->next;
+             cur_l != current->q && --cnt; cur_l = cur_l->next) {
+            element_t *item, *next_item;
+            item = list_entry(cur_l, element_t, list);
+            next_item = list_entry(cur_l->next, element_t, list);
+            if (strcmp(item->value, next_item->value) > 0) {
+                report(1,
+                       "ERROR: At least one node violated the ordering rule");
+                ok = false;
+                break;
+            }
+        }
+    }
+
+    q_show(3);
+    return ok && !error_check();
 }
 
 static bool do_descend(int argc, char *argv[])
@@ -767,7 +822,7 @@ static bool do_merge(int argc, char *argv[])
     int len = 0;
     set_noallocate_mode(true);
     if (current && exception_setup(true))
-        len = q_merge(&chain.head);
+        len = q_merge(&chain.head, descend);
     exception_cancel();
     set_noallocate_mode(false);
 
@@ -796,11 +851,22 @@ static bool do_merge(int argc, char *argv[])
             element_t *item, *next_item;
             item = list_entry(cur_l, element_t, list);
             next_item = list_entry(cur_l->next, element_t, list);
-            if (strcmp(item->value, next_item->value) > 0) {
+            if (!descend && strcmp(item->value, next_item->value) > 0) {
                 report(1,
                        "ERROR: Not sorted in ascending order (It might because "
                        "of unsorted queues are merged or there're some flaws "
                        "in 'q_merge')");
+                ok = false;
+                break;
+            }
+
+
+            if (descend && strcmp(item->value, next_item->value) < 0) {
+                report(
+                    1,
+                    "ERROR: Not sorted in descending order (It might because "
+                    "of unsorted queues are merged or there're some flaws "
+                    "in 'q_merge')");
                 ok = false;
                 break;
             }
@@ -971,13 +1037,17 @@ static void console_init()
         "Remove from tail of queue. Optionally compare to expected value str",
         "[str]");
     ADD_COMMAND(reverse, "Reverse queue", "");
-    ADD_COMMAND(sort, "Sort queue in ascending order", "");
+    ADD_COMMAND(sort, "Sort queue in ascending/descening order", "");
     ADD_COMMAND(size, "Compute queue size n times (default: n == 1)", "[n]");
     ADD_COMMAND(show, "Show queue contents", "");
     ADD_COMMAND(dm, "Delete middle node in queue", "");
     ADD_COMMAND(dedup, "Delete all nodes that have duplicate string", "");
     ADD_COMMAND(merge, "Merge all the queues into one sorted queue", "");
     ADD_COMMAND(swap, "Swap every two adjacent nodes in queue", "");
+    ADD_COMMAND(ascend,
+                "Remove every node which has a node with a strictly greater "
+                "value anywhere to the right side of it",
+                "");
     ADD_COMMAND(descend,
                 "Remove every node which has a node with a strictly greater "
                 "value anywhere to the right side of it",
@@ -990,6 +1060,8 @@ static void console_init()
               NULL);
     add_param("fail", &fail_limit,
               "Number of times allow queue operations to return false", NULL);
+    add_param("descend", &descend,
+              "Sort and merge queue in ascending/descending order", NULL);
 }
 
 /* Signal handlers */
