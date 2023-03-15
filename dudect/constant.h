@@ -8,7 +8,7 @@
 #define N_MEASURES 150
 
 /* Allow random number range from 0 to 65535 */
-#define CHUNK_SIZE 16
+#define CHUNK_SIZE 2
 
 #define DROP_SIZE 20
 
