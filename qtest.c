@@ -106,9 +106,8 @@ static bool do_free(int argc, char *argv[])
 
     struct list_head *qnext = NULL;
     if (chain.size > 1) {
-        qnext = ((uintptr_t) current->chain.next == (uintptr_t) &chain.head)
-                    ? chain.head.next
-                    : current->chain.next;
+        qnext = (current->chain.next == &chain.head) ? chain.head.next
+                                                     : current->chain.next;
     }
 
     if (current) {
@@ -650,8 +649,7 @@ static bool do_dm(int argc, char *argv[])
 
     if (!current->size)
         report(3, "Warning: Try to delete middle node to empty queue");
-
-    if (current->size)
+    else
         --current->size;
     q_show(3);
     return ok && !error_check();
@@ -1100,11 +1098,10 @@ static bool q_quit(int argc, char *argv[])
     if (exception_setup(true)) {
         struct list_head *cur = chain.head.next;
         while (chain.size > 0) {
-            queue_contex_t *qctx, *tmp;
-            tmp = qctx = list_entry(cur, queue_contex_t, chain);
+            queue_contex_t *qctx = list_entry(cur, queue_contex_t, chain);
             cur = cur->next;
             q_free(qctx->q);
-            free(tmp);
+            free(qctx);
             chain.size--;
         }
     }
