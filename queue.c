@@ -15,8 +15,9 @@
 struct list_head *q_new()
 {
     struct list_head *q = malloc(sizeof(struct list_head));
-    if (list_empty(q) == 0)
-        INIT_LIST_HEAD(q);
+    if (!q)
+        return NULL;
+    INIT_LIST_HEAD(q);
     return q;
 }
 
@@ -112,15 +113,58 @@ int q_size(struct list_head *head)
 bool q_delete_mid(struct list_head *head)
 {
     // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+    if (!head || list_empty(head)) {
+        return false;
+    }
+    struct list_head *h = head->next;
+    struct list_head *t = head->prev;
+    while (true) {
+        if (h == t) {
+            list_del(h);
+            q_release_element(list_entry(h, element_t, list));
+            break;
+        }
+        if (h->next == t) {
+            list_del(t);
+            q_release_element(list_entry(t, element_t, list));
+            break;
+        }
+        h = h->next;
+        t = t->prev;
+    }
     return true;
 }
+
+
 
 /* Delete all nodes that have duplicate string */
 bool q_delete_dup(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+    if (!head)
+        return false;
+
+    element_t *cur, *safe;
+    struct list_head *cut = head;
+    LIST_HEAD(roll);
+    list_for_each_entry_safe (cur, safe, head, list) {
+        if (&safe->list != head && !strcmp(cur->value, safe->value))
+            continue;
+
+        if (cur->list.prev != cut) {
+            LIST_HEAD(tmp);
+            list_cut_position(&tmp, cut, &cur->list);
+            list_splice(&tmp, &roll);
+        }
+        cut = safe->list.prev;
+    }
+
+    list_for_each_entry_safe (cur, safe, &roll, list)
+        q_release_element(cur);
+
     return true;
 }
+
 
 /* Swap every two adjacent nodes */
 void q_swap(struct list_head *head)
@@ -138,10 +182,15 @@ void q_reverseK(struct list_head *head, int k)
 }
 
 /* Sort elements of queue in ascending order */
-void q_sort(struct list_head *head) {}
 
-/* Remove every node which has a node with a strictly greater value anywhere to
- * the right side of it */
+
+void q_sort(struct list_head *head)
+{
+    /* Remove every node which has a node with a strictly greater value anywhere
+     * to the right side of it */
+    /*https://npes87184.github.io/2015-09-12-linkedListSort/ */
+}
+
 int q_descend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
