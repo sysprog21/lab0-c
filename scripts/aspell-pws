@@ -282,6 +282,7 @@ recvmmsg
 seccomp
 userfaultfd
 compat
+reverseK
 rt
 rr
 sigaction

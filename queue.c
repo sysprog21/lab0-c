@@ -10,7 +10,6 @@
  *   cppcheck-suppress nullPointer
  */
 
-
 /* Create an empty queue */
 struct list_head *q_new()
 {
@@ -71,6 +70,7 @@ bool q_insert_tail(struct list_head *head, char *s)
     return true;
 }
 
+
 /* Remove an element from head of queue */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
@@ -119,14 +119,12 @@ bool q_delete_mid(struct list_head *head)
     struct list_head *h = head->next;
     struct list_head *t = head->prev;
     while (true) {
-        if (h == t) {
+        if (h == t || h->next == t) {
             list_del(h);
             q_release_element(list_entry(h, element_t, list));
             break;
-        }
-        if (h->next == t) {
-            list_del(t);
-            q_release_element(list_entry(t, element_t, list));
+        } else {
+            puts("del tail case.");
             break;
         }
         h = h->next;
@@ -181,7 +179,16 @@ void q_reverseK(struct list_head *head, int k)
     // https://leetcode.com/problems/reverse-nodes-in-k-group/
 }
 
-/* Sort elements of queue in ascending order */
+/* Sort elements of queue in ascending/descending order */
+void q_sort(struct list_head *head, bool descend) {}
+
+/* Remove every node which has a node with a strictly less value anywhere to
+ * the right side of it */
+int q_ascend(struct list_head *head)
+{
+    // https://leetcode.com/problems/remove-nodes-from-linked-list/
+    return 0;
+}
 
 
 void q_sort(struct list_head *head)
@@ -197,8 +204,9 @@ int q_descend(struct list_head *head)
     return 0;
 }
 
-/* Merge all the queues into one sorted queue, which is in ascending order */
-int q_merge(struct list_head *head)
+/* Merge all the queues into one sorted queue, which is in ascending/descending
+ * order */
+int q_merge(struct list_head *head, bool descend)
 {
     // https://leetcode.com/problems/merge-k-sorted-lists/
     return 0;

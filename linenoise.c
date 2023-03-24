@@ -243,10 +243,6 @@ static int enable_raw_mode(int fd)
 {
     if (!isatty(STDIN_FILENO))
         goto fatal;
-    if (!atexit_registered) {
-        atexit(line_atexit);
-        atexit_registered = true;
-    }
     if (tcgetattr(fd, &orig_termios) == -1)
         goto fatal;
 
@@ -1189,6 +1185,11 @@ char *linenoise(const char *prompt)
 {
     char buf[LINENOISE_MAX_LINE];
 
+    if (!atexit_registered) {
+        atexit(line_atexit);
+        atexit_registered = true;
+    }
+
     if (!isatty(STDIN_FILENO)) {
         /* Not a tty: read from file / pipe. In this mode we don't want any
          * limit to the line size, so we call a function to handle that. */
@@ -1344,7 +1345,7 @@ int line_history_save(const char *filename)
  * If the file exists and the operation succeeded 0 is returned, otherwise
  * on error -1 is returned.
  */
-int line_hostory_load(const char *filename)
+int line_history_load(const char *filename)
 {
     FILE *fp = fopen(filename, "r");
     if (!fp)

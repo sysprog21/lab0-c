@@ -73,10 +73,16 @@ static int fail_count = 0;
 
 static int string_length = MAXSTRING;
 
+static int descend = 0;
+
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
 static const char charset[] = "abcdefghijklmnopqrstuvwxyz";
-
+/* For queue_insert and queue_remove */
+typedef enum {
+    POS_TAIL,
+    POS_HEAD,
+} position_t;
 /* Forward declarations */
 static bool q_show(int vlevel);
 
@@ -100,9 +106,8 @@ static bool do_free(int argc, char *argv[])
 
     struct list_head *qnext = NULL;
     if (chain.size > 1) {
-        qnext = ((uintptr_t) &current->chain.next == (uintptr_t) &chain.head)
-                    ? chain.head.next
-                    : current->chain.next;
+        qnext = (current->chain.next == &chain.head) ? chain.head.next
+                                                     : current->chain.next;
     }
 
     if (current) {
@@ -123,8 +128,9 @@ static bool do_free(int argc, char *argv[])
     q_show(3);
 
     size_t bcnt = allocation_check();
-    if (bcnt > 0) {
-        report(1, "ERROR: Freed queue, but %lu blocks are still allocated",
+    if (!chain.size && bcnt > 0) {
+        report(1,
+               "ERROR: There is no queue, but %lu blocks are still allocated",
                bcnt);
         ok = false;
     }
@@ -172,15 +178,16 @@ static void fill_rand_string(char *buf, size_t buf_size)
     buf[len] = '\0';
 }
 
-/* insert head */
-static bool do_ih(int argc, char *argv[])
+/* insertion */
+static bool queue_insert(position_t pos, int argc, char *argv[])
 {
     if (simulation) {
         if (argc != 1) {
             report(1, "%s does not need arguments in simulation mode", argv[0]);
             return false;
         }
-        bool ok = is_insert_head_const();
+        bool ok =
+            pos == POS_TAIL ? is_insert_tail_const() : is_insert_head_const();
         if (!ok) {
             report(1,
                    "ERROR: Probably not constant time or wrong implementation");
@@ -213,18 +220,23 @@ static bool do_ih(int argc, char *argv[])
     }
 
     if (!current || !current->q)
-        report(3, "Warning: Calling insert head on null queue");
+        report(3, "Warning: Calling insert %s on null queue",
+               pos == POS_TAIL ? "tail" : "head");
     error_check();
 
     if (current && exception_setup(true)) {
         for (int r = 0; ok && r < reps; r++) {
             if (need_rand)
                 fill_rand_string(randstr_buf, sizeof(randstr_buf));
-            bool rval = q_insert_head(current->q, inserts);
+            bool rval = pos == POS_TAIL ? q_insert_tail(current->q, inserts)
+                                        : q_insert_head(current->q, inserts);
             if (rval) {
                 current->size++;
-                char *cur_inserts =
-                    list_entry(current->q->next, element_t, list)->value;
+                element_t *entry =
+                    pos == POS_TAIL
+                        ? list_last_entry(current->q, element_t, list)
+                        : list_first_entry(current->q, element_t, list);
+                char *cur_inserts = entry->value;
                 if (!cur_inserts) {
                     report(1, "ERROR: Failed to save copy of string in queue");
                     ok = false;
@@ -262,85 +274,20 @@ static bool do_ih(int argc, char *argv[])
     return ok;
 }
 
+/* insert head */
+static bool do_ih(int argc, char *argv[])
+{
+    return queue_insert(POS_HEAD, argc, argv);
+}
+
 /* insert tail */
 static bool do_it(int argc, char *argv[])
 {
-    if (simulation) {
-        if (argc != 1) {
-            report(1, "%s does not need arguments in simulation mode", argv[0]);
-            return false;
-        }
-        bool ok = is_insert_tail_const();
-        if (!ok) {
-            report(1,
-                   "ERROR: Probably not constant time or wrong implementation");
-            return false;
-        }
-        report(1, "Probably constant time");
-        return ok;
-    }
-
-    char randstr_buf[MAX_RANDSTR_LEN];
-    int reps = 1;
-    bool ok = true, need_rand = false;
-    if (argc != 2 && argc != 3) {
-        report(1, "%s needs 1-2 arguments", argv[0]);
-        return false;
-    }
-
-    char *inserts = argv[1];
-    if (argc == 3) {
-        if (!get_int(argv[2], &reps)) {
-            report(1, "Invalid number of insertions '%s'", argv[2]);
-            return false;
-        }
-    }
-
-    if (!strcmp(inserts, "RAND")) {
-        need_rand = true;
-        inserts = randstr_buf;
-    }
-
-    if (!current || !current->q)
-        report(3, "Warning: Calling insert tail on null queue");
-    error_check();
-
-    if (current && exception_setup(true)) {
-        for (int r = 0; ok && r < reps; r++) {
-            if (need_rand)
-                fill_rand_string(randstr_buf, sizeof(randstr_buf));
-            bool rval = q_insert_tail(current->q, inserts);
-            if (rval) {
-                current->size++;
-                char *cur_inserts =
-                    list_entry(current->q->prev, element_t, list)->value;
-                if (!cur_inserts) {
-                    report(1, "ERROR: Failed to save copy of string in queue");
-                    ok = false;
-                }
-            } else {
-                fail_count++;
-                if (fail_count < fail_limit)
-                    report(2, "Insertion of %s failed", inserts);
-                else {
-                    report(1,
-                           "ERROR: Insertion of %s failed (%d failures total)",
-                           inserts, fail_count);
-                    ok = false;
-                }
-            }
-            ok = ok && !error_check();
-        }
-    }
-    exception_cancel();
-    q_show(3);
-    return ok;
+    return queue_insert(POS_TAIL, argc, argv);
 }
 
-static bool do_remove(int option, int argc, char *argv[])
+static bool queue_remove(position_t pos, int argc, char *argv[])
 {
-    // option 0 is for remove head; option 1 is for remove tail
-
     /* FIXME: It is known that both functions is_remove_tail_const() and
      * is_remove_head_const() can not pass dudect on Apple M1 (based on Arm64).
      * We shall figure out the exact reasons and resolve later.
@@ -351,7 +298,8 @@ static bool do_remove(int option, int argc, char *argv[])
             report(1, "%s does not need arguments in simulation mode", argv[0]);
             return false;
         }
-        bool ok = option ? is_remove_tail_const() : is_remove_head_const();
+        bool ok =
+            pos == POS_TAIL ? is_remove_tail_const() : is_remove_head_const();
         if (!ok) {
             report(1,
                    "ERROR: Probably not constant time or wrong implementation");
@@ -394,13 +342,15 @@ static bool do_remove(int option, int argc, char *argv[])
     removes[string_length + STRINGPAD] = '\0';
 
     if (!current || !current->size)
-        report(3, "Warning: Calling remove head on empty queue");
+        report(3, "Warning: Calling remove %s on empty queue",
+               pos == POS_TAIL ? "tail" : "head");
     error_check();
 
     element_t *re = NULL;
     if (current && exception_setup(true))
-        re = option ? q_remove_tail(current->q, removes, string_length + 1)
-                    : q_remove_head(current->q, removes, string_length + 1);
+        re = pos == POS_TAIL
+                 ? q_remove_tail(current->q, removes, string_length + 1)
+                 : q_remove_head(current->q, removes, string_length + 1);
     exception_cancel();
 
     bool is_null = re ? false : true;
@@ -457,18 +407,23 @@ static bool do_remove(int option, int argc, char *argv[])
 
 static inline bool do_rh(int argc, char *argv[])
 {
-    return do_remove(0, argc, argv);
+    return queue_remove(POS_HEAD, argc, argv);
 }
 
 static inline bool do_rt(int argc, char *argv[])
 {
-    return do_remove(1, argc, argv);
+    return queue_remove(POS_TAIL, argc, argv);
 }
 
 static bool do_dedup(int argc, char *argv[])
 {
     if (argc != 1) {
         report(1, "%s takes no arguments", argv[0]);
+        return false;
+    }
+
+    if (!current || !current->q) {
+        report(3, "Warning: Try to access null queue");
         return false;
     }
 
@@ -644,7 +599,7 @@ bool do_sort(int argc, char *argv[])
 
     set_noallocate_mode(true);
     if (current && exception_setup(true))
-        q_sort(current->q);
+        q_sort(current->q, descend);
     exception_cancel();
     set_noallocate_mode(false);
 
@@ -652,13 +607,18 @@ bool do_sort(int argc, char *argv[])
     if (current && current->size) {
         for (struct list_head *cur_l = current->q->next;
              cur_l != current->q && --cnt; cur_l = cur_l->next) {
-            /* Ensure each element in ascending order */
-            /* FIXME: add an option to specify sorting order */
+            /* Ensure each element in ascending/descending order */
             element_t *item, *next_item;
             item = list_entry(cur_l, element_t, list);
             next_item = list_entry(cur_l->next, element_t, list);
-            if (strcmp(item->value, next_item->value) > 0) {
+            if (!descend && strcmp(item->value, next_item->value) > 0) {
                 report(1, "ERROR: Not sorted in ascending order");
+                ok = false;
+                break;
+            }
+
+            if (descend && strcmp(item->value, next_item->value) < 0) {
+                report(1, "ERROR: Not sorted in descending order");
                 ok = false;
                 break;
             }
@@ -676,8 +636,10 @@ static bool do_dm(int argc, char *argv[])
         return false;
     }
 
-    if (!current || !current->q)
+    if (!current || !current->q) {
         report(3, "Warning: Try to access null queue");
+        return false;
+    }
     error_check();
 
     bool ok = true;
@@ -685,7 +647,10 @@ static bool do_dm(int argc, char *argv[])
         ok = q_delete_mid(current->q);
     exception_cancel();
 
-    current->size--;
+    if (!current->size)
+        report(3, "Warning: Try to delete middle node to empty queue");
+    else
+        --current->size;
     q_show(3);
     return ok && !error_check();
 }
@@ -697,8 +662,10 @@ static bool do_swap(int argc, char *argv[])
         return false;
     }
 
-    if (!current || !current->q)
+    if (!current || !current->q) {
         report(3, "Warning: Try to access null queue");
+        return false;
+    }
     error_check();
 
     set_noallocate_mode(true);
@@ -712,6 +679,54 @@ static bool do_swap(int argc, char *argv[])
     return !error_check();
 }
 
+
+static bool do_ascend(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "%s takes too much arguments", argv[0]);
+        return false;
+    }
+
+    if (!current || !current->q) {
+        report(3, "Warning: Calling ascend on null queue");
+        return false;
+    }
+    error_check();
+
+
+    int cnt = q_size(current->q);
+    if (!cnt)
+        report(3, "Warning: Calling ascend on empty queue");
+    else if (cnt < 2)
+        report(3, "Warning: Calling ascend on single node");
+    error_check();
+
+    if (exception_setup(true))
+        current->size = q_ascend(current->q);
+    set_noallocate_mode(false);
+
+    bool ok = true;
+
+    cnt = current->size;
+    if (current->size) {
+        for (struct list_head *cur_l = current->q->next;
+             cur_l != current->q && --cnt; cur_l = cur_l->next) {
+            element_t *item, *next_item;
+            item = list_entry(cur_l, element_t, list);
+            next_item = list_entry(cur_l->next, element_t, list);
+            if (strcmp(item->value, next_item->value) > 0) {
+                report(1,
+                       "ERROR: At least one node violated the ordering rule");
+                ok = false;
+                break;
+            }
+        }
+    }
+
+    q_show(3);
+    return ok && !error_check();
+}
+
 static bool do_descend(int argc, char *argv[])
 {
     if (argc != 1) {
@@ -719,14 +734,18 @@ static bool do_descend(int argc, char *argv[])
         return false;
     }
 
-    if (!current || !current->q)
-        report(3, "Warning: Calling ascend on null queue");
+    if (!current || !current->q) {
+        report(3, "Warning: Calling descend on null queue");
+        return false;
+    }
     error_check();
 
 
     int cnt = q_size(current->q);
-    if (cnt < 2)
-        report(3, "Warning: Calling ascend on single node");
+    if (!cnt)
+        report(3, "Warning: Calling descend on empty queue");
+    else if (cnt < 2)
+        report(3, "Warning: Calling descend on single node");
     error_check();
 
     if (exception_setup(true))
@@ -744,8 +763,7 @@ static bool do_descend(int argc, char *argv[])
             next_item = list_entry(cur_l->next, element_t, list);
             if (strcmp(item->value, next_item->value) < 0) {
                 report(1,
-                       "ERROR: There is at least on nodes did not follow the "
-                       "ordering rule");
+                       "ERROR: At least one node violated the ordering rule");
                 ok = false;
                 break;
             }
@@ -760,8 +778,10 @@ static bool do_reverseK(int argc, char *argv[])
 {
     int k = 0;
 
-    if (!current || !current->q)
+    if (!current || !current->q) {
         report(3, "Warning: Calling reverseK on null queue");
+        return false;
+    }
     error_check();
 
     if (argc == 2) {
@@ -800,7 +820,7 @@ static bool do_merge(int argc, char *argv[])
     int len = 0;
     set_noallocate_mode(true);
     if (current && exception_setup(true))
-        len = q_merge(&chain.head);
+        len = q_merge(&chain.head, descend);
     exception_cancel();
     set_noallocate_mode(false);
 
@@ -829,11 +849,22 @@ static bool do_merge(int argc, char *argv[])
             element_t *item, *next_item;
             item = list_entry(cur_l, element_t, list);
             next_item = list_entry(cur_l->next, element_t, list);
-            if (strcmp(item->value, next_item->value) > 0) {
+            if (!descend && strcmp(item->value, next_item->value) > 0) {
                 report(1,
                        "ERROR: Not sorted in ascending order (It might because "
                        "of unsorted queues are merged or there're some flaws "
                        "in 'q_merge')");
+                ok = false;
+                break;
+            }
+
+
+            if (descend && strcmp(item->value, next_item->value) < 0) {
+                report(
+                    1,
+                    "ERROR: Not sorted in descending order (It might because "
+                    "of unsorted queues are merged or there're some flaws "
+                    "in 'q_merge')");
                 ok = false;
                 break;
             }
@@ -1004,13 +1035,17 @@ static void console_init()
         "Remove from tail of queue. Optionally compare to expected value str",
         "[str]");
     ADD_COMMAND(reverse, "Reverse queue", "");
-    ADD_COMMAND(sort, "Sort queue in ascending order", "");
+    ADD_COMMAND(sort, "Sort queue in ascending/descening order", "");
     ADD_COMMAND(size, "Compute queue size n times (default: n == 1)", "[n]");
     ADD_COMMAND(show, "Show queue contents", "");
     ADD_COMMAND(dm, "Delete middle node in queue", "");
     ADD_COMMAND(dedup, "Delete all nodes that have duplicate string", "");
     ADD_COMMAND(merge, "Merge all the queues into one sorted queue", "");
     ADD_COMMAND(swap, "Swap every two adjacent nodes in queue", "");
+    ADD_COMMAND(ascend,
+                "Remove every node which has a node with a strictly greater "
+                "value anywhere to the right side of it",
+                "");
     ADD_COMMAND(descend,
                 "Remove every node which has a node with a strictly greater "
                 "value anywhere to the right side of it",
@@ -1023,6 +1058,8 @@ static void console_init()
               NULL);
     add_param("fail", &fail_limit,
               "Number of times allow queue operations to return false", NULL);
+    add_param("descend", &descend,
+              "Sort and merge queue in ascending/descending order", NULL);
 }
 
 /* Signal handlers */
@@ -1061,11 +1098,10 @@ static bool q_quit(int argc, char *argv[])
     if (exception_setup(true)) {
         struct list_head *cur = chain.head.next;
         while (chain.size > 0) {
-            queue_contex_t *qctx, *tmp;
-            tmp = qctx = list_entry(cur, queue_contex_t, chain);
+            queue_contex_t *qctx = list_entry(cur, queue_contex_t, chain);
             cur = cur->next;
             q_free(qctx->q);
-            free(tmp);
+            free(qctx);
             chain.size--;
         }
     }
@@ -1207,7 +1243,7 @@ int main(int argc, char *argv[])
         line_set_completion_callback(completion);
 
         line_history_set_max_len(HISTORY_LEN);
-        line_hostory_load(HISTORY_FILE); /* Load the history at startup */
+        line_history_load(HISTORY_FILE); /* Load the history at startup */
     }
 
     set_verblevel(level);
