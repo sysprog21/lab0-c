@@ -80,4 +80,7 @@ clean:
 	rm -rf *.dSYM
 	(cd traces; rm -f *~)
 
+distclean: clean
+	rm -f .cmd_history
+
 -include $(deps)
