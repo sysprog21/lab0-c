@@ -191,13 +191,29 @@ void q_reverse(struct list_head *head);
 void q_reverseK(struct list_head *head, int k);
 
 /**
- * q_sort() - Sort elements of queue in ascending order
+ * q_sort() - Sort elements of queue in ascending/descending order
  * @head: header of queue
+ * @descend: whether or not to sort in descending order
  *
  * No effect if queue is NULL or empty. If there has only one element, do
  * nothing.
  */
-void q_sort(struct list_head *head);
+void q_sort(struct list_head *head, bool descend);
+
+/**
+ * q_ascend() - Remove every node which has a node with a strictly less
+ * value anywhere to the right side of it.
+ * @head: header of queue
+ *
+ * No effect if queue is NULL or empty. If there has only one element, do
+ * nothing.
+ *
+ * Reference:
+ * https://leetcode.com/problems/remove-nodes-from-linked-list/
+ *
+ * Return: the number of elements in queue after performing operation
+ */
+int q_ascend(struct list_head *head);
 
 /**
  * q_descend() - Remove every node which has a node with a strictly greater
@@ -215,9 +231,10 @@ void q_sort(struct list_head *head);
 int q_descend(struct list_head *head);
 
 /**
- * q_merge() - Merge all the queues into one sorted queue, which is in ascending
- * order.
+ * q_merge() - Merge all the queues into one sorted queue, which is in
+ * ascending/descending order.
  * @head: header of chain
+ * @descend: whether to merge queues sorted in descending order
  *
  * This function merge the second to the last queues in the chain into the first
  * queue. The queues are guaranteed to be sorted before this function is called.
@@ -231,6 +248,6 @@ int q_descend(struct list_head *head);
  *
  * Return: the number of elements in queue after merging
  */
-int q_merge(struct list_head *head);
+int q_merge(struct list_head *head, bool descend);
 
 #endif /* LAB0_QUEUE_H */
