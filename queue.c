@@ -111,6 +111,7 @@ int q_size(struct list_head *head)
 
 /* Delete the middle node in queue */
 bool q_delete_mid(struct list_head *head)
+
 {
     // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
     if (!head || list_empty(head)) {
@@ -134,7 +135,17 @@ bool q_delete_mid(struct list_head *head)
     return true;
 }
 
-
+/* Function of view list content */
+void q_view(struct list_head *head)
+{
+    element_t *now;
+    now = head->next; /* Cppcheck init error */
+    list_for_each_entry (now, head, list) {
+        printf("%s ", now->value);
+        if (now->list.next == head)
+            printf("&&&!\n");
+    }
+}
 
 /* Delete all nodes that have duplicate string */
 bool q_delete_dup(struct list_head *head)
@@ -180,8 +191,38 @@ void q_reverseK(struct list_head *head, int k)
     // https://leetcode.com/problems/reverse-nodes-in-k-group/
 }
 
+static void merge_two(struct list_head *l1, struct list_head *l2, bool descend);
+
+
 /* Sort elements of queue in ascending/descending order */
-void q_sort(struct list_head *head, bool descend) {}
+void q_sort(struct list_head *head, bool descend)
+{
+    /* Try to use merge sort*/
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+
+    /* Find middle point */
+    struct list_head *mid, *left, *right;
+    left = right = head;
+    do {
+        left = left->next;
+        right = right->prev;
+    } while (left != right && left->next != right);
+    mid = left;
+
+    /* Divide into two part */
+    LIST_HEAD(second);
+    list_cut_position(&second, mid, head->prev);
+
+    /* Conquer */
+    q_sort(head, descend);
+    q_sort(&second, descend);
+
+    q_view(head), puts(""), q_view(&second);
+    /* Merge */
+    merge_two(head, &second, descend);
+    q_view(head);
+}
 
 /* Remove every node which has a node with a strictly less value anywhere to
  * the right side of it */
@@ -196,6 +237,34 @@ int q_descend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
     return 0;
+}
+
+
+/*merge two sorted lists, as one sorted list*/
+static void merge_two(struct list_head *l1, struct list_head *l2, bool descend)
+{
+    if (!l1 || !l2)
+        return;
+    bool state;
+
+    LIST_HEAD(newhd);
+    while (!list_empty(l1) && !list_empty(l2)) {
+        element_t *nod1, *nod2, *ext; /* extreme value */
+        nod1 = list_first_entry(l1, element_t, list);
+        nod2 = list_first_entry(l2, element_t, list);
+        if (!descend)
+            state = strcmp(nod1->value, nod2->value) < 0;
+        else
+            state = strcmp(nod1->value, nod2->value) > 0;
+        ext = state ? nod1 : nod2;
+        /* add node to tail of newhd list */
+        list_move_tail(&ext->list, &newhd);
+    }
+    if (list_empty(l2))
+        list_splice_tail_init(l1, &newhd);
+    else
+        list_splice_tail_init(l2, &newhd);
+    list_splice(&newhd, l1);
 }
 
 /* Merge all the queues into one sorted queue, which is in ascending/descending
