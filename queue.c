@@ -119,12 +119,13 @@ bool q_delete_mid(struct list_head *head)
     struct list_head *h = head->next;
     struct list_head *t = head->prev;
     while (true) {
-        if (h == t || h->next == t) {
+        if (h == t) {
             list_del(h);
             q_release_element(list_entry(h, element_t, list));
             break;
-        } else {
-            puts("del tail case.");
+        } else if (h->next == t) {
+            list_del(t);
+            q_release_element(list_entry(t, element_t, list));
             break;
         }
         h = h->next;
