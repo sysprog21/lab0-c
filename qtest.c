@@ -1043,7 +1043,7 @@ static void console_init()
     ADD_COMMAND(merge, "Merge all the queues into one sorted queue", "");
     ADD_COMMAND(swap, "Swap every two adjacent nodes in queue", "");
     ADD_COMMAND(ascend,
-                "Remove every node which has a node with a strictly greater "
+                "Remove every node which has a node with a strictly less "
                 "value anywhere to the right side of it",
                 "");
     ADD_COMMAND(descend,
