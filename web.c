@@ -137,8 +137,8 @@ int web_open(int port)
 
     // 6 is TCP's protocol number
     // enable this, much faster : 4000 req/s -> 17000 req/s
-    if (setsockopt(listenfd, 6, TCP_CORK, (const void *) &optval, sizeof(int)) <
-        0)
+    if (setsockopt(listenfd, IPPROTO_TCP, TCP_CORK, (const void *) &optval,
+                   sizeof(int)) < 0)
         return -1;
 
     /* Listenfd will be an endpoint for all requests to port
