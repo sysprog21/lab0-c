@@ -475,6 +475,7 @@ static bool do_dedup(int argc, char *argv[])
     }
 
     struct list_head *l_tmp = current->q->next;
+    bool is_this_dup = false;
     // Compare between new list and old one
     list_for_each_entry (item, &l_copy, list) {
         // Skip comparison with new list if the string is duplicate
@@ -482,7 +483,7 @@ static bool do_dedup(int argc, char *argv[])
             item->list.next != &l_copy &&
             strcmp(list_entry(item->list.next, element_t, list)->value,
                    item->value) == 0;
-        if (is_next_dup) {
+        if (is_this_dup || is_next_dup) {
             // Update list size
             current->size--;
         } else if (l_tmp != current->q &&
@@ -491,6 +492,7 @@ static bool do_dedup(int argc, char *argv[])
             l_tmp = l_tmp->next;
         else
             ok = false;
+        is_this_dup = is_next_dup;
     }
     // All elements in new list should be traversed
     ok = ok && l_tmp == current->q;
