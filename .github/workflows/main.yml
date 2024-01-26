@@ -6,7 +6,7 @@ jobs:
   lab0-c:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3.3.0
+    - uses: actions/checkout@v4
     - uses: webfactory/ssh-agent@v0.7.0
       continue-on-error: true
       with:
@@ -24,19 +24,18 @@ jobs:
     - name: make check
       run: |
             make check || (cat scripts/weeping.raw ; exit 1)
-            cat scripts/pikachu.raw
+            cat scripts/kirby.raw
     - name: make test
       run: |
             make test || (cat scripts/weeping.raw ; exit 1)
-            cat scripts/pikachu.raw
+            cat scripts/kirby.raw
 
   coding-style:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3.3.0
+    - uses: actions/checkout@v4
     - name: coding convention
       run: |
             sudo apt-get install -q -y clang-format-14
             sh .ci/check-format.sh
-            cat scripts/pikachu.raw
       shell: bash
