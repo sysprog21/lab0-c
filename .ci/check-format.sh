@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SOURCES=$(find $(git rev-parse --show-toplevel) | egrep "\.(cpp|h)\$")
+SOURCES=$(find $(git rev-parse --show-toplevel) | grep -E "\.(cpp|h)\$")
 
 set -x
 
@@ -9,4 +9,4 @@ do
     clang-format-14 ${file} > expected-format
     diff -u -p --label="${file}" --label="expected coding style" ${file} expected-format
 done
-exit $(clang-format-14 --output-replacements-xml ${SOURCES} | egrep -c "</replacement>")
+exit $(clang-format-14 --output-replacements-xml ${SOURCES} | grep -E -c "</replacement>")
