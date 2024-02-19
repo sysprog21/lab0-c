@@ -37,5 +37,6 @@ jobs:
     - name: coding convention
       run: |
             sudo apt-get install -q -y clang-format-14
-            sh .ci/check-format.sh
+            .ci/check-newline.sh
+            .ci/check-format.sh
       shell: bash
