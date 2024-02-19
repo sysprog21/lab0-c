@@ -8,12 +8,12 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Validate repository
-# commit c2084e68866b7eaabd95f671319d3ee01e923b32 (HEAD -> master)
-# Author: Jim Huang <jserv.tw@gmail.com>
-# Date:   Tue Jan 24 14:59:36 2023 +0800
+# commit 3ed17237af5b1ead6c394df5099bc2bc1f8392df (HEAD -> bump-copyright-year)
+# Author: Jim Huang <jserv@ccns.ncku.edu.tw>
+# Date:   Tue Feb 20 03:59:49 2024 +0800
 #     Bump copyright year
-commit=$(git rev-list -n 1 --grep '^Bump copyright' 0e922a9b7da49726c91f1d7176bd5fa0cada97be...HEAD)
-if [ x"$commit" != x"c2084e68866b7eaabd95f671319d3ee01e923b32" ] ; then
+commit=$(git rev-list -n 1 --grep '^Bump copyright' 1aca5b98471765db50c91e03298e49bf7c08cdbc...HEAD)
+if [ x"$commit" != x"3ed17237af5b1ead6c394df5099bc2bc1f8392df" ] ; then
     echo -e "${RED}ERROR${NC}: This repository is insane."
     echo -e "Make sure you did fork from https://github.com/sysprog21/lab0-c recently."
     echo ""

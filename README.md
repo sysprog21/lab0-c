@@ -116,7 +116,7 @@ Trace files
 ## Debugging Facilities
 
 Before using GDB debug `qtest`, there are some routine instructions need to do. The script `scripts/debug.py` covers these instructions and provides basic debug function. 
-```
+```shell
 $ scripts/debug.py -h
 usage: debug.py [-h] [-d | -a]
 
@@ -126,7 +126,7 @@ optional arguments:
   -a, --analyze  Analyze the core dump file
 ```
 * Enter GDB without interruption by **SIGALRM**.
-```
+```shell
 $ scripts/debug.py -d
 Reading symbols from lab0-c/qtest...done.
 Signal        Stop	Print	Pass to program	Description
@@ -138,13 +138,13 @@ cmd>
 
   The core dump file was created in the working directory of the `qtest`.
   * Allow the core dumps by using shell built-in command **ulimit** to set core file size.
-  ```
+  ```shell
   $ ulimit -c unlimited
   $ ulimit -c
   unlimited
   ```
   * Enter GDB and analyze
-  ```
+  ```shell
   $ scripts/debug.py -a
   Reading symbols from lab0-c/qtest...done.
   [New LWP 9424]
@@ -167,7 +167,7 @@ cmd>
 
 A small web server is already integrated within the `qtest` command line interpreter,
 and you may use it by running the `web` command in its prompt.
-```
+```shell
 $ ./qtest
 cmd> web
 listen on port 9999, fd is 3
