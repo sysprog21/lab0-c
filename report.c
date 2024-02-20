@@ -45,7 +45,7 @@ void set_verblevel(int level)
     verblevel = level;
 }
 
-bool set_logfile(char *file_name)
+bool set_logfile(const char *file_name)
 {
     logfile = fopen(file_name, "w");
     return logfile != NULL;
@@ -161,7 +161,7 @@ void report_noreturn(int level, char *fmt, ...)
 /* Functions denoting failures */
 
 /* Need to be able to print without using malloc */
-static void fail_fun(char *format, char *msg)
+static void fail_fun(const char *format, const char *msg)
 {
     snprintf(fail_buf, sizeof(fail_buf), format, msg);
     /* Tack on return */
@@ -209,7 +209,7 @@ static void check_exceed(size_t new_bytes)
 }
 
 /* Call malloc & exit if fails */
-void *malloc_or_fail(size_t bytes, char *fun_name)
+void *malloc_or_fail(size_t bytes, const char *fun_name)
 {
     check_exceed(bytes);
     void *p = malloc(bytes);
@@ -228,7 +228,7 @@ void *malloc_or_fail(size_t bytes, char *fun_name)
 }
 
 /* Call calloc returns NULL & exit if fails */
-void *calloc_or_fail(size_t cnt, size_t bytes, char *fun_name)
+void *calloc_or_fail(size_t cnt, size_t bytes, const char *fun_name)
 {
     check_exceed(cnt * bytes);
     void *p = calloc(cnt, bytes);
@@ -246,7 +246,7 @@ void *calloc_or_fail(size_t cnt, size_t bytes, char *fun_name)
     return p;
 }
 
-char *strsave_or_fail(char *s, char *fun_name)
+char *strsave_or_fail(const char *s, const char *fun_name)
 {
     if (!s)
         return NULL;
