@@ -76,7 +76,7 @@ $ make valgrind
 * Use `$ make clean` or `$ rm /tmp/qtest.*` to clean the temporary files created by target valgrind
 
 Extra options can be recognized by make:
-* `VERBOSE`: control the build verbosity. If `VERBOSE=1`, echo eacho command in build process.
+* `VERBOSE`: control the build verbosity. If `VERBOSE=1`, echo each command in build process.
 * `SANITIZER`: enable sanitizer(s) directed build. At the moment, AddressSanitizer is supported.
 
 ## Using `qtest`
