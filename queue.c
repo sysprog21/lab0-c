@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "list.h"
 #include "queue.h"
 
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
@@ -47,6 +48,19 @@ bool q_insert_head(struct list_head *head, char *s)
 /* Insert an element at tail of queue */
 bool q_insert_tail(struct list_head *head, char *s)
 {
+    if (!head || !s)
+        return false;
+    element_t *ele = malloc(sizeof(element_t));
+    if (!ele)
+        return false;
+    char *tmp = malloc(strlen(s) + 1);
+    if (!tmp) {
+        free(ele);
+        return false;
+    }
+    ele->value = tmp;
+    memcpy(ele->value, s, strlen(s) + 1);
+    list_add_tail(&ele->list, head);
     return true;
 }
 
