@@ -279,38 +279,29 @@ struct list_head *merge(struct list_head *l1, struct list_head *l2)
     if (!l1)
         return l2;
 
-
-    struct list_head *next;
     struct list_head *result;
     element_t *l1_entry = list_entry(l1, __typeof__(*l1_entry), list);
     element_t *l2_entry = list_entry(l2, __typeof__(*l2_entry), list);
 
     if (strcmp(l1_entry->value, l2_entry->value) <= 0) {
-        if (l1_entry->list.next != &l1_entry->list)
-            next = l1_entry->list.next;
-        else
-            next = NULL;
         list_del(&l1_entry->list);
-        result = merge(next, l2);
-        l1_entry->list.next = result;
-        l1_entry->list.prev = result->prev;
-        result->prev->next = &l1_entry->list;
-        result->prev = &l1_entry->list;
+        if (l1_entry->list.next != &l1_entry->list)
+            result = merge(l1_entry->list.next, l2);
+        else
+            result = merge(NULL, l2);
+        list_add_tail(&l1_entry->list, result);
+
         return l1;
     } else {
-        if (l2_entry->list.next != &l2_entry->list)
-            next = l2_entry->list.next;
-        else
-            next = NULL;
         list_del(&l2_entry->list);
-        result = merge(l1, next);
-        l2_entry->list.next = result;
-        l2_entry->list.prev = result->prev;
-        result->prev->next = &l2_entry->list;
-        result->prev = &l2_entry->list;
+        if (l2_entry->list.next != &l2_entry->list)
+            result = merge(l2_entry->list.next, l1);
+        else
+            result = merge(l1, NULL);
+        list_add_tail(&l2_entry->list, result);
+
         return l2;
     }
-    printf("merge two list done\n");
 }
 
 struct list_head *mergeSortList(struct list_head *head)
@@ -349,17 +340,13 @@ void q_sort(struct list_head *head, bool descend)
         return;
 
     // Bubble sort
-    // bubble_sort(head);
+    // q_bubble_sort(head);
 
     struct list_head *first = head->next;
     list_del_init(head);
 
     struct list_head *result = mergeSortList(first);
-    printf("merge sort done\n");
-    head->next = result;
-    head->prev = result->prev;
-    result->prev = head;
-    head->prev->next = head;
+    list_add_tail(head, result);
     if (descend)
         q_reverse(head);
 }
