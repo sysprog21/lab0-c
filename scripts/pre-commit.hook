@@ -5,6 +5,8 @@ for f in *.c; do
     CPPCHECK_unmatched="$CPPCHECK_unmatched --suppress=unmatchedSuppression:$f"
 done
 
+# We suppress the checkLevelNormal warning for Cppcheck versions 2.11 and above.
+# Please refer to issues/153 for more details.
 CPPCHECK_suppresses="--inline-suppr harness.c \
 --suppress=missingIncludeSystem \
 --suppress=noValidConfiguration \
