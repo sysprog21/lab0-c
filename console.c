@@ -405,6 +405,7 @@ static bool do_web(int argc, char *argv[])
     web_fd = web_open(port);
     if (web_fd > 0) {
         printf("listen on port %d, fd is %d\n", port, web_fd);
+        line_set_eventmux_callback(web_eventmux);
         use_linenoise = false;
     } else {
         perror("ERROR");
@@ -560,13 +561,13 @@ static int cmd_select(int nfds,
                       fd_set *exceptfds,
                       struct timeval *timeout)
 {
-    int infd;
     fd_set local_readset;
 
     if (cmd_done())
         return 0;
 
     if (!block_flag) {
+        int infd;
         /* Process any commands in input buffer */
         if (!readfds)
             readfds = &local_readset;
@@ -581,51 +582,18 @@ static int cmd_select(int nfds,
             FD_SET(web_fd, readfds);
 
         if (infd == STDIN_FILENO && prompt_flag) {
-            printf("%s", prompt);
+            char *cmdline = linenoise(prompt);
+            if (cmdline)
+                interpret_cmd(cmdline);
             fflush(stdout);
             prompt_flag = true;
+        } else if (infd != STDIN_FILENO) {
+            char *cmdline = readline();
+            if (cmdline)
+                interpret_cmd(cmdline);
         }
-
-        if (infd >= nfds)
-            nfds = infd + 1;
-        if (web_fd >= nfds)
-            nfds = web_fd + 1;
     }
-    if (nfds == 0)
-        return 0;
-
-    int result = select(nfds, readfds, writefds, exceptfds, timeout);
-    if (result <= 0)
-        return result;
-
-    infd = buf_stack->fd;
-    if (readfds && FD_ISSET(infd, readfds)) {
-        /* Commandline input available */
-        FD_CLR(infd, readfds);
-        result--;
-
-        set_echo(0);
-        char *cmdline = readline();
-        if (cmdline)
-            interpret_cmd(cmdline);
-    } else if (readfds && FD_ISSET(web_fd, readfds)) {
-        FD_CLR(web_fd, readfds);
-        result--;
-        struct sockaddr_in clientaddr;
-        socklen_t clientlen = sizeof(clientaddr);
-        web_connfd =
-            accept(web_fd, (struct sockaddr *) &clientaddr, &clientlen);
-
-        char *p = web_recv(web_connfd, &clientaddr);
-        char *buffer = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
-        web_send(web_connfd, buffer);
-
-        if (p)
-            interpret_cmd(p);
-        free(p);
-        close(web_connfd);
-    }
-    return result;
+    return 0;
 }
 
 bool finish_cmd()

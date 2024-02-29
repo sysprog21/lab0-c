@@ -124,6 +124,7 @@ static char *unsupported_term[] = {"dumb", "cons25", "emacs", NULL};
 static line_completion_callback_t *completion_callback = NULL;
 static line_hints_callback_t *hints_callback = NULL;
 static line_free_hints_callback_t *free_hints_callback = NULL;
+static line_eventmux_callback_t *eventmux_callback = NULL;
 
 static struct termios orig_termios; /* In order to restore at exit.*/
 static bool maskmode = false; /* Show "***" instead of input. For passwords. */
@@ -470,6 +471,20 @@ void line_set_hints_callback(line_hints_callback_t *fn)
 void line_set_free_hints_callback(line_free_hints_callback_t *fn)
 {
     free_hints_callback = fn;
+}
+
+/* Register a function to perform I/O multiplexing to monitor multiple file
+ * descriptor from different input at the same time, so we can allow the ability
+ * of receiving commands from different input sources and still provides the
+ * command-line auto-complete feature of this package. For example, the main
+ * loop of this package can only deal with standard input file descriptor
+ * originally. When this callback function is invoked, it allows the main loop
+ * of this package to deal with multiple file descriptors from different input
+ * alongside with the origin feature to deal with the standard input.
+ */
+void line_set_eventmux_callback(line_eventmux_callback_t *fn)
+{
+    eventmux_callback = fn;
 }
 
 /* This function is used by the callback function registered by the user
@@ -931,6 +946,12 @@ static int line_edit(int stdin_fd,
         signed char c;
         int nread;
         char seq[5];
+
+        if (eventmux_callback != NULL) {
+            int result = eventmux_callback(l.buf);
+            if (result != 0)
+                return result;
+        }
 
         nread = read(l.ifd, &c, 1);
         if (nread <= 0)

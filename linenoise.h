@@ -54,9 +54,11 @@ typedef struct {
 typedef void(line_completion_callback_t)(const char *, line_completions_t *);
 typedef char *(line_hints_callback_t)(const char *, int *color, int *bold);
 typedef void(line_free_hints_callback_t)(void *);
+typedef int(line_eventmux_callback_t)(char *);
 void line_set_completion_callback(line_completion_callback_t *);
 void line_set_hints_callback(line_hints_callback_t *);
 void line_set_free_hints_callback(line_free_hints_callback_t *);
+void line_set_eventmux_callback(line_eventmux_callback_t *);
 void line_add_completion(line_completions_t *, const char *);
 /* clang-format on */
 
