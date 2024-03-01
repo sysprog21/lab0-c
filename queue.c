@@ -431,10 +431,70 @@ int q_descend(struct list_head *head)
     return q_size(head);
 }
 
+void mergeTwoLists(struct list_head *l1_head, struct list_head *l2_head)
+{
+    int l1_len = q_size(l1_head);
+    int l2_len = q_size(l2_head);
+
+    // Create empty node to save result
+    struct list_head result_head;
+    INIT_LIST_HEAD(&result_head);
+
+    struct list_head *l1_ele = l1_head->next;
+    struct list_head *l2_ele = l2_head->next;
+    struct list_head *cur;
+
+    while (l1_len != 0 && l2_len != 0) {
+        element_t *l1_entry = list_entry(l1_ele, __typeof__(*l1_entry), list);
+        element_t *l2_entry = list_entry(l2_ele, __typeof__(*l2_entry), list);
+
+        if (strcmp(l1_entry->value, l2_entry->value) <= 0) {
+            cur = l1_ele;
+            list_del(l1_ele);
+            l1_ele = l1_ele->next;
+            l1_len--;
+            list_add_tail(cur, &result_head);
+        } else {
+            cur = l2_ele;
+            list_del(l2_ele);
+            l2_ele = l2_ele->next;
+            l2_len--;
+            list_add_tail(cur, &result_head);
+        }
+    }
+
+    if (l2_len > 0) {
+        list_splice_tail(l2_head, &result_head);
+        INIT_LIST_HEAD(l2_head);
+    }
+
+    if (l1_len > 0) {
+        list_splice_tail(l1_head, &result_head);
+        INIT_LIST_HEAD(l1_head);
+    }
+
+    INIT_LIST_HEAD(l1_head);
+    list_splice_tail(&result_head, l1_head);
+}
+
 /* Merge all the queues into one sorted queue, which is in ascending/descending
  * order */
 int q_merge(struct list_head *head, bool descend)
 {
     // https://leetcode.com/problems/merge-k-sorted-lists/
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+
+    struct list_head *first = head->next;
+    struct list_head *next = first->next;
+
+    queue_contex_t *first_queue =
+        list_entry(first, __typeof__(*first_queue), chain);
+    for (int i = 1; i < q_size(head); i++) {
+        queue_contex_t *next_queue =
+            list_entry(next, __typeof__(*next_queue), chain);
+        mergeTwoLists(first_queue->q, next_queue->q);
+        next = next->next;
+    }
+    return q_size(first_queue->q);
 }
