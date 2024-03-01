@@ -274,34 +274,49 @@ void q_bubble_sort(struct list_head *head)
 
 struct list_head *merge(struct list_head *l1, struct list_head *l2)
 {
-    if (!l2)
-        return l1;
-    if (!l1)
-        return l2;
+    struct list_head l1_head, l2_head, result;
+    INIT_LIST_HEAD(&result);
+    INIT_LIST_HEAD(&l1_head);
+    INIT_LIST_HEAD(&l2_head);
 
-    struct list_head *result;
-    element_t *l1_entry = list_entry(l1, __typeof__(*l1_entry), list);
-    element_t *l2_entry = list_entry(l2, __typeof__(*l2_entry), list);
+    list_add_tail(&l1_head, l1);
+    list_add_tail(&l2_head, l2);
 
-    if (strcmp(l1_entry->value, l2_entry->value) <= 0) {
-        list_del(&l1_entry->list);
-        if (l1_entry->list.next != &l1_entry->list)
-            result = merge(l1_entry->list.next, l2);
-        else
-            result = merge(NULL, l2);
-        list_add_tail(&l1_entry->list, result);
+    int l1_len = q_size(&l1_head);
+    int l2_len = q_size(&l2_head);
 
-        return l1;
-    } else {
-        list_del(&l2_entry->list);
-        if (l2_entry->list.next != &l2_entry->list)
-            result = merge(l2_entry->list.next, l1);
-        else
-            result = merge(l1, NULL);
-        list_add_tail(&l2_entry->list, result);
+    struct list_head *cur;
 
-        return l2;
+    while (l1_len != 0 && l2_len != 0) {
+        element_t *l1_entry = list_entry(l1, __typeof__(*l1_entry), list);
+        element_t *l2_entry = list_entry(l2, __typeof__(*l2_entry), list);
+
+        if (strcmp(l1_entry->value, l2_entry->value) <= 0) {
+            cur = l1;
+            list_del(l1);
+            l1 = l1->next;
+            l1_len--;
+            list_add_tail(cur, &result);
+        } else {
+            cur = l2;
+            list_del(l2);
+            l2 = l2->next;
+            l2_len--;
+            list_add_tail(cur, &result);
+        }
     }
+
+    if (l2_len > 0)
+        list_splice_tail(&l2_head, &result);
+
+
+    if (l1_len > 0)
+        list_splice_tail(&l1_head, &result);
+
+
+    cur = result.next;
+    list_del(&result);
+    return cur;
 }
 
 struct list_head *mergeSortList(struct list_head *head)
