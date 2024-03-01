@@ -273,14 +273,6 @@ void q_bubble_sort(struct list_head *head)
     }
 }
 
-/*void printList(struct list_head *head){
-    element_t *cur;
-    list_for_each_entry(cur,head->prev,list){
-        printf("%s => ",cur->value);
-    }
-    printf("%s",cur->value);
-    printf("\n");
-}*/
 
 struct list_head *merge(struct list_head *l1, struct list_head *l2)
 {
