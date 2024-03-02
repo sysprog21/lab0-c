@@ -498,3 +498,37 @@ int q_merge(struct list_head *head, bool descend)
     }
     return q_size(first_queue->q);
 }
+
+void q_shuffle(struct list_head *head)
+{
+    if (!head || list_empty(head))
+        return;
+
+    int len = q_size(head);
+    struct list_head *cur, *cmp;
+
+    for (int i = len - 1; i > 0; i--) {
+        // rand range 0 ~ i+1
+        int rand_num = rand() % (i + 1);
+        // No swap this round
+        if (rand_num == 0)
+            continue;
+
+        cur = head->prev;
+        for (int j = i; j < (len - 1); j++)
+            cur = cur->prev;
+        cmp = cur;
+        for (int j = 0; j < rand_num; j++)
+            cmp = cmp->prev;
+
+        // Swap two node
+        if (rand_num > 1) {
+            struct list_head *tmp = cmp->prev;
+            list_move(cmp, cur->prev);
+            list_move(cur, tmp);
+        } else {
+            list_del(cmp);
+            list_add(cmp, cur);
+        }
+    }
+}
