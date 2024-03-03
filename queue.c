@@ -133,6 +133,7 @@ bool q_delete_mid(struct list_head *head)
     } while (fast != prev && fast != head);
     list_del(slow);
     element_t *node = list_entry(slow, element_t, list);
+    free(node->value);
     free(node);
     return true;
 }
