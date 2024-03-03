@@ -147,11 +147,9 @@ bool q_delete_dup(struct list_head *head)
     struct list_head *pos, *tmp;
     bool dup = false;
     list_for_each_safe (pos, tmp, head) {
-        if (pos->next == head)
-            break;
         element_t *ele = list_entry(pos, element_t, list);
         const element_t *next = list_entry(pos->next, element_t, list);
-        if (strcmp(ele->value, next->value) == 0) {
+        if (pos->next != head && strcmp(ele->value, next->value) == 0) {
             list_del(pos);
             free(ele->value);
             free(ele);
