@@ -117,9 +117,10 @@ bool q_delete_mid(struct list_head *head)
     do {
         slow = slow->next;
         fast = fast->next->next;
-    } while (fast != prev || fast != head);
+    } while (fast != prev && fast != head);
     list_del(slow);
-    free(slow);
+    element_t *node = list_entry(slow, element_t, list);
+    free(node);
     return true;
 }
 
