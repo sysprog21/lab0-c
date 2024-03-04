@@ -23,6 +23,8 @@
 #define TCP_CORK TCP_NOPUSH
 #endif
 
+static int server_fd;
+
 typedef struct {
     int fd;            /* descriptor for this buf */
     int count;         /* unread byte in this buf */
@@ -153,6 +155,9 @@ int web_open(int port)
     /* Make it a listening socket ready to accept connection requests */
     if (listen(listenfd, LISTENQ) < 0)
         return -1;
+
+    server_fd = listenfd;
+
     return listenfd;
 }
 
@@ -227,4 +232,39 @@ char *web_recv(int fd, struct sockaddr_in *clientaddr)
     strncpy(ret, req.filename, strlen(req.filename) + 1);
 
     return ret;
+}
+
+int web_eventmux(char *buf)
+{
+    fd_set listenset;
+
+    FD_ZERO(&listenset);
+    FD_SET(STDIN_FILENO, &listenset);
+    int max_fd = STDIN_FILENO;
+    if (server_fd > 0) {
+        FD_SET(server_fd, &listenset);
+        max_fd = max_fd > server_fd ? max_fd : server_fd;
+    }
+    int result = select(max_fd + 1, &listenset, NULL, NULL, NULL);
+    if (result < 0)
+        return -1;
+
+    if (server_fd > 0 && FD_ISSET(server_fd, &listenset)) {
+        FD_CLR(server_fd, &listenset);
+        struct sockaddr_in clientaddr;
+        socklen_t clientlen = sizeof(clientaddr);
+        int web_connfd =
+            accept(server_fd, (struct sockaddr *) &clientaddr, &clientlen);
+
+        char *p = web_recv(web_connfd, &clientaddr);
+        char *buffer = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+        web_send(web_connfd, buffer);
+        strncpy(buf, p, strlen(p) + 1);
+        free(p);
+        close(web_connfd);
+        return strlen(buf);
+    }
+
+    FD_CLR(STDIN_FILENO, &listenset);
+    return 0;
 }
