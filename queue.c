@@ -226,11 +226,12 @@ int q_ascend(struct list_head *head)
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
     if (!head)
         return false;
-    struct list_head *pos, *tmp;
-    list_for_each_safe (pos, tmp, head) {
+    struct list_head *pos, *safe;
+    for (pos = (head)->prev, safe = pos->prev; pos != (head);
+         pos = safe, safe = pos->prev) {
         element_t *ele = list_entry(pos, element_t, list);
-        const element_t *next = list_entry(pos->next, element_t, list);
-        if (pos->next != head && strcmp(ele->value, next->value) > 0) {
+        const element_t *prev = list_entry(pos->prev, element_t, list);
+        if (pos->prev != head && strcmp(prev->value, ele->value) > 0) {
             list_del(pos);
             free(ele->value);
             free(ele);
@@ -246,11 +247,12 @@ int q_descend(struct list_head *head)
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
     if (!head)
         return false;
-    struct list_head *pos, *tmp;
-    list_for_each_safe (pos, tmp, head) {
+    struct list_head *pos, *safe;
+    for (pos = (head)->prev, safe = pos->prev; pos != (head);
+         pos = safe, safe = pos->prev) {
         element_t *ele = list_entry(pos, element_t, list);
-        const element_t *next = list_entry(pos->next, element_t, list);
-        if (pos->next != head && strcmp(ele->value, next->value) < 0) {
+        const element_t *prev = list_entry(pos->prev, element_t, list);
+        if (pos->prev != head && strcmp(prev->value, ele->value) > 0) {
             list_del(pos);
             free(ele->value);
             free(ele);
