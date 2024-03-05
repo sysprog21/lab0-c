@@ -302,3 +302,30 @@ int q_merge(struct list_head *head, bool descend)
     }
     return count;
 }
+
+void q_shuffle(struct list_head *head)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+    int len = q_size(head);
+    struct list_head *new_head;
+    struct list_head *new_tail = head->prev;
+    while (len) {
+        int index = rand() % len;
+        new_head = head->next;
+        while (index--) {
+            new_head = new_head->next;
+        }
+        if (new_head == new_tail) {
+            new_tail = new_tail->prev;
+            len--;
+            continue;
+        }
+        struct list_head *tmp = new_head->prev;
+        list_move(new_head, new_tail);
+        list_move(new_tail, tmp);
+        new_tail = new_head->prev;
+        len--;
+    }
+    return;
+}
