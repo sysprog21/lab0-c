@@ -226,22 +226,19 @@ void q_sort(struct list_head *head, bool descend)
         if (y->next == head)
             break;
         list_for_each_safe (x, xsafe, head) {
-            if (x->next == head) {
-                list_move_tail(x, y);
+            if (x->next == head)
                 break;
-            }
             const element_t *ele1 = list_entry(x, element_t, list);
             const element_t *ele2 = list_entry(x->next, element_t, list);
             if (descend) {
                 if (strcmp(ele1->value, ele2->value) < 0) {
-                    xsafe = x;
                     list_move(x, x->next);
                 }
             } else {
                 if (strcmp(ele1->value, ele2->value) > 0) {
-                    xsafe = x;
                     list_move(x, x->next);
                 }
+                xsafe = x->next;
             }
         }
     }
