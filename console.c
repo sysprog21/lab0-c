@@ -21,7 +21,6 @@ int show_entropy = 0;
 static cmd_element_t *cmd_list = NULL;
 static param_element_t *param_list = NULL;
 static bool block_flag = false;
-static bool prompt_flag = true;
 
 /* Am I timing a command that has the console blocked? */
 static bool block_timing = false;
@@ -581,13 +580,12 @@ static int cmd_select(int nfds,
         if (web_fd != -1)
             FD_SET(web_fd, readfds);
 
-        if (infd == STDIN_FILENO && prompt_flag) {
+        if (infd == STDIN_FILENO) {
             char *cmdline = linenoise(prompt);
             if (cmdline)
                 interpret_cmd(cmdline);
             fflush(stdout);
-            prompt_flag = true;
-        } else if (infd != STDIN_FILENO) {
+        } else {
             char *cmdline = readline();
             if (cmdline)
                 interpret_cmd(cmdline);
