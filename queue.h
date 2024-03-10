@@ -207,6 +207,7 @@ void q_sort(struct list_head *head, bool descend);
  *
  * No effect if queue is NULL or empty. If there has only one element, do
  * nothing.
+ * Memory allocated to removed nodes must be freed.
  *
  * Reference:
  * https://leetcode.com/problems/remove-nodes-from-linked-list/
@@ -222,6 +223,7 @@ int q_ascend(struct list_head *head);
  *
  * No effect if queue is NULL or empty. If there has only one element, do
  * nothing.
+ * Memory allocated to removed nodes must be freed.
  *
  * Reference:
  * https://leetcode.com/problems/remove-nodes-from-linked-list/
