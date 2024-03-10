@@ -239,9 +239,9 @@ int q_descend(struct list_head *head);
  * This function merge the second to the last queues in the chain into the first
  * queue. The queues are guaranteed to be sorted before this function is called.
  * No effect if there is only one queue in the chain. Allocation is disallowed
- * in this function. There is no need to free the 'qcontext_t' and its member
- * 'q' since they will be released externally. However, q_merge() is responsible
- * for making the queues to be NULL-queue, except the first one.
+ * in this function. There is no need to free the 'queue_contex_t' and its
+ * member 'q' since they will be released externally. However, q_merge() is
+ * responsible for making the queues to be NULL-queue, except the first one.
  *
  * Reference:
  * https://leetcode.com/problems/merge-k-sorted-lists/
