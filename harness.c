@@ -2,6 +2,7 @@
 
 #include <setjmp.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,6 +58,12 @@ static int time_limit = 1;
 static jmp_buf env;
 static volatile sig_atomic_t jmp_ready = false;
 static bool time_limited = false;
+
+/* For test_malloc and test_calloc */
+typedef enum {
+    TEST_MALLOC,
+    TEST_CALLOC,
+} alloc_t;
 
 /* Internal functions */
 
@@ -115,17 +122,23 @@ static size_t *find_footer(block_element_t *b)
     return p;
 }
 
-/* Implementation of application functions */
-
-void *test_malloc(size_t size)
+static void *alloc(alloc_t alloc_type, size_t size)
 {
     if (noallocate_mode) {
-        report_event(MSG_FATAL, "Calls to malloc disallowed");
+        char *msg_alloc_forbidden[] = {
+            "Calls to malloc are disallowed",
+            "Calls to calloc are disallowed",
+        };
+        report_event(MSG_FATAL, "%s", msg_alloc_forbidden[alloc_type]);
         return NULL;
     }
 
     if (fail_allocation()) {
-        report_event(MSG_WARN, "Malloc returning NULL");
+        char *msg_alloc_failure[] = {
+            "Malloc returning NULL",
+            "Calloc returning NULL",
+        };
+        report_event(MSG_WARN, "%s", msg_alloc_failure[alloc_type]);
         return NULL;
     }
 
@@ -142,7 +155,7 @@ void *test_malloc(size_t size)
     new_block->payload_size = size;
     *find_footer(new_block) = MAGICFOOTER;
     void *p = (void *) &new_block->payload;
-    memset(p, FILLCHAR, size);
+    memset(p, !alloc_type * FILLCHAR, size);
     // cppcheck-suppress nullPointerRedundantCheck
     new_block->next = allocated;
     // cppcheck-suppress nullPointerRedundantCheck
@@ -156,16 +169,22 @@ void *test_malloc(size_t size)
     return p;
 }
 
+/* Implementation of application functions */
+
+void *test_malloc(size_t size)
+{
+    return alloc(TEST_MALLOC, size);
+}
+
 // cppcheck-suppress unusedFunction
 void *test_calloc(size_t nelem, size_t elsize)
 {
     /* Reference: Malloc tutorial
      * https://danluu.com/malloc-tutorial/
      */
-    size_t size = nelem * elsize;  // TODO: check for overflow
-    void *ptr = test_malloc(size);
-    memset(ptr, 0, size);
-    return ptr;
+    if (!nelem || !elsize || nelem > SIZE_MAX / elsize)
+        return NULL;
+    return alloc(TEST_CALLOC, nelem * elsize);
 }
 
 void test_free(void *p)
