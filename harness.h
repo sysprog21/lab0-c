@@ -55,6 +55,7 @@ void trigger_exception(char *msg);
 
 /* Tested program use our versions of malloc and free */
 #define malloc test_malloc
+#define calloc test_calloc
 #define free test_free
 
 /* Use undef to avoid strdup redefined error */
