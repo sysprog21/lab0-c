@@ -60,7 +60,7 @@ extern int show_entropy;
 /* Global variables */
 
 typedef struct {
-    struct list_head head;
+    
     int size;
 } queue_chain_t;
 
