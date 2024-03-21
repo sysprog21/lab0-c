@@ -71,8 +71,6 @@ static queue_contex_t *current = NULL;
 static int fail_limit = BIG_LIST_SIZE;
 static int fail_count = 0;
 
-static int string_length = MAXSTRING;
-
 static int descend = 0;
 
 #define MIN_RANDSTR_LEN 5
