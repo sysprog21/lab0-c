@@ -882,7 +882,7 @@ static bool is_circular()
     struct list_head *cur = current->q->next;
     struct list_head *fast = (cur) ? cur->next : NULL;
     while (cur != current->q) {
-        if (!cur || !fast || !(fast->next))
+        if (!cur || !fast || !fast->next)
             return false;
         if (cur == fast)
             return false;
@@ -893,7 +893,7 @@ static bool is_circular()
     cur = current->q->prev;
     fast = (cur) ? cur->prev : NULL;
     while (cur != current->q) {
-        if (!cur || !fast || !(fast->prev))
+        if (!cur || !fast || !fast->prev)
             return false;
         cur = cur->prev;
         fast = fast->prev->prev;
