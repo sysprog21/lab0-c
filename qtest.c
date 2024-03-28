@@ -542,11 +542,6 @@ static bool do_size(int argc, char *argv[])
 
     int reps = 1;
     bool ok = true;
-    if (argc != 1 && argc != 2) {
-        report(1, "%s needs 0-1 arguments", argv[0]);
-        return false;
-    }
-
     if (argc == 2) {
         if (!get_int(argv[1], &reps))
             report(1, "Invalid number of calls to size '%s'", argv[2]);
