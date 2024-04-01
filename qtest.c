@@ -875,17 +875,23 @@ static bool do_merge(int argc, char *argv[])
 static bool is_circular()
 {
     struct list_head *cur = current->q->next;
+    struct list_head *fast = (cur) ? cur->next : NULL;
     while (cur != current->q) {
-        if (!cur)
+        if (!cur || !fast || !fast->next)
+            return false;
+        if (cur == fast)
             return false;
         cur = cur->next;
+        fast = fast->next->next;
     }
 
     cur = current->q->prev;
+    fast = (cur) ? cur->prev : NULL;
     while (cur != current->q) {
-        if (!cur)
+        if (!cur || !fast || !fast->prev)
             return false;
         cur = cur->prev;
+        fast = fast->prev->prev;
     }
     return true;
 }
