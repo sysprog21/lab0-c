@@ -595,6 +595,23 @@ bool do_sort(int argc, char *argv[])
     error_check();
 
     set_noallocate_mode(true);
+
+/* If the number of elements is too large, it may take a long time to check the
+ * stability of the sort. So, MAX_NODES is used to limit the number of elements
+ * to check the stability of the sort. */
+#define MAX_NODES 100000
+    struct list_head *nodes[MAX_NODES];
+    unsigned no = 0;
+    if (current && current->size && current->size <= MAX_NODES) {
+        element_t *entry;
+        list_for_each_entry (entry, current->q, list)
+            nodes[no++] = &entry->list;
+    } else if (current && current->size > MAX_NODES)
+        report(1,
+               "Warning: Skip checking the stability of the sort because the "
+               "number of elements %d is too large, exceeds the limit %d.",
+               current->size, MAX_NODES);
+
     if (current && exception_setup(true))
         q_sort(current->q, descend);
     exception_cancel();
@@ -619,8 +636,32 @@ bool do_sort(int argc, char *argv[])
                 ok = false;
                 break;
             }
+            /* Ensure the stability of the sort */
+            if (current->size <= MAX_NODES &&
+                !strcmp(item->value, next_item->value)) {
+                bool unstable = false;
+                for (unsigned i = 0; i < MAX_NODES; i++) {
+                    if (nodes[i] == cur_l->next) {
+                        unstable = true;
+                        break;
+                    }
+                    if (nodes[i] == cur_l) {
+                        break;
+                    }
+                }
+                if (unstable) {
+                    report(
+                        1,
+                        "ERROR: Not stable sort. The duplicate strings \"%s\" "
+                        "are not in the same order.",
+                        item->value);
+                    ok = false;
+                    break;
+                }
+            }
         }
     }
+#undef MAX_NODES
 
     q_show(3);
     return ok && !error_check();
