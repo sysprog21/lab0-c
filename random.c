@@ -90,7 +90,7 @@ static ssize_t getrandom(void *buf, size_t buflen, unsigned int flags)
 }
 #endif
 
-static int randombytes_linux_randombytes_getrandom(void *buf, size_t n)
+static int linux_getrandom(void *buf, size_t n)
 {
     size_t offset = 0;
     int ret;
@@ -114,12 +114,12 @@ static int randombytes_linux_randombytes_getrandom(void *buf, size_t n)
 #if defined(__linux__) && !defined(SYS_getrandom)
 
 #if defined(__linux__)
-static inline int randombytes_linux_read_entropy_ioctl(int device, int *entropy)
+static inline int linux_read_entropy_ioctl(int device, int *entropy)
 {
     return ioctl(device, RNDGETENTCNT, entropy);
 }
 
-static int randombytes_linux_read_entropy_proc(FILE *stream, int *entropy)
+static int linux_read_entropy_proc(FILE *stream, int *entropy)
 {
     int retcode;
     do {
@@ -131,7 +131,7 @@ static int randombytes_linux_read_entropy_proc(FILE *stream, int *entropy)
     return 0;
 }
 
-static int randombytes_linux_wait_for_entropy(int device)
+static int linux_wait_for_entropy(int device)
 {
     /* We will block on /dev/random, because any increase in the OS' entropy
      * level will unblock the request. I use poll here (as does libsodium),
@@ -144,7 +144,7 @@ static int randombytes_linux_wait_for_entropy(int device)
     int entropy = 0;
 
     /* If the device has enough entropy already, we will want to return early */
-    int retcode = randombytes_linux_read_entropy_ioctl(device, &entropy);
+    int retcode = linux_read_entropy_ioctl(device, &entropy);
     if (retcode != 0 && (errno == ENOTTY || errno == ENOSYS)) {
         /* The ioctl call on /dev/urandom has failed due to a
          *   - ENOTTY (unsupported action), or
@@ -184,11 +184,9 @@ static int randombytes_linux_wait_for_entropy(int device)
             continue;
         } else if (retcode == 1) {
             if (strategy == IOCTL) {
-                retcode =
-                    randombytes_linux_read_entropy_ioctl(device, &entropy);
+                retcode = linux_read_entropy_ioctl(device, &entropy);
             } else if (strategy == PROC) {
-                retcode =
-                    randombytes_linux_read_entropy_proc(proc_file, &entropy);
+                retcode = linux_read_entropy_proc(proc_file, &entropy);
             } else {
                 return -1; /* Unreachable */
             }
@@ -220,7 +218,7 @@ static int randombytes_linux_wait_for_entropy(int device)
 }
 #endif /* defined(__linux__) */
 
-static int randombytes_linux_randombytes_urandom(void *buf, size_t n)
+static int linux_urandom(void *buf, size_t n)
 {
     int fd;
     do {
@@ -229,7 +227,7 @@ static int randombytes_linux_randombytes_urandom(void *buf, size_t n)
     if (fd == -1)
         return -1;
 #if defined(__linux__)
-    if (randombytes_linux_wait_for_entropy(fd) == -1)
+    if (linux_wait_for_entropy(fd) == -1)
         return -1;
 #endif
 
@@ -259,7 +257,7 @@ static int randombytes_linux_randombytes_urandom(void *buf, size_t n)
 #include <CommonCrypto/CommonRandom.h>
 #endif
 #endif
-static int randombytes_bsd_randombytes(void *buf, size_t n)
+static int bsd_randombytes(void *buf, size_t n)
 {
 #if defined(MAC_OS_X_VERSION_10_15) && \
     MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_15
@@ -279,16 +277,16 @@ int randombytes(uint8_t *buf, size_t n)
 #if defined(__linux__) || defined(__GNU__)
 #if defined(USE_GLIBC)
     /* Use getrandom system call */
-    return randombytes_linux_randombytes_getrandom(buf, n);
+    return linux_getrandom(buf, n);
 #elif defined(SYS_getrandom)
     /* Use getrandom system call */
-    return randombytes_linux_randombytes_getrandom(buf, n);
+    return linux_getrandom(buf, n);
 #else
     /* When we have enough entropy, we can read from /dev/urandom */
-    return randombytes_linux_randombytes_urandom(buf, n);
+    return linux_urandom(buf, n);
 #endif
 #elif defined(BSD)
-    return randombytes_bsd_randombytes(buf, n);
+    return bsd_randombytes(buf, n);
 #else
 #error "randombytes(...) is not supported on this platform"
 #endif

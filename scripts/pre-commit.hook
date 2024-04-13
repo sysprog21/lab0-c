@@ -19,7 +19,9 @@ CPPCHECK_suppresses="--inline-suppr harness.c \
 --suppress=returnDanglingLifetime:report.c \
 --suppress=constParameterCallback:console.c \
 --suppress=constParameterPointer:console.c \
---suppress=checkLevelNormal:log2_lshift16.h"
+--suppress=checkLevelNormal:log2_lshift16.h \
+--suppress=preprocessorErrorDirective:random.h \
+"
 CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1 --force $CPPCHECK_suppresses $CPPCHECK_unmatched ."
 
 RETURN=0
