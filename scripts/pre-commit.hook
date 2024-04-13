@@ -43,7 +43,7 @@ if [ -z "$($CPPCHECK --version | grep -E '^Cppcheck\s2')" ]; then
     if [ $CPPCHECK_VER -lt 90 ]; then
         echo "[!] cppcheck version must be at least 1.90." >&2
         echo -e "    Check 'Developer Info' for building Cppcheck from source:\n" \
-                "          http://cppcheck.sourceforge.net/devinfo/" >&2
+                "          https://cppcheck.sourceforge.net/devinfo/" >&2
         exit 1
     fi
 fi
