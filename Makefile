@@ -47,6 +47,7 @@ OBJS := qtest.o report.o console.o harness.o queue.o \
 		mt19937-64.o \
 		zobrist.o \
 		ttt_agent/mcts.o \
+		ttt_agent/fixed_point.o \
 		ttt_agent/negamax.o
 
 deps := $(OBJS:%.o=.%.o.d)
