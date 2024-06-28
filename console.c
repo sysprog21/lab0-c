@@ -23,6 +23,7 @@
 /* Some global values */
 int simulation = 0;
 int show_entropy = 0;
+int ai_vs_ai = 0;
 static cmd_element_t *cmd_list = NULL;
 static param_element_t *param_list = NULL;
 static bool block_flag = false;
@@ -497,13 +498,20 @@ static int get_input(char player)
 }
 static bool do_ttt(int argc, char *argv[])
 {
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "--ai_vs_ai") == 0) {
+            ai_vs_ai = 1;
+        }
+    }
+
     srand(time(NULL));
     char table[N_GRIDS];
     memset(table, ' ', N_GRIDS);
     char turn = 'X';
     char ai = 'O';
 
-    // negamax_init();
+    if (ai_vs_ai)
+        negamax_init();
 
     while (1) {
         char win = check_win(table);
@@ -523,11 +531,12 @@ static bool do_ttt(int argc, char *argv[])
                 table[move] = ai;
                 record_move(move);
             }
-            // int move = negamax_predict(table, ai).move;
-            // if (move != -1) {
-            //     table[move] = ai;
-            //     record_move(move);
-            // }
+        } else if (ai_vs_ai) {
+            int move = negamax_predict(table, ai).move;
+            if (move != -1) {
+                table[move] = turn;
+                record_move(move);
+            }
         } else {
             draw_board(table);
             int move;
@@ -542,7 +551,18 @@ static bool do_ttt(int argc, char *argv[])
             record_move(move);
         }
         turn = turn == 'X' ? 'O' : 'X';
+
+        if (ai_vs_ai) {
+            draw_board(table);
+            time_t timer = time(NULL);
+            struct tm *tm_info = localtime(&timer);
+
+            char buffer[26];
+            strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+            puts(buffer);
+        }
     }
+    ai_vs_ai = 0;
     print_moves();
     return true;
 }
@@ -564,13 +584,14 @@ void init_cmd()
     ADD_COMMAND(log, "Copy output to file", "file");
     ADD_COMMAND(time, "Time command execution", "cmd arg ...");
     ADD_COMMAND(web, "Read commands from builtin web server", "[port]");
-    ADD_COMMAND(ttt, "Do tic-tac-toe game", "");
+    ADD_COMMAND(ttt, "Play tic-tac-toe game", "");
     add_cmd("#", do_comment_cmd, "Display comment", "...");
     add_param("simulation", &simulation, "Start/Stop simulation mode", NULL);
     add_param("verbose", &verblevel, "Verbosity level", NULL);
     add_param("error", &err_limit, "Number of errors until exit", NULL);
     add_param("echo", &echo, "Do/don't echo commands", NULL);
     add_param("entropy", &show_entropy, "Show/Hide Shannon entropy", NULL);
+    add_param("AI_vs_AI", &ai_vs_ai, "Trigger tic-tac-toe AI vs AI", NULL);
 
     init_in();
     init_time(&last_time);
