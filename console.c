@@ -1,19 +1,21 @@
 /* Implementation of simple command-line interface */
-
 #include <ctype.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <setjmp.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "console.h"
 #include "game.h"
+#include "list.h"
 #include "report.h"
 #include "web.h"
 
@@ -24,6 +26,7 @@
 int simulation = 0;
 int show_entropy = 0;
 int ai_vs_ai = 0;
+int coro = 0;
 static cmd_element_t *cmd_list = NULL;
 static param_element_t *param_list = NULL;
 static bool block_flag = false;
@@ -422,12 +425,15 @@ static bool do_web(int argc, char *argv[])
 
 // /* Implementation of command ttt */
 static int move_record[N_GRIDS];
+int move_record_arr[50][N_GRIDS];
 static int move_count = 0;
-static void record_move(int move)
+int record_arr_len = 0;
+
+void record_move(int move)
 {
     move_record[move_count++] = move;
 }
-static void print_moves()
+void print_moves()
 {
     printf("Moves: ");
     for (int i = 0; i < move_count; i++) {
@@ -439,7 +445,24 @@ static void print_moves()
     }
     printf("\n");
 }
-static int get_input(char player)
+
+
+void print_all_moves()
+{
+    for (int i = 0; i < record_arr_len; i++) {
+        printf("Battle %d, Moves: ", i + 1);
+        for (int j = 1; j <= move_record_arr[i][0]; j++) {
+            printf("%c%d", 'A' + GET_COL(move_record_arr[i][j]),
+                   1 + GET_ROW(move_record_arr[i][j]));
+            if (j < move_record_arr[i][0]) {
+                printf(" -> ");
+            }
+        }
+        printf("\n");
+    }
+}
+
+int get_input(char player)
 {
     char *line = NULL;
     size_t line_length = 0;
@@ -496,11 +519,151 @@ static int get_input(char player)
     free(line);
     return GET_INDEX(y, x);
 }
+
+static void show_time()
+{
+    struct timeval currentTime;
+    gettimeofday(&currentTime, NULL);
+    time_t rawtime;
+    time(&rawtime);
+    struct tm *timeinfo = localtime(&rawtime);
+    printf("Current Time: %02d:%02d:%02d:%02ld\n", timeinfo->tm_hour,
+           timeinfo->tm_min, timeinfo->tm_sec, currentTime.tv_usec / 10000);
+}
+
+struct task {
+    jmp_buf env;
+    struct list_head list;
+    char task_name[10];
+    char *table;
+    char turn;
+};
+struct arg {
+    char *task_name;
+    char *table;
+    char turn;
+};
+static LIST_HEAD(tasklist);
+static void (**tasks)(void *);
+static struct arg *args;
+static int ntasks;
+static jmp_buf sched;
+static struct task *cur_task;
+static void task_add(struct task *task)
+{
+    list_add_tail(&task->list, &tasklist);
+}
+static void task_switch()
+{
+    if (!list_empty(&tasklist)) {
+        struct task *t = list_first_entry(&tasklist, struct task, list);
+        list_del(&t->list);
+        cur_task = t;
+        longjmp(t->env, 1);
+    }
+}
+void schedule(void)
+{
+    static int i;
+    i = 0;
+    setjmp(sched);
+    while (ntasks-- > 0) {
+        struct arg arg = args[i];
+        tasks[i++](&arg);
+        printf("Never reached\n");
+    }
+    task_switch();
+}
+/*negamax*/
+void task0(void *arg)
+{
+    struct task *task = malloc(sizeof(struct task));
+    strncpy(task->task_name, ((struct arg *) arg)->task_name, 6);
+    task->table = ((struct arg *) arg)->table;
+    task->turn = ((struct arg *) arg)->turn;
+    INIT_LIST_HEAD(&task->list);
+    printf("%s: n = %c\n", task->task_name, task->turn);
+    if (setjmp(task->env) == 0) {
+        task_add(task);
+        longjmp(sched, 1);
+    }
+    for (int i = 0; i < task->turn; i++) {
+        task = cur_task;
+        if (setjmp(task->env) == 0) {
+            char win = check_win(task->table);
+            if (win == 'D') {
+                draw_board(task->table);
+                printf("It is a draw!\n");
+                break;
+            } else if (win != ' ') {
+                draw_board(task->table);
+                printf("%c won!\n", win);
+                break;
+            }
+            draw_board(task->table);
+            int move = negamax_predict(task->table, task->turn).move;
+            if (move != -1) {
+                task->table[move] = task->turn;
+                record_move(move);
+            }
+            task_add(task);
+            printf("%s: n = %c,  continue...\n", task->task_name, task->turn);
+            task_switch();
+        }
+    }
+    printf("%s: complete\n", task->task_name);
+    print_all_moves();
+    longjmp(sched, 1);
+}
+/*mcts*/
+void task1(void *arg)
+{
+    struct task *task = malloc(sizeof(struct task));
+    strncpy(task->task_name, ((struct arg *) arg)->task_name, 6);
+    task->table = ((struct arg *) arg)->table;
+    task->turn = ((struct arg *) arg)->turn;
+    INIT_LIST_HEAD(&task->list);
+    printf("%s: n = %c\n", task->task_name, task->turn);
+    if (setjmp(task->env) == 0) {
+        task_add(task);
+        longjmp(sched, 1);
+    }
+    for (int i = 0; i < task->turn; i++) {
+        task = cur_task;
+        if (setjmp(task->env) == 0) {
+            char win = check_win(task->table);
+            if (win == 'D') {
+                draw_board(task->table);
+                printf("It is a draw!\n");
+                break;
+            } else if (win != ' ') {
+                draw_board(task->table);
+                printf("%c won!\n", win);
+                break;
+            }
+            draw_board(task->table);
+            int move = mcts(task->table, task->turn);
+            if (move != -1) {
+                task->table[move] = task->turn;
+                record_move(move);
+            }
+            task_add(task);
+            printf("%s: n = %c,  continue...\n", task->task_name, task->turn);
+            task_switch();
+        }
+    }
+    printf("%s: complete\n", task->task_name);
+    longjmp(sched, 1);
+}
+
 static bool do_ttt(int argc, char *argv[])
 {
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "--ai_vs_ai") == 0) {
             ai_vs_ai = 1;
+        }
+        if (strcmp(argv[i], "--coro") == 0) {
+            coro = 1;
         }
     }
 
@@ -510,6 +673,11 @@ static bool do_ttt(int argc, char *argv[])
     char turn = 'X';
     char ai = 'O';
 
+    void (*registered_task[])(void *) = {task0, task1};
+    struct arg arg0 = {.table = table, .turn = 'X', .task_name = "Task 0"};
+    struct arg arg1 = {.table = table, .turn = 'O', .task_name = "Task 1"};
+    struct arg registered_arg[] = {arg0, arg1};
+
     if (ai_vs_ai)
         negamax_init();
 
@@ -518,52 +686,71 @@ static bool do_ttt(int argc, char *argv[])
         if (win == 'D') {
             draw_board(table);
             printf("It is a draw!\n");
+            show_time();
             break;
         } else if (win != ' ') {
             draw_board(table);
+            show_time();
             printf("%c won!\n", win);
             break;
         }
 
-        if (turn == ai) {
-            int move = mcts(table, ai);
-            if (move != -1) {
-                table[move] = ai;
-                record_move(move);
-            }
-        } else if (ai_vs_ai) {
-            int move = negamax_predict(table, ai).move;
-            if (move != -1) {
+        if (ai_vs_ai == 0) {
+            if (turn == ai) {
+                int move = mcts(table, ai);
+                if (move != -1) {
+                    table[move] = ai;
+                    record_move(move);
+                }
+            } else {
+                draw_board(table);
+                int move;
+                while (1) {
+                    move = get_input(turn);
+                    if (table[move] == ' ') {
+                        break;
+                    }
+                    printf("Invalid operation: the position has been marked\n");
+                }
                 table[move] = turn;
                 record_move(move);
             }
-        } else {
-            draw_board(table);
-            int move;
-            while (1) {
-                move = get_input(turn);
-                if (table[move] == ' ') {
-                    break;
+        } else if (ai_vs_ai == 1) {
+            if (turn == ai) {
+                draw_board(table);
+                int move = mcts(table, ai);
+                if (move != -1) {
+                    table[move] = ai;
+                    record_move(move);
                 }
-                printf("Invalid operation: the position has been marked\n");
+            } else {
+                draw_board(table);
+                int move = negamax_predict(table, turn).move;
+                if (move != -1) {
+                    table[move] = turn;
+                    record_move(move);
+                }
             }
-            table[move] = turn;
-            record_move(move);
+        } else if (ai_vs_ai == 2) {
+            tasks = registered_task;
+            args = registered_arg;
+            ntasks = ARRAY_SIZE(registered_task);
+            schedule();
+            for (int i = 0; i < N_GRIDS; i++) {
+                table[i] = ' ';
+            }
+            for (int i = 0; i < move_count; i++) {
+                move_record_arr[record_arr_len][i + 1] = move_record[i];
+                move_record[i] = 0;
+            }
+            move_record_arr[record_arr_len][0] = move_count;
+            move_count = 0;
+            record_arr_len++;
         }
         turn = turn == 'X' ? 'O' : 'X';
-
-        if (ai_vs_ai) {
-            draw_board(table);
-            time_t timer = time(NULL);
-            struct tm *tm_info = localtime(&timer);
-
-            char buffer[26];
-            strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
-            puts(buffer);
-        }
     }
     ai_vs_ai = 0;
-    print_moves();
+    print_all_moves();
     return true;
 }
 
@@ -592,6 +779,8 @@ void init_cmd()
     add_param("echo", &echo, "Do/don't echo commands", NULL);
     add_param("entropy", &show_entropy, "Show/Hide Shannon entropy", NULL);
     add_param("AI_vs_AI", &ai_vs_ai, "Trigger tic-tac-toe AI vs AI", NULL);
+    // add_param("coro", &ai_vs_ai, "Trigger coroutine tic-tac-toe AI vs AI",
+    // NULL);
 
     init_in();
     init_time(&last_time);

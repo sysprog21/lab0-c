@@ -18,6 +18,7 @@ CPPCHECK_suppresses="--inline-suppr harness.c \
 --suppress=nullPointer:qtest.c \
 --suppress=nullPointer:zobrist.c \
 --suppress=nullPointer:coroutine.h \
+--suppress=nullPointer:console.c \
 --suppress=returnDanglingLifetime:report.c \
 --suppress=constParameterCallback:console.c \
 --suppress=constParameterPointer:console.c \

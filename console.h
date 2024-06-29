@@ -8,6 +8,12 @@
 
 #define HISTORY_FILE ".cmd_history"
 
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+void print_all_moves();
+void record_move(int move);
+void print_moves();
+int get_input(char player);
+
 /* Implementation of simple command-line interface */
 
 /* Simulation flag of console option */
