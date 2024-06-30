@@ -10,7 +10,7 @@
 #define LOG2_ARG_SHIFT (1 << 16)
 #define LOG2_RET_SHIFT (1 << 3)
 
-/* store precalculated function (log2(arg << 16)) << 3 */
+/* store precalculated function (log2(arg << 24)) << 3 */
 static inline int log2_lshift16(uint64_t lshift16)
 {
     if (lshift16 < 558) {
