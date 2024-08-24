@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   lab0-c:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - uses: webfactory/ssh-agent@v0.7.0
@@ -31,12 +31,12 @@ jobs:
             cat scripts/kirby.raw
 
   coding-style:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: coding convention
       run: |
-            sudo apt-get install -q -y clang-format-14
+            sudo apt-get install -q -y clang-format-16
             .ci/check-newline.sh
             .ci/check-format.sh
       shell: bash
