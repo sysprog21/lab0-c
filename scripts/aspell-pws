@@ -295,3 +295,6 @@ Shannon
 http
 https
 tcp
+awk
+sed
+changeid
