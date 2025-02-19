@@ -1173,6 +1173,108 @@ static void usage(char *cmd)
     exit(0);
 }
 
+extern char **environ;
+
+/* Returns true if the hash is exactly 40 hexadecimal characters. */
+static inline bool is_valid_sha1(const char *hash)
+{
+    size_t len = strlen(hash);
+    if (len != 40)
+        return false;
+    for (size_t i = 0; i < len; i++) {
+        char c = hash[i];
+        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ||
+              (c >= 'A' && c <= 'F'))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* Checks if a specific SHA-1 commit exists in the git log. */
+bool commit_exists(const char *commit_hash)
+{
+    /* Verify the commit_hash is a valid SHA-1 hash */
+    if (!is_valid_sha1(commit_hash))
+        return false;
+
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        /* Error creating pipe */
+        perror("pipe");
+        return false;
+    }
+
+    posix_spawn_file_actions_t actions;
+    if (posix_spawn_file_actions_init(&actions) != 0) {
+        /* Error initializing spawn file actions */
+        perror("posix_spawn_file_actions_init");
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return false;
+    }
+
+    /* Redirect child's stdout to the pipe's write end */
+    if (posix_spawn_file_actions_adddup2(&actions, pipefd[1], STDOUT_FILENO) !=
+        0) {
+        perror("posix_spawn_file_actions_adddup2");
+        posix_spawn_file_actions_destroy(&actions);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return false;
+    }
+
+    /* Close unused pipe ends in the child */
+    if (posix_spawn_file_actions_addclose(&actions, pipefd[0]) != 0 ||
+        posix_spawn_file_actions_addclose(&actions, pipefd[1]) != 0) {
+        perror("posix_spawn_file_actions_addclose");
+        posix_spawn_file_actions_destroy(&actions);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return false;
+    }
+
+    pid_t pid;
+    /* Use "--no-abbrev-commit" to ensure full SHA-1 hash is printed */
+    char *argv[] = {"git", "log", "--pretty=oneline", "--no-abbrev-commit",
+                    NULL};
+    int spawn_ret = posix_spawnp(&pid, "git", &actions, NULL, argv, environ);
+    posix_spawn_file_actions_destroy(&actions);
+    if (spawn_ret != 0) {
+        /* Error spawning git process */
+        fprintf(stderr, "posix_spawnp failed: %s\n", strerror(spawn_ret));
+        close(pipefd[0]);
+        return false;
+    }
+
+    /* Parent process: close the write end of the pipe */
+    close(pipefd[1]);
+
+    FILE *stream = fdopen(pipefd[0], "r");
+    if (stream == NULL) {
+        /* Error converting file descriptor to stream */
+        perror("fdopen");
+        return false;
+    }
+
+    bool found = false;
+    char buffer[1024];
+    while (fgets(buffer, sizeof(buffer), stream)) {
+        /* Compare the first 40 characters of each line with commit_hash */
+        if (strncmp(buffer, commit_hash, 40) == 0) {
+            found = true;
+            break;
+        }
+    }
+    fclose(stream);
+
+    /* Wait for the child process to finish */
+    int status;
+    waitpid(pid, &status, 0);
+
+    return found;
+}
+
 #define GIT_HOOK ".git/hooks/"
 static bool sanity_check()
 {
@@ -1202,6 +1304,13 @@ static bool sanity_check()
         }
         return false;
     }
+#define COPYRIGHT_COMMIT_SHA1 "50c5ac53d31adf6baac4f8d3db6b3ce2215fee40"
+    if (!commit_exists(COPYRIGHT_COMMIT_SHA1)) {
+        fprintf(stderr,
+                "FATAL: The repository is outdated. Please update properly.\n");
+        return false;
+    }
+
     return true;
 }
 
