@@ -1236,8 +1236,9 @@ bool commit_exists(const char *commit_hash)
 
     pid_t pid;
     /* Use "--no-abbrev-commit" to ensure full SHA-1 hash is printed */
-    char *argv[] = {"git", "log", "--pretty=oneline", "--no-abbrev-commit",
-                    NULL};
+    char *argv[] = {
+        "git", "log", "--pretty=oneline", "--no-abbrev-commit", NULL,
+    };
     int spawn_ret = posix_spawnp(&pid, "git", &actions, NULL, argv, environ);
     posix_spawn_file_actions_destroy(&actions);
     if (spawn_ret != 0) {
@@ -1261,7 +1262,7 @@ bool commit_exists(const char *commit_hash)
     char buffer[1024];
     while (fgets(buffer, sizeof(buffer), stream)) {
         /* Compare the first 40 characters of each line with commit_hash */
-        if (strncmp(buffer, commit_hash, 40) == 0) {
+        if (!strncmp(buffer, commit_hash, 40)) {
             found = true;
             break;
         }
@@ -1304,11 +1305,14 @@ static bool sanity_check()
         }
         return false;
     }
+    if (stat("/home/runner/work", &buf)) { /* Skip the check in CI */
 #define COPYRIGHT_COMMIT_SHA1 "50c5ac53d31adf6baac4f8d3db6b3ce2215fee40"
-    if (!commit_exists(COPYRIGHT_COMMIT_SHA1)) {
-        fprintf(stderr,
+        if (!commit_exists(COPYRIGHT_COMMIT_SHA1)) {
+            fprintf(
+                stderr,
                 "FATAL: The repository is outdated. Please update properly.\n");
-        return false;
+            return false;
+        }
     }
 
     return true;
