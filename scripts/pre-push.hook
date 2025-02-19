@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 # Author: Jim Huang <jserv.tw@gmail.com>
 # Date:   Thu Feb 20 05:20:55 2025 +0800
 #    Bump copyright year
-commit=$(git rev-list --skip 1 --grep '^Bump copyright' 0c2680aedb95dba0b7faa0b3acf784b55826652f...HEAD)
+commit=$(git rev-list --skip 1 --grep '^Bump copyright' 0b8be2c15160c216e8b6ec82c99a000e81c0e429...HEAD)
 if [ x"$commit" != x"50c5ac53d31adf6baac4f8d3db6b3ce2215fee40" ] ; then
     echo -e "${RED}ERROR${NC}: This repository is insane."
     echo -e "Make sure you did fork from https://github.com/sysprog21/lab0-c recently."
