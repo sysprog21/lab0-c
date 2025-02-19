@@ -1305,7 +1305,8 @@ static bool sanity_check()
         }
         return false;
     }
-    if (stat("/home/runner/work", &buf)) { /* Skip the check in CI */
+    /* GitHub Actions checkouts do not include the complete git history. */
+    if (stat("/home/runner/work", &buf)) {
 #define COPYRIGHT_COMMIT_SHA1 "50c5ac53d31adf6baac4f8d3db6b3ce2215fee40"
         if (!commit_exists(COPYRIGHT_COMMIT_SHA1)) {
             fprintf(
