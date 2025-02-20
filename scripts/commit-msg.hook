@@ -249,13 +249,21 @@ validate_commit_message() {
   # 6. Wrap the body at 72 characters
   # ------------------------------------------------------------------------------
 
-  URL_REGEX='^[[:blank:]]*(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+URL_REGEX='^[[:blank:]]*(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]'
 
-  for i in "${!COMMIT_MSG_LINES[@]}"; do
-    LINE_NUMBER=$((i+1))
-    test "${#COMMIT_MSG_LINES[$i]}" -le 72 || [[ ${COMMIT_MSG_LINES[$i]} =~ $URL_REGEX ]]
-    test $? -eq 0 || add_warning $LINE_NUMBER "Wrap the body at 72 characters (${#COMMIT_MSG_LINES[$i]} chars)"
-  done
+# Ensure the commit message lines are loaded into an array.
+readarray -t COMMIT_MSG_LINES < "$COMMIT_MSG_FILE"
+
+for i in "${!COMMIT_MSG_LINES[@]}"; do
+  LINE="${COMMIT_MSG_LINES[$i]}"
+  # Trim leading and trailing whitespace.
+  TRIMMED_LINE="${LINE#"${LINE%%[![:space:]]*}"}"
+  TRIMMED_LINE="${TRIMMED_LINE%"${TRIMMED_LINE##*[![:space:]]}"}"
+  LINE_NUMBER=$((i+1))
+  if [ "${#TRIMMED_LINE}" -gt 72 ] && ! [[ "$TRIMMED_LINE" =~ $URL_REGEX ]]; then
+    add_warning "$LINE_NUMBER" "Wrap the body at 72 characters (${#TRIMMED_LINE} chars)"
+  fi
+done
 
   # 7. Use the body to explain what and why vs. how
   # ------------------------------------------------------------------------------
@@ -282,15 +290,28 @@ validate_commit_message() {
 
   word_count=$(echo "$COMMIT_SUBJECT_TO_PROCESS" | wc -w)
   test "$word_count" -gt 1
-  test $? -eq 0 || add_warning 1 "Commit subject should contain more than one word (e.g. 'Update dependencies' instead of 'Update')"
+  test $? -eq 0 || add_warning 1 "Commit subject should contain more than one word. Summarize your changes"
 
   # 11. Avoid commit subject that simply states a file update (e.g. "Update console.c")
+  # ------------------------------------------------------------------------------
+
   if [[ $COMMIT_SUBJECT_TO_PROCESS =~ ^Update[[:space:]]+([^[:space:]]+)$ ]]; then
     candidate="${BASH_REMATCH[1]}"
     # Only warn if the candidate filename ends with .c or .h
     if [[ $candidate =~ \.(c|h)$ ]]; then
       add_warning 1 "Avoid using just a filename like '$candidate'. Provide a functional, meaningful description"
     fi
+  fi
+
+  # 12. Avoid abusive language in commit message content
+  # ------------------------------------------------------------------------------
+
+  FULL_COMMIT_MSG=$(sed '/^#/d;/^[[:space:]]*$/d' "$COMMIT_MSG_FILE")
+  # Extended list of abusive words (case-insensitive).
+  # Adjust the list as needed.
+  ABUSIVE_WORDS_REGEX='\b(fuck|fucking|dick|shit|bitch|asshole|cunt|motherfucker|damn|crap|dumbass|piss)\b'
+  if echo "$FULL_COMMIT_MSG" | grep -Eiq "$ABUSIVE_WORDS_REGEX"; then
+    add_warning 1 "Commit message contains inappropriate language. Avoid using abusive words"
   fi
 }
 
