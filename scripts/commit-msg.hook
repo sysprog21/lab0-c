@@ -260,8 +260,6 @@ validate_commit_message() {
   # 7. Use the body to explain what and why vs. how
   # ------------------------------------------------------------------------------
 
-  # ?
-
   # 8. Do no write single worded commits
   # ------------------------------------------------------------------------------
 
@@ -278,6 +276,22 @@ validate_commit_message() {
 
   [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ ^[[:blank:]]+ ]]
   test $? -eq 1 || add_warning 1 "Do not start the subject line with whitespace"
+
+  # 10. Avoid single word commit messages in subject
+  # ------------------------------------------------------------------------------
+
+  word_count=$(echo "$COMMIT_SUBJECT_TO_PROCESS" | wc -w)
+  test "$word_count" -gt 1
+  test $? -eq 0 || add_warning 1 "Commit subject should contain more than one word (e.g. 'Update dependencies' instead of 'Update')"
+
+  # 11. Avoid commit subject that simply states a file update (e.g. "Update console.c")
+  if [[ $COMMIT_SUBJECT_TO_PROCESS =~ ^Update[[:space:]]+([^[:space:]]+)$ ]]; then
+    candidate="${BASH_REMATCH[1]}"
+    # Only warn if the candidate filename ends with .c or .h
+    if [[ $candidate =~ \.(c|h)$ ]]; then
+      add_warning 1 "Avoid using just a filename like '$candidate'. Provide a functional, meaningful description"
+    fi
+  fi
 }
 
 unset GREP_OPTIONS
