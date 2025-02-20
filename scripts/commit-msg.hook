@@ -249,13 +249,21 @@ validate_commit_message() {
   # 6. Wrap the body at 72 characters
   # ------------------------------------------------------------------------------
 
-  URL_REGEX='^[[:blank:]]*(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+URL_REGEX='^[[:blank:]]*(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]'
 
-  for i in "${!COMMIT_MSG_LINES[@]}"; do
-    LINE_NUMBER=$((i+1))
-    test "${#COMMIT_MSG_LINES[$i]}" -le 72 || [[ ${COMMIT_MSG_LINES[$i]} =~ $URL_REGEX ]]
-    test $? -eq 0 || add_warning $LINE_NUMBER "Wrap the body at 72 characters (${#COMMIT_MSG_LINES[$i]} chars)"
-  done
+# Ensure the commit message lines are loaded into an array.
+readarray -t COMMIT_MSG_LINES < "$COMMIT_MSG_FILE"
+
+for i in "${!COMMIT_MSG_LINES[@]}"; do
+  LINE="${COMMIT_MSG_LINES[$i]}"
+  # Trim leading and trailing whitespace.
+  TRIMMED_LINE="${LINE#"${LINE%%[![:space:]]*}"}"
+  TRIMMED_LINE="${TRIMMED_LINE%"${TRIMMED_LINE##*[![:space:]]}"}"
+  LINE_NUMBER=$((i+1))
+  if [ "${#TRIMMED_LINE}" -gt 72 ] && ! [[ "$TRIMMED_LINE" =~ $URL_REGEX ]]; then
+    add_warning "$LINE_NUMBER" "Wrap the body at 72 characters (${#TRIMMED_LINE} chars)"
+  fi
+done
 
   # 7. Use the body to explain what and why vs. how
   # ------------------------------------------------------------------------------
