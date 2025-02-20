@@ -68,6 +68,9 @@ chmod +x .git/hooks/commit-msg
 ln -sf ../../scripts/pre-push.hook .git/hooks/pre-push || exit 1
 chmod +x .git/hooks/pre-push
 
+ln -sf ../../scripts/prepare-commit-msg.hook .git/hooks/prepare-commit-msg || exit 1
+chmod +x .git/hooks/prepare-commit-msg
+
 touch .git/hooks/applied || exit 1
 
 echo

@@ -1,0 +1,40 @@
+#!/bin/bash
+
+COMMIT_MSG_FILE="$1"
+
+# Only proceed if the commit message file is empty (ignoring comment or blank lines).
+if grep -qE '^[^[:space:]#]' "$COMMIT_MSG_FILE"; then
+    exit 0
+fi
+
+# Define the inline message with commit guidelines.
+INLINE_MSG=$(cat <<'EOF'
+# 🎉Check the rules before writing commit messages.
+#     https://cbea.ms/git-commit/
+#
+# Seven Rules for a Great Git Commit Message:
+# 1. Separate subject from body with a blank line
+# 2. Limit the subject line to 50 characters
+# 3. Capitalize the subject line
+# 4. Do not end the subject line with a period
+# 5. Use the imperative mood in the subject line
+# 6. Wrap the body at 72 characters
+# 7. Use the body to explain what and why vs. how
+#
+# You may modify this commit message.
+# To abort this commit, exit the editor without saving.
+EOF
+)
+
+# Write the inline guidelines into the commit message file.
+echo > "$COMMIT_MSG_FILE"
+echo -e "$INLINE_MSG" >> "$COMMIT_MSG_FILE"
+
+# Prompt the user to optionally abort the commit.
+read -rp "Do you want to abort this commit? (y/N): " answer
+if [[ "$answer" =~ ^[Yy]$ ]]; then
+    echo "Commit aborted by user." >&2
+    exit 1
+fi
+
+exit 0
