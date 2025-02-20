@@ -1252,7 +1252,7 @@ bool commit_exists(const char *commit_hash)
     close(pipefd[1]);
 
     FILE *stream = fdopen(pipefd[0], "r");
-    if (stream == NULL) {
+    if (!stream) {
         /* Error converting file descriptor to stream */
         perror("fdopen");
         return false;
@@ -1274,6 +1274,26 @@ bool commit_exists(const char *commit_hash)
     waitpid(pid, &status, 0);
 
     return found;
+}
+
+static bool check_commitlog(void)
+{
+    pid_t pid;
+    int status;
+    char *script_path = "scripts/check-commitlog.sh";
+    char *argv[] = {script_path, NULL};
+
+    int spawn_ret = posix_spawnp(&pid, script_path, NULL, NULL, argv, environ);
+    if (spawn_ret != 0)
+        return false;
+
+    if (waitpid(pid, &status, 0) == -1)
+        return false;
+
+    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+        return false;
+
+    return true;
 }
 
 #define GIT_HOOK ".git/hooks/"
@@ -1312,6 +1332,14 @@ static bool sanity_check()
             fprintf(
                 stderr,
                 "FATAL: The repository is outdated. Please update properly.\n");
+            return false;
+        }
+        if (!check_commitlog()) {
+            fprintf(stderr, "FATAL: The git commit history is chaotic.\n");
+            fprintf(stderr,
+                    "Please install the required git hooks per the assignment "
+                    "instructions and make your commits from the terminal "
+                    "instead of using the GitHub web interface.\n");
             return false;
         }
     }
