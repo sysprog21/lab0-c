@@ -265,16 +265,17 @@ validate_commit_message() {
     fi
   done
 
-  # 7. Do no write single worded commits
+  # 7. Ensure the commit subject has more than one word.
   # ------------------------------------------------------------------------------
 
-  COMMIT_SUBJECT_WORDS=(${COMMIT_SUBJECT_TO_PROCESS})
-  test "${#COMMIT_SUBJECT_WORDS[@]}" -gt 1
-  test $? -eq 0 || add_warning 1 "Do no write single worded commits"
+  if [ "$(echo "$COMMIT_SUBJECT_TO_PROCESS" | wc -w)" -le 1 ]; then
+    add_warning 1 "Do not write single-word commits. Provide a descriptive subject"
+  fi
 
-  # 7a. Do not mention C source filenames
-  [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ [_a-zA-Z0-9]+\.[ch]$ ]]
-  test $? -eq 1 || add_warning 1 "Avoid mentioning C source filenames"
+  # 7a. Avoid using C source filenames as the commit subject.
+  if [[ "$COMMIT_SUBJECT_TO_PROCESS" =~ ^[_a-zA-Z0-9]+\.[ch]$ ]]; then
+    add_warning 1 "Avoid mentioning C source filenames in the commit subject"
+  fi
 
   # 8. Use the body to explain what and why vs. how
   # ------------------------------------------------------------------------------
@@ -295,12 +296,12 @@ validate_commit_message() {
   [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ ^[[:blank:]]+ ]]
   test $? -eq 1 || add_warning 1 "Do not start the subject line with whitespace"
 
-  # 10. Avoid single word commit messages in subject
+  # 10. Disallow backticks anywhere in the commit message.
   # ------------------------------------------------------------------------------
 
-  word_count=$(echo "$COMMIT_SUBJECT_TO_PROCESS" | wc -w)
-  test "$word_count" -gt 1
-  test $? -eq 0 || add_warning 1 "Commit subject should contain more than one word. Summarize your changes"
+  if sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d' "$COMMIT_MSG_FILE" | grep -q "\`"; then
+    add_warning 1 "Avoid using backticks in commit messages"
+  fi
 
   # 11. Avoid commit subject that simply states a file update (e.g. "Update console.c")
   # ------------------------------------------------------------------------------
