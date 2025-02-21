@@ -288,11 +288,14 @@ validate_commit_message() {
   # Count non-comment, non-blank lines excluding "Change-Id:".
   NON_COMMENT_COUNT=$(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d;/^[[:space:]]*Change-Id:/d' "${COMMIT_MSG_FILE}" | wc -l | xargs)
 
-  # If the subject is oversimplified for a queue function OR queue.c is modified,
-  # and there is only one meaningful line, issue a warning.
-  if { [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^(Implement|Finish|Complete)[[:space:]]+q_[[:alnum:]_]+\(?\)?$ ]] || \
-     git diff --cached --name-only | grep -Eq '(^|/)queue\.c$'; } && [ "${NON_COMMENT_COUNT}" -le 1 ]; then
-    add_warning 1 "Commit message oversimplified. Use the commit message body to explain what and why."
+  # If queue.c is modified and the commit message is oversimplified, forbid generic subjects.
+  if git diff --cached --name-only | grep -Eq '(^|/)queue\.c$'; then
+    if [ "${NON_COMMENT_COUNT}" -le 1 ]; then
+      add_warning 1 "Commit message oversimplified. Use the commit message body to explain what and why."
+    fi
+    if [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^(Complete|Finish|Done)[[:space:]]+ ]]; then
+      add_warning 1 "Avoid using generic subjects starting with 'Complete', 'Finish', or 'Done'"
+    fi
   fi
 
   # 9. Do not start the subject line with whitespace
