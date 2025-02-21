@@ -268,25 +268,30 @@ validate_commit_message() {
   # 7. Ensure the commit subject has more than one word.
   # ------------------------------------------------------------------------------
 
-  if [ "$(echo "$COMMIT_SUBJECT_TO_PROCESS" | wc -w)" -le 1 ]; then
+  if [ "$(echo "${COMMIT_SUBJECT_TO_PROCESS}" | wc -w)" -le 1 ]; then
     add_warning 1 "Do not write single-word commits. Provide a descriptive subject"
   fi
 
   # 7a. Avoid using C source filenames as the commit subject.
-  if [[ "$COMMIT_SUBJECT_TO_PROCESS" =~ ^[_a-zA-Z0-9]+\.[ch]$ ]]; then
+  if [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^[_a-zA-Z0-9]+\.[ch]$ ]]; then
     add_warning 1 "Avoid mentioning C source filenames in the commit subject"
+  fi
+
+  # 11a. Disallow parentheses in the commit subject.
+  if [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ [\(\)] ]]; then
+    add_warning 1 "Avoid using parentheses '()' in commit subjects"
   fi
 
   # 8. Use the body to explain what and why vs. how
   # ------------------------------------------------------------------------------
 
   # Count non-comment, non-blank lines excluding "Change-Id:".
-  NON_COMMENT_COUNT=$(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d;/^[[:space:]]*Change-Id:/d' "$COMMIT_MSG_FILE" | wc -l | xargs)
+  NON_COMMENT_COUNT=$(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d;/^[[:space:]]*Change-Id:/d' "${COMMIT_MSG_FILE}" | wc -l | xargs)
 
   # If the subject is oversimplified for a queue function OR queue.c is modified,
   # and there is only one meaningful line, issue a warning.
-  if { [[ "$COMMIT_SUBJECT_TO_PROCESS" =~ ^(Implement|Finish)[[:space:]]+q_[[:alnum:]_]+\(?\)?$ ]] || \
-     git diff --cached --name-only | grep -Eq '(^|/)queue\.c$'; } && [ "$NON_COMMENT_COUNT" -le 1 ]; then
+  if { [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^(Implement|Finish|Complete)[[:space:]]+q_[[:alnum:]_]+\(?\)?$ ]] || \
+     git diff --cached --name-only | grep -Eq '(^|/)queue\.c$'; } && [ "${NON_COMMENT_COUNT}" -le 1 ]; then
     add_warning 1 "Commit message oversimplified. Use the commit message body to explain what and why."
   fi
 
@@ -299,14 +304,14 @@ validate_commit_message() {
   # 10. Disallow backticks anywhere in the commit message.
   # ------------------------------------------------------------------------------
 
-  if sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d' "$COMMIT_MSG_FILE" | grep -q "\`"; then
+  if sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d' "${COMMIT_MSG_FILE}" | grep -q "\`"; then
     add_warning 1 "Avoid using backticks in commit messages"
   fi
 
   # 11. Avoid commit subject that simply states a file update (e.g. "Update console.c")
   # ------------------------------------------------------------------------------
 
-  if [[ $COMMIT_SUBJECT_TO_PROCESS =~ ^Update[[:space:]]+([^[:space:]]+)$ ]]; then
+  if [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ ^Update[[:space:]]+([^[:space:]]+)$ ]]; then
     candidate="${BASH_REMATCH[1]}"
     # Only warn if the candidate filename ends with .c or .h
     if [[ $candidate =~ \.(c|h)$ ]]; then
