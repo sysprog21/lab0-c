@@ -1,4 +1,4 @@
-/* Linux-like doubly-linked list implementation */
+/* Linux-like circular doubly-linked list implementation */
 
 #pragma once
 
@@ -8,11 +8,19 @@ extern "C" {
 
 #include <stddef.h>
 
-/* "typeof" is a GNU extension.
+/**
+ * Feature detection for 'typeof':
+ * - Supported as a GNU extension in GCC/Clang.
+ * - Part of C23 standard (ISO/IEC 9899:2024).
+ *
  * Reference: https://gcc.gnu.org/onlinedocs/gcc/Typeof.html
  */
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) || defined(__clang__) ||         \
+    (defined(__STDC__) && defined(__STDC_VERSION__) && \
+     (__STDC_VERSION__ >= 202311L)) /* C23 ?*/
 #define __LIST_HAVE_TYPEOF 1
+#else
+#define __LIST_HAVE_TYPEOF 0
 #endif
 
 /**
@@ -46,11 +54,11 @@ struct list_head {
  * Return: @type pointer of structure containing ptr
  */
 #ifndef container_of
-#ifdef __LIST_HAVE_TYPEOF
-#define container_of(ptr, type, member)                            \
-    __extension__({                                                \
-        const __typeof__(((type *) 0)->member) *__pmember = (ptr); \
-        (type *) ((char *) __pmember - offsetof(type, member));    \
+#if __LIST_HAVE_TYPEOF
+#define container_of(ptr, type, member)                         \
+    __extension__({                                             \
+        const typeof(((type *) 0)->member) *__pmember = (ptr);  \
+        (type *) ((char *) __pmember - offsetof(type, member)); \
     })
 #else
 #define container_of(ptr, type, member) \
@@ -379,54 +387,61 @@ static inline void list_move_tail(struct list_head *node,
     for (node = (head)->next; node != (head); node = node->next)
 
 /**
- * list_for_each_entry - Iterate over list entries
- * @entry: pointer used as iterator
- * @head: pointer to the head of the list
- * @member: name of the list_head member variable in struct type of @entry
+ * list_for_each_entry - Iterate over a list of entries
+ * @entry: Pointer to the structure type, used as the loop iterator.
+ * @head: Pointer to the list_head structure representing the list head.
+ * @member: Name of the list_head member within the structure type of @entry.
  *
- * The nodes and the head of the list must be kept unmodified while
- * iterating through it. Any modifications to the the list will cause undefined
- * behavior.
- *
- * FIXME: remove dependency of __typeof__ extension
+ * Iterates over a circular doubly-linked list, starting from the first node
+ * after @head until reaching @head again. The macro assumes the list structure
+ * remains unmodified during iteration; any changes (e.g., adding/removing
+ * nodes) may result in undefined behavior.
  */
-#ifdef __LIST_HAVE_TYPEOF
-#define list_for_each_entry(entry, head, member)                       \
-    for (entry = list_entry((head)->next, __typeof__(*entry), member); \
-         &entry->member != (head);                                     \
-         entry = list_entry(entry->member.next, __typeof__(*entry), member))
+#if __LIST_HAVE_TYPEOF
+#define list_for_each_entry(entry, head, member)                   \
+    for (entry = list_entry((head)->next, typeof(*entry), member); \
+         &entry->member != (head);                                 \
+         entry = list_entry(entry->member.next, typeof(*entry), member))
 #endif
 
 /**
- * list_for_each_safe - Iterate over list nodes and allow deletions
- * @node: list_head pointer used as iterator
- * @safe: list_head pointer used to store info for next entry in list
- * @head: pointer to the head of the list
+ * list_for_each_safe - Iterate over list nodes, allowing removal
+ * @node: Pointer to a list_head structure, used as the loop iterator.
+ * @safe: Pointer to a list_head structure, storing the next node for safe
+ *        iteration.
+ * @head: Pointer to the list_head structure representing the list head.
  *
- * The current node (iterator) is allowed to be removed from the list. Any
- * other modifications to the the list will cause undefined behavior.
+ * Iterates over a circular doubly-linked list, starting from the first node
+ * after @head and continuing until reaching @head again. This macro allows
+ * safe removal of the current node (@node) during iteration by pre-fetching
+ * the next node into @safe. Other modifications to the list structure (e.g.,
+ * adding nodes or altering @head) may result in undefined behavior.
  */
 #define list_for_each_safe(node, safe, head)                     \
     for (node = (head)->next, safe = node->next; node != (head); \
          node = safe, safe = node->next)
 
 /**
- * list_for_each_entry_safe - Iterate over list entries and allow deletes
- * @entry: pointer used as iterator
- * @safe: @type pointer used to store info for next entry in list
- * @head: pointer to the head of the list
- * @member: name of the list_head member variable in struct type of @entry
+ * list_for_each_entry_safe - Iterate over a list, allowing node removal
+ * @entry: Pointer to the structure type, used as the loop iterator.
+ * @safe: Pointer to the structure type, storing the next entry for safe
+ * iteration.
+ * @head: Pointer to the list_head structure representing the list head.
+ * @member: Name of the list_head member within the structure type of @entry.
  *
- * The current node (iterator) is allowed to be removed from the list. Any
- * other modifications to the the list will cause undefined behavior.
- *
- * FIXME: remove dependency of __typeof__ extension
+ * Iterates over a circular doubly-linked list, starting from the first node
+ * after @head and continuing until reaching @head again. This macro permits
+ * safe removal of the current node (@entry) during iteration by pre-fetching
+ * the next node into @safe. Other modifications to the list structure (e.g.,
+ * adding nodes or altering @head) may result in undefined behavior.
  */
-#define list_for_each_entry_safe(entry, safe, head, member)                \
-    for (entry = list_entry((head)->next, __typeof__(*entry), member),     \
-        safe = list_entry(entry->member.next, __typeof__(*entry), member); \
-         &entry->member != (head); entry = safe,                           \
-        safe = list_entry(safe->member.next, __typeof__(*entry), member))
+#if __LIST_HAVE_TYPEOF
+#define list_for_each_entry_safe(entry, safe, head, member)            \
+    for (entry = list_entry((head)->next, typeof(*entry), member),     \
+        safe = list_entry(entry->member.next, typeof(*entry), member); \
+         &entry->member != (head); entry = safe,                       \
+        safe = list_entry(safe->member.next, typeof(*entry), member))
+#endif
 
 #undef __LIST_HAVE_TYPEOF
 
