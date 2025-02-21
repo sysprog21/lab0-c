@@ -277,7 +277,7 @@ validate_commit_message() {
     add_warning 1 "Avoid mentioning C source filenames in the commit subject"
   fi
 
-  # 11a. Disallow parentheses in the commit subject.
+  # 7b. Disallow parentheses in the commit subject.
   if [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ [\(\)] ]]; then
     add_warning 1 "Avoid using parentheses '()' in commit subjects"
   fi
@@ -334,8 +334,18 @@ validate_commit_message() {
   # 13. Always use American English.
   # ------------------------------------------------------------------------------
 
-  # Use aspell to list misspelled words according to American English.
-  MISSPELLED_WORDS=$(echo "$FULL_COMMIT_MSG" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
+  # Alert if the commit message appears to be written in Chinese.
+  # This pattern matches any Chinese character (common CJK Unified Ideographs).
+  MISSPELLED_WORDS=$(echo "$FULL_COMMIT_MSG" | grep "[一-龥]")
+  if [ -n "$MISSPELLED_WORDS" ]; then
+    add_warning 1 "Commit message appears to be written in Chinese: $MISSPELLED_WORDS"
+  fi
+
+  # Remove quoted text from FULL_COMMIT_MSG for spell checking.
+  MSG_FOR_SPELLCHECK=$(echo "$FULL_COMMIT_MSG" | sed -E "s/(['\"][^'\"]*['\"])//g")
+
+  # Use aspell to list misspelled words according to American English, ignoring quoted text.
+  MISSPELLED_WORDS=$(echo "$MSG_FOR_SPELLCHECK" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
   if [ -n "$MISSPELLED_WORDS" ]; then
     add_warning 1 "Avoid using non-American English words"
   fi
