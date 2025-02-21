@@ -24,21 +24,19 @@ extern "C" {
 #endif
 
 /**
- * struct list_head - Head and node of a doubly-linked list
- * @prev: pointer to the previous node in the list
- * @next: pointer to the next node in the list
+ * struct list_head - Node structure for a circular doubly-linked list
+ * @next: Pointer to the next node in the list.
+ * @prev: Pointer to the previous node in the list.
  *
- * The simple doubly-linked list consists of a head and nodes attached to
- * this head. Both node and head share the same struct type. The list_*
- * functions and macros can be used to access and modify this data structure.
+ * Defines both the head and nodes of a circular doubly-linked list. The head's
+ * @next points to the first node and @prev to the last node; in an empty list,
+ * both point to the head itself. All nodes, including the head, share this
+ * structure type.
  *
- * The @prev pointer of the list head points to the last list node of the
- * list and @next points to the first list node of the list. For an empty list,
- * both member variables point to the head.
- *
- * The list nodes are usually embedded in a container structure which holds the
- * actual data. Such container structure is called entry. The helper list_entry
- * can be used to calculate the structure address from the address of the node.
+ * Nodes are typically embedded within a container structure holding actual
+ * data, accessible via the list_entry() helper, which computes the container's
+ * address from a node pointer. The list_* functions and macros provide an API
+ * for manipulating this data structure efficiently.
  */
 struct list_head {
     struct list_head *prev;
@@ -67,25 +65,23 @@ struct list_head {
 #endif
 
 /**
- * LIST_HEAD - Declare list head and initialize it
+ * LIST_HEAD - Define and initialize a circular list head
  * @head: name of the new list
  */
 #define LIST_HEAD(head) struct list_head head = {&(head), &(head)}
 
 /**
  * INIT_LIST_HEAD() - Initialize empty list head
- * @head: pointer to list head
+ * @head: Pointer to the list_head structure to initialize.
  *
- * This can also be used to initialize a unlinked list node.
+ * It sets both @next and @prev to point to the structure itself. The
+ * initialization applies to either a list head or an unlinked node that is
+ * not yet part of a list.
  *
- * A node is usually linked inside a list, will be added to a list in
- * the near future or the entry containing the node will be free'd soon.
- *
- * But an unlinked node may be given to a function which uses list_del(_init)
- * before it ends up in a previously mentioned state. The list_del(_init) on an
- * initialized node is well defined and safe. But the result of a
- * list_del(_init) on an uninitialized node is undefined (unrelated memory is
- * modified, crashes, ...).
+ * Unlinked nodes may be passed to functions using 'list_del()' or
+ * 'list_del_init()', which are safe only on initialized nodes. Applying these
+ * operations to an uninitialized node results in undefined behavior, such as
+ * memory corruption or crashes.
  */
 static inline void INIT_LIST_HEAD(struct list_head *head)
 {
@@ -94,9 +90,13 @@ static inline void INIT_LIST_HEAD(struct list_head *head)
 }
 
 /**
- * list_add() - Add a list node to the beginning of the list
- * @node: pointer to the new node
- * @head: pointer to the head of the list
+ * list_add - Insert a node at the beginning of a circular list
+ * @node: Pointer to the list_head structure to add.
+ * @head: Pointer to the list_head structure representing the list head.
+ *
+ * Adds the specified @node immediately after @head in a circular doubly-linked
+ * list, effectively placing it at the beginning. The existing first node, if
+ * any, shifts to follow @node, and the list's circular structure is maintained.
  */
 static inline void list_add(struct list_head *node, struct list_head *head)
 {
@@ -124,20 +124,22 @@ static inline void list_add_tail(struct list_head *node, struct list_head *head)
 }
 
 /**
- * list_del() - Remove a list node from the list
- * @node: pointer to the node
+ * list_del - Remove a node from a circular doubly-linked list
+ * @node: Pointer to the list_head structure to remove.
  *
- * The node is only removed from the list. Neither the memory of the removed
- * node nor the memory of the entry containing the node is free'd. The node
- * has to be handled like an uninitialized node. Accessing the next or prev
- * pointer of the node is not safe.
+ * Removes @node from its list by updating the adjacent nodes’ pointers to
+ * bypass it. The node’s memory and its containing structure, if any, are not
+ * freed. After removal, @node is left unlinked and should be treated as
+ * uninitialized; accessing its @next or @prev pointers is unsafe and may cause
+ * undefined behavior.
  *
- * Unlinked, initialized nodes are also uninitialized after list_del.
+ * Even previously initialized but unlinked nodes become uninitialized after
+ * this operation. To reintegrate @node into a list, it must be reinitialized
+ * (e.g., via INIT_LIST_HEAD).
  *
- * LIST_POISONING can be enabled during build-time to provoke an invalid memory
- * access when the memory behind the next/prev pointer is used after a list_del.
- * This only works on systems which prohibit access to the predefined memory
- * addresses.
+ * If LIST_POISONING is enabled at build time, @next and @prev are set to
+ * invalid addresses to trigger memory access faults on misuse. This feature is
+ * effective only on systems that restrict access to these specific addresses.
  */
 static inline void list_del(struct list_head *node)
 {
@@ -154,11 +156,13 @@ static inline void list_del(struct list_head *node)
 }
 
 /**
- * list_del_init() - Remove a list node from the list and reinitialize it
- * @node: pointer to the node
+ * list_del_init - Remove a node and reinitialize it as unlinked
+ * @node: Pointer to the list_head structure to remove and reinitialize.
  *
- * The removed node will not end up in an uninitialized state like when using
- * list_del. Instead the node is initialized again to the unlinked state.
+ * Removes @node from its circular doubly-linked list using list_del() and then
+ * reinitializes it as an unlinked node via INIT_LIST_HEAD(). Unlike list_del(),
+ * which leaves the node uninitialized, this ensures @node is safely reset to an
+ * empty, standalone state with @next and @prev pointing to itself.
  */
 static inline void list_del_init(struct list_head *node)
 {
@@ -167,10 +171,14 @@ static inline void list_del_init(struct list_head *node)
 }
 
 /**
- * list_empty() - Check if list head has no nodes attached
- * @head: pointer to the head of the list
+ * list_empty - Test if a circular list has no nodes
+ * @head: Pointer to the list_head structure representing the list head.
  *
- * Return: 0 - list is not empty !0 - list is empty
+ * Checks whether the circular doubly-linked list headed by @head is empty.
+ * A list is empty if @head’s @next points to itself, indicating no nodes are
+ * attached.
+ *
+ * Returns: 0 if the list has nodes, non-zero if the list is empty.
  */
 static inline int list_empty(const struct list_head *head)
 {
@@ -181,7 +189,8 @@ static inline int list_empty(const struct list_head *head)
  * list_is_singular() - Check if list head has exactly one node attached
  * @head: pointer to the head of the list
  *
- * Return: 0 - list is not singular !0 -list has exactly one entry
+ * Returns: 0 if the list is not singular, non-zero if the list has exactly one
+ * entry.
  */
 static inline int list_is_singular(const struct list_head *head)
 {
