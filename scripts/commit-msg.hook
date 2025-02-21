@@ -249,35 +249,45 @@ validate_commit_message() {
   # 6. Wrap the body at 72 characters
   # ------------------------------------------------------------------------------
 
-URL_REGEX='^[[:blank:]]*(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]'
+  URL_REGEX='^[[:blank:]]*(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]'
 
-# Ensure the commit message lines are loaded into an array.
-readarray -t COMMIT_MSG_LINES < "$COMMIT_MSG_FILE"
+  # Ensure the commit message lines are loaded into an array.
+  readarray -t COMMIT_MSG_LINES < "$COMMIT_MSG_FILE"
 
-for i in "${!COMMIT_MSG_LINES[@]}"; do
-  LINE="${COMMIT_MSG_LINES[$i]}"
-  # Trim leading and trailing whitespace.
-  TRIMMED_LINE="${LINE#"${LINE%%[![:space:]]*}"}"
-  TRIMMED_LINE="${TRIMMED_LINE%"${TRIMMED_LINE##*[![:space:]]}"}"
-  LINE_NUMBER=$((i+1))
-  if [ "${#TRIMMED_LINE}" -gt 72 ] && ! [[ "$TRIMMED_LINE" =~ $URL_REGEX ]]; then
-    add_warning "$LINE_NUMBER" "Wrap the body at 72 characters (${#TRIMMED_LINE} chars)"
-  fi
-done
+  for i in "${!COMMIT_MSG_LINES[@]}"; do
+    LINE="${COMMIT_MSG_LINES[$i]}"
+    # Trim leading and trailing whitespace.
+    TRIMMED_LINE="${LINE#"${LINE%%[![:space:]]*}"}"
+    TRIMMED_LINE="${TRIMMED_LINE%"${TRIMMED_LINE##*[![:space:]]}"}"
+    LINE_NUMBER=$((i+1))
+    if [ "${#TRIMMED_LINE}" -gt 72 ] && ! [[ "$TRIMMED_LINE" =~ $URL_REGEX ]]; then
+      add_warning "$LINE_NUMBER" "Wrap the body at 72 characters (${#TRIMMED_LINE} chars)"
+    fi
+  done
 
-  # 7. Use the body to explain what and why vs. how
-  # ------------------------------------------------------------------------------
-
-  # 8. Do no write single worded commits
+  # 7. Do no write single worded commits
   # ------------------------------------------------------------------------------
 
   COMMIT_SUBJECT_WORDS=(${COMMIT_SUBJECT_TO_PROCESS})
   test "${#COMMIT_SUBJECT_WORDS[@]}" -gt 1
   test $? -eq 0 || add_warning 1 "Do no write single worded commits"
 
-  # 8a. Do not mention C source filenames
+  # 7a. Do not mention C source filenames
   [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ [_a-zA-Z0-9]+\.[ch]$ ]]
   test $? -eq 1 || add_warning 1 "Avoid mentioning C source filenames"
+
+  # 8. Use the body to explain what and why vs. how
+  # ------------------------------------------------------------------------------
+
+  # Count non-comment, non-blank lines excluding "Change-Id:".
+  NON_COMMENT_COUNT=$(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d;/^[[:space:]]*Change-Id:/d' "$COMMIT_MSG_FILE" | wc -l | xargs)
+
+  # If the subject is oversimplified for a queue function OR queue.c is modified,
+  # and there is only one meaningful line, issue a warning.
+  if { [[ "$COMMIT_SUBJECT_TO_PROCESS" =~ ^(Implement|Finish)[[:space:]]+q_[[:alnum:]_]+\(?\)?$ ]] || \
+     git diff --cached --name-only | grep -Eq '(^|/)queue\.c$'; } && [ "$NON_COMMENT_COUNT" -le 1 ]; then
+    add_warning 1 "Commit message oversimplified. Use the commit message body to explain what and why."
+  fi
 
   # 9. Do not start the subject line with whitespace
   # ------------------------------------------------------------------------------
