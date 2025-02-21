@@ -341,8 +341,11 @@ validate_commit_message() {
     add_warning 1 "Commit message appears to be written in Chinese: $MISSPELLED_WORDS"
   fi
 
-  # Use aspell to list misspelled words according to American English.
-  MISSPELLED_WORDS=$(echo "$FULL_COMMIT_MSG" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
+  # Remove quoted text from FULL_COMMIT_MSG for spell checking.
+  MSG_FOR_SPELLCHECK=$(echo "$FULL_COMMIT_MSG" | sed -E "s/(['\"][^'\"]*['\"])//g")
+
+  # Use aspell to list misspelled words according to American English, ignoring quoted text.
+  MISSPELLED_WORDS=$(echo "$MSG_FOR_SPELLCHECK" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
   if [ -n "$MISSPELLED_WORDS" ]; then
     add_warning 1 "Avoid using non-American English words"
   fi
