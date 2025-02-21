@@ -10,7 +10,6 @@
  *   cppcheck-suppress nullPointer
  */
 
-/* Change */
 /* Create an empty queue */
 struct list_head *q_new()
 {
