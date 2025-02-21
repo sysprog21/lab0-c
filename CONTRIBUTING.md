@@ -789,6 +789,65 @@ mainstream architectures.  PDP-11 era is long gone.
 - It is fair to assume that `NULL` is matching `(uintptr_t) 0` and it is fair
 to `memset()` structures with zero.  Non-zero `NULL` is for retro computing.
 
+## Git Commit Style
+
+Clear and descriptive commit messages are crucial for maintaining a transparent history of changes and for facilitating effective debugging and tracking. Please adhere to the guidelines outlined in [How to Write a Git Commit Message](http://chris.beams.io/posts/git-commit/).
+1. Separate the subject from the body with a blank line.
+2. Limit the subject line to 50 characters.
+3. Capitalize the subject line.
+4. Do not end the subject line with a period.
+5. Use the imperative mood in the subject line.
+6. Wrap the body at 72 characters.
+7. Use the body to explain what and why, not how.
+
+An example (derived from Chris' blog post) looks like the following:
+
+```text
+Summarize changes in around 50 characters or less
+
+More detailed explanatory text, if necessary. Wrap it to about 72
+characters or so. In some contexts, the first line is treated as the
+subject of the commit and the rest of the text as the body. The
+blank line separating the summary from the body is critical (unless
+you omit the body entirely); various tools like `log`, `shortlog`
+and `rebase` can get confused if you run the two together.
+
+Explain the problem that this commit is solving. Focus on why you
+are making this change as opposed to how (the code explains that).
+Are there side effects or other unintuitive consequences of this
+change? Here's the place to explain them.
+
+Further paragraphs come after blank lines.
+
+- Bullet points are okay, too
+
+- Typically a hyphen or asterisk is used for the bullet, preceded
+  by a single space, with blank lines in between, but conventions
+  vary here
+
+If you use an issue tracker, put references to them at the bottom,
+like this:
+Close #123
+```
+
+In addition, this project expects contributors to follow these additional rules:
+* If there is important, useful, or essential conversation or information,
+  include a reference or copy it.
+* Do not write single-word commits. Provide a descriptive subject.
+* Avoid using just a filename (e.g., `Update qtest.c`).
+  Each commit message subject should be sufficiently descriptive.
+* Avoid using abusive words.
+* For queue functions (names starting with "q_", e.g., `Implement q_size` or `Finish q_new`),
+  ensure the commit message includes a detailed explanation in the body.
+* Avoid using backticks in commit subjects.
+  Backticks can be easily confused with single quotes on some terminals,
+  reducing readability. Plain text or single quotes provide sufficient clarity and emphasis.
+* Avoid using parentheses in commit subjects.
+  Excessive use of parentheses "()" can clutter the subject line,
+  making it harder to quickly grasp the essential message.
+
+Some conventions are automatically enforced by the [githooks](https://git-scm.com/docs/githooks).
+
 ## References
 - [Linux kernel coding style](https://www.kernel.org/doc/html/latest/process/coding-style.html)
 - 1999, Brian W. Kernighan and Rob Pike, The Practice of Programming, Addison–Wesley.
