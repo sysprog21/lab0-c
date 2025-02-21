@@ -322,7 +322,8 @@ validate_commit_message() {
   # 12. Avoid abusive language in commit message content
   # ------------------------------------------------------------------------------
 
-  FULL_COMMIT_MSG=$(sed '/^#/d;/^[[:space:]]*$/d;/^[[:space:]]*Change-Id:/d' "$COMMIT_MSG_FILE")
+  FULL_COMMIT_MSG=$(sed '/^#/d;/^[[:space:]]*$/d;/^[[:space:]]*Change-Id:/d' "$COMMIT_MSG_FILE" | \
+                    sed -E "s@${URL_REGEX#^}@@g")
   # Extended list of abusive words (case-insensitive).
   # Adjust the list as needed.
   ABUSIVE_WORDS_REGEX='\b(fuck|fucking|dick|shit|bitch|asshole|cunt|motherfucker|damn|crap|dumbass|piss)\b'
