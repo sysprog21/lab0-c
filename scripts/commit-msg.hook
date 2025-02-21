@@ -322,12 +322,21 @@ validate_commit_message() {
   # 12. Avoid abusive language in commit message content
   # ------------------------------------------------------------------------------
 
-  FULL_COMMIT_MSG=$(sed '/^#/d;/^[[:space:]]*$/d' "$COMMIT_MSG_FILE")
+  FULL_COMMIT_MSG=$(sed '/^#/d;/^[[:space:]]*$/d;/^[[:space:]]*Change-Id:/d' "$COMMIT_MSG_FILE")
   # Extended list of abusive words (case-insensitive).
   # Adjust the list as needed.
   ABUSIVE_WORDS_REGEX='\b(fuck|fucking|dick|shit|bitch|asshole|cunt|motherfucker|damn|crap|dumbass|piss)\b'
   if echo "$FULL_COMMIT_MSG" | grep -Eiq "$ABUSIVE_WORDS_REGEX"; then
     add_warning 1 "Commit message contains inappropriate language. Avoid using abusive words"
+  fi
+
+  # 13. Always use American English.
+  # ------------------------------------------------------------------------------
+
+  # Use aspell to list misspelled words according to American English.
+  MISSPELLED_WORDS=$(echo "$FULL_COMMIT_MSG" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
+  if [ -n "$MISSPELLED_WORDS" ]; then
+    add_warning 1 "Avoid using non-American English words"
   fi
 }
 
