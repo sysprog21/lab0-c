@@ -2,15 +2,21 @@
 
 COMMIT_MSG_FILE="$1"
 
-# Only proceed if the commit message file is empty (ignoring comment or blank lines).
+# If the commit message file already contains non-comment lines, do nothing.
 if grep -qE '^[^[:space:]#]' "$COMMIT_MSG_FILE"; then
     exit 0
 fi
 
-# Define the inline message with commit guidelines.
+# Gather a list of staged (changed) files.
+CHANGED_FILES=$(git diff --cached --name-only)
+
+# Prepare a commented list of changed files.
+CHANGED_FILES_COMMENTED=$(echo "$CHANGED_FILES" | sed 's/^/# - /')
+
+# Define the inline message with commit guidelines and changed files.
 INLINE_MSG=$(cat <<'EOF'
 # 🎉Check the rules before writing commit messages.
-#     https://cbea.ms/git-commit/
+# https://github.com/sysprog21/lab0-c/blob/master/CONTRIBUTING.md#git-commit-style
 #
 # Seven Rules for a Great Git Commit Message:
 # 1. Separate subject from body with a blank line
@@ -23,14 +29,24 @@ INLINE_MSG=$(cat <<'EOF'
 #
 # You may modify this commit message.
 # To abort this commit, exit the editor without saving.
+#
+# 🔥Changed files:
 EOF
 )
 
-# Write the inline guidelines into the commit message file.
-echo > "$COMMIT_MSG_FILE"
-echo -e "$INLINE_MSG" >> "$COMMIT_MSG_FILE"
+# Write an empty line, the guidelines, and the changed files into the commit message.
+{
+  echo
+  echo "$INLINE_MSG"
+  # Append the staged files (as comments).
+  if [ -n "$CHANGED_FILES" ]; then
+    echo "$CHANGED_FILES_COMMENTED"
+  else
+    echo "# (No staged files detected.)"
+  fi
+} > "$COMMIT_MSG_FILE"
 
-# Prompt the user to optionally abort the commit.
+# Prompt the user about aborting the commit.
 read -rp "Do you want to abort this commit? (y/N): " answer
 if [[ "$answer" =~ ^[Yy]$ ]]; then
     echo "Commit aborted by user." >&2
