@@ -314,11 +314,11 @@ validate_commit_message() {
   # 11. Avoid commit subject that simply states a file update (e.g. "Update console.c")
   # ------------------------------------------------------------------------------
 
-  if [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ ^Update[[:space:]]+([^[:space:]]+)$ ]]; then
-    candidate="${BASH_REMATCH[1]}"
+  if [[ "$COMMIT_SUBJECT_TO_PROCESS" =~ ^(Update|Modify|Change|Fix|Refine|Improve|Revise)[[:space:]]+([^[:space:]]+)$ ]]; then
+    candidate="${BASH_REMATCH[2]}"
     # Only warn if the candidate filename ends with .c or .h
-    if [[ $candidate =~ \.(c|h)$ ]]; then
-      add_warning 1 "Avoid using just a filename like '$candidate'. Provide a functional, meaningful description"
+    if [[ "$candidate" =~ \.(c|h)$ ]]; then
+      add_warning 1 "Avoid using just a filename like '$candidate'. Provide a functional, meaningful description"	    
     fi
   fi
 
