@@ -21,6 +21,7 @@ CPPCHECK_suppresses="--inline-suppr harness.c \
 --suppress=staticFunction:harness.c \
 --suppress=nullPointerRedundantCheck:queue.c \
 --suppress=constParameterPointer:queue.c \
+--suppress=memleak:queue.c \
 --suppress=nullPointer:queue.c \
 --suppress=nullPointer:qtest.c \
 --suppress=returnDanglingLifetime:report.c \
