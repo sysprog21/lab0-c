@@ -300,6 +300,11 @@ done
     add_warning 1 "Commit subject should use imperative mood"
   fi
 
+  # 7d. Alert if the commit subject uses the pattern "Implement of ..."
+  if [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^(Implement|Realize|Update|Finish|Code)[[:space:]]+of[[:space:]]+ ]]; then
+    add_warning 1 "Avoid using 'of' immediately after the verb"
+  fi
+
   # 8. Use the body to explain what and why vs. how
   # ------------------------------------------------------------------------------
 
