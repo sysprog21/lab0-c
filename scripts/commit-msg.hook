@@ -296,7 +296,7 @@ done
 
   # 7c. Alert if the commit subject starts with "Implementation"
   # ------------------------------------------------------------------------------
-  if [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^(First|My|Implementation|Creation|Modification) ]]; then
+  if [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^(First|My|Implementation|Implementations|Creation|Modification|Queue) ]]; then
     add_warning 1 "Commit subject should use imperative mood"
   fi
 
