@@ -282,6 +282,12 @@ validate_commit_message() {
     add_warning 1 "Avoid using parentheses '()' in commit subjects"
   fi
 
+  # 7c. Alert if the commit subject starts with "Implementation"
+  # ------------------------------------------------------------------------------
+  if [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^(First|My|Implementation|Creation|Modification) ]]; then
+    add_warning 1 "Commit subject should use imperative mood"
+  fi
+
   # 8. Use the body to explain what and why vs. how
   # ------------------------------------------------------------------------------
 
