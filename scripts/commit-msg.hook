@@ -251,19 +251,31 @@ validate_commit_message() {
 
   URL_REGEX='^[[:blank:]]*(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]'
 
-  # Ensure the commit message lines are loaded into an array.
-  readarray -t COMMIT_MSG_LINES < "$COMMIT_MSG_FILE"
+# Ensure the commit message lines are loaded into an array.
+readarray -t COMMIT_MSG_LINES < "$COMMIT_MSG_FILE"
 
-  for i in "${!COMMIT_MSG_LINES[@]}"; do
-    LINE="${COMMIT_MSG_LINES[$i]}"
-    # Trim leading and trailing whitespace.
-    TRIMMED_LINE="${LINE#"${LINE%%[![:space:]]*}"}"
-    TRIMMED_LINE="${TRIMMED_LINE%"${TRIMMED_LINE##*[![:space:]]}"}"
-    LINE_NUMBER=$((i+1))
-    if [ "${#TRIMMED_LINE}" -gt 72 ] && ! [[ "$TRIMMED_LINE" =~ $URL_REGEX ]]; then
-      add_warning "$LINE_NUMBER" "Wrap the body at 72 characters (${#TRIMMED_LINE} chars)"
-    fi
-  done
+for i in "${!COMMIT_MSG_LINES[@]}"; do
+  # Skip the first line (the subject) because the limit applies to the body.
+  if [ "$i" -eq 0 ]; then
+    continue
+  fi
+
+  LINE="${COMMIT_MSG_LINES[$i]}"
+  
+  # Skip the line if it is a comment.
+  if [[ "$LINE" =~ ^[[:space:]]*# ]]; then
+    continue
+  fi
+
+  # Trim leading and trailing whitespace.
+  TRIMMED_LINE="${LINE#"${LINE%%[![:space:]]*}"}"
+  TRIMMED_LINE="${TRIMMED_LINE%"${TRIMMED_LINE##*[![:space:]]}"}"
+  LINE_NUMBER=$((i+1))
+  
+  if [ "${#TRIMMED_LINE}" -gt 72 ] && ! [[ "$TRIMMED_LINE" =~ $URL_REGEX ]]; then
+    add_warning "$LINE_NUMBER" "Wrap the body at 72 characters (${#TRIMMED_LINE} chars)"
+  fi
+done
 
   # 7. Ensure the commit subject has more than one word.
   # ------------------------------------------------------------------------------
