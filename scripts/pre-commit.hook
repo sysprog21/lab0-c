@@ -79,9 +79,13 @@ if [ $? -ne 0 ]; then
     DIFF=diff
 fi
 
-SHA1SUM=$(which sha1sum)
-if [ $? -ne 0 ]; then
-    SHA1SUM=shasum
+if command -v sha1sum >/dev/null 2>&1; then
+  SHA1SUM="sha1sum"
+elif command -v shasum >/dev/null 2>&1; then
+  SHA1SUM="shasum"
+else
+  echo "[!] sha1sum or shasum not installed." >&2
+  exit 1
 fi
 
 FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h)$")
@@ -116,7 +120,7 @@ if [ ! -z "${FILES[*]}" ]; then
     echo "${FILES[*]}"
 fi
 
-$SHA1SUM -c scripts/checksums >/dev/null
+$SHA1SUM -c scripts/checksums 2>/dev/null >/dev/null
 if [ $? -ne 0 ]; then
     echo "[!] You are not allowed to change the header file queue.h or list.h" >&2
     exit 1
