@@ -82,6 +82,7 @@ clean:
 	(cd traces; rm -f *~)
 
 distclean: clean
-	rm -f .cmd_history
+	-rm -f .cmd_history
+	-rm -rf .out
 
 -include $(deps)
