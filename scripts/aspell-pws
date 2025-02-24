@@ -332,3 +332,9 @@ SIGTERM
 SIGTRAP
 SIGUSR
 SIGWINCH
+risc
+mips
+riscv
+info
+cpu
+libvirt
