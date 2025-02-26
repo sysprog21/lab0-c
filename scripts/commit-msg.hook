@@ -124,6 +124,41 @@ read_commit_message() {
   done < $COMMIT_MSG_FILE
 }
 
+# Get positions (line, column) for each target word in a multiline string.
+# Output format: "target: line"
+get_all_match_positions() {
+  local text="$1"
+  local targets="$2"
+  local start_line=1
+  local start_col=1
+
+  while IFS= read -r target; do
+    # search for the target string
+    local result
+    result=$(
+      awk -v t="$target" -v sl="$start_line" -v sc="$start_col" '{
+        if (NR < sl) next
+        pos = index(NR == sl ? substr($0, sc) : $0, t)
+        if (pos) {
+          print NR, (NR == sl ? pos + sc - 1 : pos)
+          exit
+        }
+      }' <<< "$text"
+    )
+
+    # skip if the target is not found
+    [ -z "$result" ] && continue
+    
+    # output and update states
+    local line col
+    read -r line col <<< "$result"
+    echo "$target: $line"
+    start_line="$line"
+    start_col=$((col + 1))
+
+  done <<< "$targets"
+}
+
 #
 # Validate the contents of the commmit msg agains the good commit guidelines.
 #
@@ -348,8 +383,10 @@ done
   # 12. Avoid abusive language in commit message content
   # ------------------------------------------------------------------------------
 
-  FULL_COMMIT_MSG=$(sed '/^#/d;/^[[:space:]]*$/d;/^[[:space:]]*Change-Id:/d' "$COMMIT_MSG_FILE" | \
-                    sed -E "s@${URL_REGEX#^}@@g")
+  FULL_COMMIT_MSG_WITH_SPACE=$(sed '/^#/d;/^[[:space:]]*Change-Id:/d' "$COMMIT_MSG_FILE" | \
+                               sed -E "s@${URL_REGEX#^}@@g")
+  FULL_COMMIT_MSG=$(echo "$FULL_COMMIT_MSG_WITH_SPACE" | sed '/^[[:space:]]*$/d')
+  
   # Extended list of abusive words (case-insensitive).
   # Adjust the list as needed.
   ABUSIVE_WORDS_REGEX='\b(fuck|fucking|dick|shit|bitch|asshole|cunt|motherfucker|damn|crap|dumbass|piss)\b'
@@ -367,16 +404,20 @@ done
     add_warning 1 "Commit message appears to be written in Chinese: $MISSPELLED_WORDS"
   fi
 
-  # Remove quoted text and commit hashes from $FULL_COMMIT_MSG for spell checking.
-  # Handles commit references like "commit 7d05741" (short) or full 40-char hashes.
-  MSG_FOR_SPELLCHECK=$(echo "$FULL_COMMIT_MSG" | sed -E \
+  MSG_FOR_SPELLCHECK_LINE_FINDING=$(echo "$FULL_COMMIT_MSG_WITH_SPACE" | sed -E \
     -e "s/(['\"][^'\"]*['\"])//g" \
     -e "s/\bcommit[[:space:]]+[0-9a-fA-F]{7,40}\b/commit/g")
-
+  MSG_FOR_SPELLCHECK=$(echo "$MSG_FOR_SPELLCHECK_LINE_FINDING" | sed '/^[[:space:]]*$/d')
+  
+  
   # Use aspell to list misspelled words according to American English, ignoring quoted text.
   MISSPELLED_WORDS=$(echo "$MSG_FOR_SPELLCHECK" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
   if [ -n "$MISSPELLED_WORDS" ]; then
-    add_warning 1 "Avoid using non-American English words"
+    results=$(get_all_match_positions "$MSG_FOR_SPELLCHECK_LINE_FINDING" "$MISSPELLED_WORDS")
+
+    while read -r result; do
+      add_warning "${result#*:}" "Avoid using non-American English words: ${result%%:*}"
+    done <<< "$results"
   fi
 }
 
