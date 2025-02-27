@@ -766,15 +766,13 @@ typedef struct {
     uint16_t periodic  : 1; /* offset 6 bit 0      */
 } mytimer_t;
 
-/* Preprocessor check of timer register layout byte count. */
-#if (sizeof(mytimer_t) != 8)
-#error mytimer_t struct size incorrect (expected 8 bytes)
-#endif
+_Static_assert(sizeof(mytimer_t) == 8,
+               "mytimer_t struct size incorrect (expected 8 bytes)");
 ```
 
 To enhance portability, use standard-defined types (e.g., `uint16_t`, `uint32_t`) and avoid relying on compiler-specific behavior.
 Where precise control over memory layout is required, such as in embedded systems or when interfacing with hardware,
-always verify the structure size and layout using static assertions or preprocessor checks.
+always verify the structure size and layout using static assertions.
 
 #### Avoid extreme portability
 
