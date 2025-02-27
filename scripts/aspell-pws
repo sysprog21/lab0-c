@@ -338,3 +338,15 @@ riscv
 info
 cpu
 libvirt
+preprocessor
+sizeof
+alignas
+alignof
+constexpr
+enum
+char
+nullptr
+typedef
+BitInt
+noreturn
+pragma
