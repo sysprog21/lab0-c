@@ -412,6 +412,7 @@ static inline void list_move_tail(struct list_head *node,
          &entry->member != (head);                                 \
          entry = list_entry(entry->member.next, typeof(*entry), member))
 #else
+// The negative width bit-field makes a compile-time error for use of this.
 #define list_for_each_entry(entry, head, member) \
     for (entry = (void *) 1; sizeof(struct { int : -1; }); ++(entry))
 #endif
