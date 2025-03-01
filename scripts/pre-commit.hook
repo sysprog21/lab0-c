@@ -1,41 +1,68 @@
 #!/usr/bin/env bash
 
-CPPCHECK_unmatched=
-for f in *.c; do
-    CPPCHECK_unmatched="$CPPCHECK_unmatched --suppress=unmatchedSuppression:$f"
-done
+# Build unmatched suppressions for each *.c file.
+cppcheck_build_unmatched() {
+  local file suppression=""
+  for file in *.c; do
+    suppression+=" --suppress=unmatchedSuppression:$file"
+  done
+  echo "$suppression"
+}
 
-# We suppress the checkLevelNormal warning for Cppcheck versions 2.11 and above.
-# Please refer to issues/153 for more details.
-CPPCHECK_suppresses="--inline-suppr harness.c \
---suppress=checkersReport \
---suppress=unmatchedSuppression \
---suppress=normalCheckLevelMaxBranches \
---suppress=missingIncludeSystem \
---suppress=noValidConfiguration \
---suppress=unusedFunction \
---suppress=identicalInnerCondition:log2_lshift16.h \
---suppress=nullPointerRedundantCheck:report.c \
---suppress=nullPointerRedundantCheck:harness.c \
---suppress=nullPointerOutOfMemory:harness.c \
---suppress=staticFunction:harness.c \
---suppress=nullPointerRedundantCheck:queue.c \
---suppress=constParameterPointer:queue.c \
---suppress=memleak:queue.c \
---suppress=nullPointer:queue.c \
---suppress=nullPointer:qtest.c \
---suppress=returnDanglingLifetime:report.c \
---suppress=constParameterCallback:console.c \
---suppress=constParameterPointer:console.c \
---suppress=staticFunction:console.c \
---suppress=checkLevelNormal:log2_lshift16.h \
---suppress=preprocessorErrorDirective:random.h \
---suppress=constVariablePointer:linenoise.c \
---suppress=staticFunction:linenoise.c \
---suppress=nullPointerOutOfMemory:web.c \
---suppress=staticFunction:web.c \
-"
-CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1 --force $CPPCHECK_suppresses $CPPCHECK_unmatched --cppcheck-build-dir=.out ."
+cppcheck_suppressions() {
+  # Array of suppression keys (plain elements, without "--suppress=")
+  local -a suppr_keys=(
+    "checkersReport"
+    "unmatchedSuppression"
+    "normalCheckLevelMaxBranches"
+    "missingIncludeSystem"
+    "noValidConfiguration"
+    "unusedFunction"
+    "identicalInnerCondition:log2_lshift16.h"
+    "checkLevelNormal:log2_lshift16.h"
+    "nullPointerRedundantCheck:report.c"
+    "returnDanglingLifetime:report.c"
+    "nullPointerRedundantCheck:harness.c"
+    "nullPointerOutOfMemory:harness.c"
+    "staticFunction:harness.c"
+    "nullPointerRedundantCheck:queue.c"
+    "constParameterPointer:queue.c"
+    "memleak:queue.c"
+    "nullPointer:queue.c"
+    "nullPointer:qtest.c"
+    "constParameterCallback:console.c"
+    "constParameterPointer:console.c"
+    "staticFunction:console.c"
+    "preprocessorErrorDirective:random.h"
+    "constVariablePointer:linenoise.c"
+    "staticFunction:linenoise.c"
+    "nullPointerOutOfMemory:web.c"
+    "staticFunction:web.c"
+  )
+
+  # Array for additional cppcheck options (non-suppressions)
+  local -a other_flags=(
+    "--inline-suppr harness.c"
+  )
+
+  local out=""
+  # Append other flags.
+  for flag in "${other_flags[@]}"; do
+    out+="$flag "
+  done
+
+  # Append each suppression flag separately.
+  for key in "${suppr_keys[@]}"; do
+    out+="--suppress=$key "
+  done
+
+  # Trim trailing whitespace and output the final string.
+  printf "%s" "$out" | sed 's/[[:space:]]*$//'
+}
+
+CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1"
+CPPCHECK_OPTS+=" --force $(cppcheck_suppressions) $(cppcheck_build_unmatched)"
+CPPCHECK_OPTS+=" --cppcheck-build-dir=.out ."
 
 RETURN=0
 CLANG_FORMAT=$(which clang-format)
