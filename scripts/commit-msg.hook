@@ -141,6 +141,100 @@ get_all_match_positions() {
   done <<< "$targets"
 }
 
+# Build regex for detecting commit trailers.
+build_commit_trailer_regex() {
+  local -a keys specials standalones trailers
+  local _ each key separators
+
+  # Get the trailer separators from git config (default to ':' if not set)
+  separators=$(git config --get trailer.separators || echo ':')
+
+  # Predefined trailer keys.
+  trailers=(
+    'CC' 'Change-Id'
+    'Bug' 'Close' 'Closes'
+    'Acked-by' 'Co-Authored-By' 'Reported-by' 'Reviewed-by'
+    'Signed-off-by' 'Suggested-by' 'Tested-by'
+  )
+
+  # Standalone keys (those that do not require a value).
+  standalones=(
+    '(Doc|Upgrade|Security)Impact'
+    "Git-Dch[$separators] (Ignore|Short|Full)"
+  )
+
+  # Read custom trailer keys from git config and add them either to specials or trailers.
+  # This loop reads lines matching 'trailer.*.key'.
+  while read -r _ key; do
+    # Skip if key already exists in trailers or specials.
+    for each in "${trailers[@]}" "${specials[@]}"; do
+      if [ "$key" = "$each" ]; then
+        continue 2
+      fi
+    done
+    # If key ends with a separator character, add to specials; otherwise, to trailers.
+    if [[ $key =~ [${separators}]$ ]]; then
+      specials+=("$key")
+    else
+      trailers+=("$key")
+    fi
+  done < <(git config --get-regexp 'trailer.*.key')
+
+  # Read custom trailer keys again into the 'keys' array (if needed).
+  while IFS=. read -r _ key _; do
+    for each in "${keys[@]}"; do
+      if [ "$key" = "$each" ]; then
+        continue 2
+      fi
+    done
+    keys+=("$key")
+  done < <(git config --get-regexp 'trailer.*.key')
+
+  # Begin constructing the regex.
+  TRAILER_REGEX='^('
+
+  # Append trailer keys (with values).
+  if ((${#trailers[@]} > 0)); then
+    TRAILER_REGEX+='(('
+    for each in "${trailers[@]}"; do
+      TRAILER_REGEX+="$each|"
+    done
+    # Remove the trailing pipe, then add a separator and blank space pattern.
+    TRAILER_REGEX="${TRAILER_REGEX%|})[$separators][[:blank:]]*)"
+  fi
+
+  # Append standalone trailer keys.
+  if ((${#standalones[@]} > 0)); then
+    TRAILER_REGEX+='|(('
+    for each in "${standalones[@]}"; do
+      TRAILER_REGEX+="$each|"
+    done
+    TRAILER_REGEX="${TRAILER_REGEX%|})$)"
+  fi
+
+  # Append specials.
+  if ((${#specials[@]} > 0)); then
+    TRAILER_REGEX+='|('
+    for each in "${specials[@]}"; do
+      TRAILER_REGEX+="$each|"
+    done
+    TRAILER_REGEX="${TRAILER_REGEX%|})"
+  fi
+
+  # Append additional keys.
+  if ((${#keys[@]} > 0)); then
+    TRAILER_REGEX+='|(('
+    for each in "${keys[@]}"; do
+      TRAILER_REGEX+="$each|"
+    done
+    # Use the second character of separators (if available) as a separator for keys.
+    TRAILER_REGEX="${TRAILER_REGEX%|})[${separators:1:1}[:blank:]])"
+  fi
+
+  # End the regex.
+  TRAILER_REGEX+=")"
+}
+
 # Validate the contents of the commmit msg agains the good commit guidelines.
 validate_commit_message() {
   # reset warnings
@@ -265,31 +359,35 @@ validate_commit_message() {
 
   URL_REGEX='^[[:blank:]]*(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]'
 
-# Ensure the commit message lines are loaded into an array.
-readarray -t COMMIT_MSG_LINES < "$COMMIT_MSG_FILE"
+  # Ensure the commit message lines are loaded into an array.
+  readarray -t commit_msg_lines < "$COMMIT_MSG_FILE"
 
-for i in "${!COMMIT_MSG_LINES[@]}"; do
-  # Skip the first line (the subject) because the limit applies to the body.
-  if [ "$i" -eq 0 ]; then
-    continue
-  fi
+  for i in "${!commit_msg_lines[@]}"; do
+    # Skip the first line (the subject) since the limit applies to the body.
+    if [ "$i" -eq 0 ]; then
+      continue
+    fi
 
-  LINE="${COMMIT_MSG_LINES[$i]}"
-  
-  # Skip the line if it is a comment.
-  if [[ "$LINE" =~ ^[[:space:]]*# ]]; then
-    continue
-  fi
+    line="${commit_msg_lines[$i]}"
 
-  # Trim leading and trailing whitespace.
-  TRIMMED_LINE="${LINE#"${LINE%%[![:space:]]*}"}"
-  TRIMMED_LINE="${TRIMMED_LINE%"${TRIMMED_LINE##*[![:space:]]}"}"
-  LINE_NUMBER=$((i+1))
-  
-  if [ "${#TRIMMED_LINE}" -gt 72 ] && ! [[ "$TRIMMED_LINE" =~ $URL_REGEX ]]; then
-    add_warning "$LINE_NUMBER" "Wrap the body at 72 characters (${#TRIMMED_LINE} chars)"
-  fi
-done
+    # Skip lines that are comments.
+    if [[ "$line" =~ ^[[:space:]]*# ]]; then
+      continue
+    fi
+
+    # Trim leading and trailing whitespace.
+    trimmed_line="${line#"${line%%[![:space:]]*}"}"
+    trimmed_line="${trimmed_line%"${trimmed_line##*[![:space:]]}"}"
+    line_number=$((i+1))
+
+    # Check if the trimmed line is longer than 72 characters and does not match a URL
+    # or commit trailer. The URL regex is used inline by stripping its leading caret.
+    if [ "${#trimmed_line}" -gt 72 ] && \
+       ! [[ "$trimmed_line" =~ ${URL_REGEX#^} ]] && \
+       ! [[ "$trimmed_line" =~ $TRAILER_REGEX ]]; then
+      add_warning "$line_number" "Wrap the body at 72 characters (${#trimmed_line} chars)"
+    fi
+  done
 
   # 7. Ensure the commit subject has more than one word.
   # ------------------------------------------------------------------------------
@@ -322,8 +420,9 @@ done
   # 8. Use the body to explain what and why vs. how
   # ------------------------------------------------------------------------------
 
-  # Count non-comment, non-blank lines excluding "Change-Id:".
-  NON_COMMENT_COUNT=$(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d;/^[[:space:]]*Change-Id:/d' "${COMMIT_MSG_FILE}" | wc -l | xargs)
+  # Count non-comment, non-blank lines, excluding lines that match the trailer regex.
+  NON_COMMENT_COUNT=$(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d' "${COMMIT_MSG_FILE}" | \
+                      sed -E "/$TRAILER_REGEX/d" | wc -l | xargs)
 
   # If queue.c is modified and the commit message is oversimplified, forbid generic subjects.
   if git diff --cached --name-only | grep -Eq '(^|/)queue\.c$'; then
@@ -362,8 +461,9 @@ done
   # 12. Avoid abusive language in commit message content
   # ------------------------------------------------------------------------------
 
-  FULL_COMMIT_MSG_WITH_SPACE=$(sed '/^#/d;/^[[:space:]]*Change-Id:/d' "$COMMIT_MSG_FILE" | \
-                               sed -E "s@${URL_REGEX#^}@@g")
+  # Remove comment lines, trailer lines, and URLs.
+  FULL_COMMIT_MSG_WITH_SPACE=$(sed '/^[[:space:]]*#/d' "$COMMIT_MSG_FILE" | \
+                               sed -E "/$TRAILER_REGEX/d" | sed -E "s@${URL_REGEX#^}@@g")
   FULL_COMMIT_MSG=$(echo "$FULL_COMMIT_MSG_WITH_SPACE" | sed '/^[[:space:]]*$/d')
   
   # Extended list of abusive words (case-insensitive).
@@ -387,7 +487,6 @@ done
     -e "s/(['\"][^'\"]*['\"])//g" \
     -e "s/\bcommit[[:space:]]+[0-9a-fA-F]{7,40}\b/commit/g")
   MSG_FOR_SPELLCHECK=$(echo "$MSG_FOR_SPELLCHECK_LINE_FINDING" | sed '/^[[:space:]]*$/d')
-  
   
   # Use aspell to list misspelled words according to American English, ignoring quoted text.
   MISSPELLED_WORDS=$(echo "$MSG_FOR_SPELLCHECK" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
@@ -561,6 +660,8 @@ _gen_changeid() {
 set_colors
 
 set_editor
+
+build_commit_trailer_regex
 
 if tty >/dev/null 2>&1; then
   TTY=$(tty)
