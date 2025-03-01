@@ -416,7 +416,7 @@ static inline void list_move_tail(struct list_head *node,
  * works in the same way as BUILD_BUG_ON_ZERO macro of Linux kernel.
  */
 #define list_for_each_entry(entry, head, member) \
-    for (entry = (void *) 1; sizeof(struct { int : -1; }); ++(entry))
+    for (entry = (void *) 1; sizeof(struct { int i : -1; }); ++(entry))
 #endif
 
 /**
@@ -457,8 +457,8 @@ static inline void list_move_tail(struct list_head *node,
          &entry->member != (head); entry = safe,                       \
         safe = list_entry(safe->member.next, typeof(*entry), member))
 #else
-#define list_for_each_entry_safe(entry, safe, head, member)       \
-    for (entry = safe = (void *) 1; sizeof(struct { int : -1; }); \
+#define list_for_each_entry_safe(entry, safe, head, member)  \
+    for (entry = (void *) 1; sizeof(struct { int i : -1; }); \
          ++(entry), ++(safe))
 #endif
 
