@@ -111,6 +111,8 @@ Trace files
   * They are short and simple.
   * We encourage to study them to see what tests are being performed.
   * XX is the trace number (1-17).  CAT describes the general nature of the test.
+  * All functions that need to be implemented are explicitly listed.
+  * If a colon is present in the title, all functions mentioned afterwards must be correctly implemented for the test to pass.
 * `traces/trace-eg.cmd` : A simple, documented trace file to demonstrate the operation of `qtest`
 
 ## Debugging Facilities

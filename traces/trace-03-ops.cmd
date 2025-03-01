@@ -1,4 +1,4 @@
-# Test of insert_head, insert_tail, remove_head, reverse and merge
+# Test of 'q_new', 'q_insert_head', 'q_remove_head', 'q_reverse', 'q_sort', and 'q_merge'
 option fail 0
 option malloc 0
 new

@@ -1,4 +1,4 @@
-# Test of insert_head, insert_tail, size, swap, and sort
+# Test of 'q_new', 'q_insert_tail', 'q_insert_head', 'q_remove_head', 'q_size', 'q_swap', and 'q_sort'
 option fail 0
 option malloc 0
 new

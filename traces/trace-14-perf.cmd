@@ -1,4 +1,4 @@
-# Test performance of insert_tail, reverse, and sort
+# Test performance of 'q_new', 'q_insert_head', 'q_insert_tail', 'q_reverse', and 'q_sort'
 option fail 0
 option malloc 0
 new
