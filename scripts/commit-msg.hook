@@ -18,10 +18,7 @@ WHITE=
 CYAN=
 NC=
 
-#
 # Set colour variables if the output should be coloured.
-#
-
 set_colors() {
   local default_color=$(git config --get hooks.goodcommit.color || git config --get color.ui || echo 'auto')
   if [[ $default_color == 'always' ]] || [[ $default_color == 'auto' && -t 1 ]]; then
@@ -34,10 +31,7 @@ set_colors() {
   fi
 }
 
-#
 # Set the hook editor, using the same approach as git.
-#
-
 set_editor() {
   # $GIT_EDITOR appears to always be set to `:` when the hook is executed by Git?
   # ref: http://stackoverflow.com/q/41468839/885540
@@ -49,10 +43,7 @@ set_editor() {
   test -z "${HOOK_EDITOR}" && HOOK_EDITOR='vi'
 }
 
-#
 # Output prompt help information.
-#
-
 prompt_help() {
   echo -e "${RED}$(cat <<-EOF
 e - edit commit message
@@ -62,20 +53,14 @@ EOF
 )${NC}"
 }
 
-#
 # Add a warning with <line_number> and <msg>.
-#
-
 add_warning() {
   local line_number=$1
   local warning=$2
   WARNINGS[$line_number]="${WARNINGS[$line_number]}$warning;"
 }
 
-#
 # Output warnings.
-#
-
 display_warnings() {
   if [ $SKIP_DISPLAY_WARNINGS -eq 1 ]; then
     # if the warnings were skipped then they should be displayed next time
@@ -98,10 +83,7 @@ EOF
 )${NC}"
 }
 
-#
 # Read the contents of the commit msg into an array of lines.
-#
-
 read_commit_message() {
   # reset commit_msg_lines
   COMMIT_MSG_LINES=()
@@ -159,10 +141,7 @@ get_all_match_positions() {
   done <<< "$targets"
 }
 
-#
 # Validate the contents of the commmit msg agains the good commit guidelines.
-#
-
 validate_commit_message() {
   # reset warnings
   WARNINGS=()
@@ -427,7 +406,6 @@ CHANGE_ID_AFTER="Bug|Issue|Test"
 MSG="$1"
 
 # Ensure that a unique Change-Id is present, and generate one if it is not.
-#
 # Partially taken from Gerrit Code Review 3.3.0-56-gbcecc47463
 add_change_id() {
   clean_message=`sed -e '
@@ -578,9 +556,7 @@ _gen_changeid() {
   git hash-object -t commit --stdin
 }
 
-#
 # It's showtime.
-#
 
 set_colors
 
