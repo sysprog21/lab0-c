@@ -65,6 +65,14 @@ CPPCHECK_OPTS+=" --force $(cppcheck_suppressions) $(cppcheck_build_unmatched)"
 CPPCHECK_OPTS+=" --cppcheck-build-dir=.out ."
 
 RETURN=0
+
+# Disallow non-ASCII characters in workspace path
+workspace=$(git rev-parse --show-toplevel)
+if echo "$workspace" | grep -q "[一-龥]"; then
+  echo "[!] The workspace path '$workspace' contains non-ASCII characters." >&2
+  exit 1
+fi
+
 CLANG_FORMAT=$(which clang-format)
 if [ $? -ne 0 ]; then
   echo "[!] clang-format not installed. Unable to check source file format policy." >&2
