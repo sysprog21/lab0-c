@@ -49,8 +49,8 @@ EOF
 # Prompt the user about aborting the commit.
 read -rp "Do you want to abort this commit? (y/N): " answer
 if [[ "$answer" =~ ^[Yy]$ ]]; then
-    echo "Commit aborted by user." >&2
-    exit 1
+  echo "Commit aborted by user." >&2
+  exit 1
 fi
 
 exit 0

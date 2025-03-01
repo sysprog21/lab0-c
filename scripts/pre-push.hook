@@ -14,10 +14,10 @@ NC='\033[0m' # No Color
 #    Bump copyright year
 commit=$(git rev-list --skip 1 --grep '^Bump copyright' 0b8be2c15160c216e8b6ec82c99a000e81c0e429...HEAD)
 if [ x"$commit" != x"50c5ac53d31adf6baac4f8d3db6b3ce2215fee40" ] ; then
-    echo -e "${RED}ERROR${NC}: This repository is insane."
-    echo -e "Make sure you did fork from https://github.com/sysprog21/lab0-c recently."
-    echo ""
-    exit 1
+  echo -e "${RED}ERROR${NC}: This repository is insane."
+  echo -e "Make sure you did fork from https://github.com/sysprog21/lab0-c recently."
+  echo ""
+  exit 1
 fi
 
 # Show hints
@@ -27,24 +27,24 @@ echo ""
 
 # only run this if you are pushing to master
 if [[ $current_branch = $protected_branch ]] ; then
-    echo -e "${YELLOW}Running pre push to master check...${NC}"
+  echo -e "${YELLOW}Running pre push to master check...${NC}"
 
-    echo -e "${YELLOW}Trying to build tests project...${NC}"
+  echo -e "${YELLOW}Trying to build tests project...${NC}"
 
-    # build the project
-    make
+  # build the project
+  make
 
-    # $? is a shell variable which stores the return code from what we just ran
-    rc=$?
-    if [[ $rc != 0 ]] ; then
-        echo -e "${RED}Failed to build the project, please fix this and push again${NC}"
-        echo ""
-        exit $rc
-    fi
-
-    # Everything went OK so we can exit with a zero
-    echo -e "${GREEN}Pre-push check passed!${NC}"
+  # $? is a shell variable which stores the return code from what we just ran
+  rc=$?
+  if [[ $rc != 0 ]] ; then
+    echo -e "${RED}Failed to build the project, please fix this and push again${NC}"
     echo ""
+    exit $rc
+  fi
+
+  # Everything went OK so we can exit with a zero
+  echo -e "${GREEN}Pre-push check passed!${NC}"
+  echo ""
 fi
 
 exit 0
