@@ -67,43 +67,45 @@ CPPCHECK_OPTS+=" --cppcheck-build-dir=.out ."
 RETURN=0
 CLANG_FORMAT=$(which clang-format)
 if [ $? -ne 0 ]; then
-    echo "[!] clang-format not installed. Unable to check source file format policy." >&2
-    exit 1
+  echo "[!] clang-format not installed. Unable to check source file format policy." >&2
+  exit 1
 fi
 
 CPPCHECK=$(which cppcheck)
 mkdir -p .out
 if [ $? -ne 0 ]; then
-    echo "[!] cppcheck not installed. Unable to perform static analysis." >&2
-    exit 1
+  echo "[!] cppcheck not installed. Unable to perform static analysis." >&2
+  exit 1
 fi
 
-# Expected Cppcheck version is 1.90+
-# First, Cppcheck 2.x
-if [ -z "$($CPPCHECK --version | grep -E '^Cppcheck\s2')" ]; then
-    # Second, Cppcheck 1.x
-    CPPCHECK_VER=$($CPPCHECK --version | sed -Ee 's/Cppcheck 1.([0-9]+)/\1/;q')
-    if [ $CPPCHECK_VER -lt 90 ]; then
-        echo "[!] cppcheck version must be at least 1.90." >&2
-        echo -e "    Check 'Developer Info' for building Cppcheck from source:\n" \
-                "          https://cppcheck.sourceforge.net/devinfo/" >&2
-        exit 1
-    fi
+# Check that cppcheck's version is at least 1.90.
+cppcheck_ver=$("$CPPCHECK" --version)
+if echo "$cppcheck_ver" | grep -qE '^Cppcheck\s2'; then
+  : # Version 2.x is acceptable.
+else
+  # For version 1.x, extract the minor version and compare.
+  minor_version=$(echo "$cppcheck_ver" | sed -Ee 's/Cppcheck 1\.([0-9]+)/\1/;q')
+  if [ "$minor_version" -lt 90 ]; then
+    echo "[!] cppcheck version must be at least 1.90." >&2
+    echo -e "    See Developer Info for building cppcheck from source:\n"
+    echo -e "        https://cppcheck.sourceforge.io/devinfo/" >&2
+    exit 1
+  fi
 fi
 
 ASPELL=$(which aspell)
 if [ $? -ne 0 ]; then
-    echo "[!] aspell not installed. Unable to do spelling check." >&2
-    exit 1
+  echo "[!] aspell not installed. Unable to do spelling check." >&2
+  exit 1
 fi
 if [ -z "$(aspell dump dicts | grep -E '^en$')" ]; then
-    echo "[!] aspell-en not installed. Unable to do spelling check." >&2
-    exit 1
+  echo "[!] aspell-en not installed. Unable to do spelling check." >&2
+  exit 1
 fi
 
 DIFF=$(which colordiff)
 if [ $? -ne 0 ]; then
-    DIFF=diff
+  DIFF=diff
 fi
 
 if command -v sha1sum >/dev/null 2>&1; then
@@ -117,40 +119,41 @@ fi
 
 FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h)$")
 for FILE in $FILES; do
-    nf=$(git checkout-index --temp $FILE | cut -f 1)
-    tempdir=$(mktemp -d) || exit 1
-    newfile=$(mktemp ${tempdir}/${nf}.XXXXXX) || exit 1
-    basename=$(basename $FILE)
+  nf=$(git checkout-index --temp $FILE | cut -f 1)
+  tempdir=$(mktemp -d) || exit 1
+  newfile=$(mktemp ${tempdir}/${nf}.XXXXXX) || exit 1
+  basename=$(basename $FILE)
 
-    source="${tempdir}/${basename}"
-    mv $nf $source
-    cp .clang-format $tempdir
-    $CLANG_FORMAT $source > $newfile 2>> /dev/null
-    $DIFF -u -p -B --label="modified $FILE" --label="expected coding style" \
-          "${source}" "${newfile}"
-    r=$?
-    rm -rf "${tempdir}"
-    if [ $r != 0 ] ; then
-        echo "[!] $FILE does not follow the consistent coding style." >&2
-        RETURN=1
-    fi
-    if [ $RETURN -eq 1 ]; then
-        echo "" >&2
-        echo "Make sure you indent as the following:" >&2
-        echo "    clang-format -i $FILE" >&2
-        echo
-    fi
+  source="${tempdir}/${basename}"
+  mv $nf $source
+  cp .clang-format $tempdir
+  $CLANG_FORMAT $source > $newfile 2>> /dev/null
+  $DIFF -u -p -B \
+        --label="modified $FILE" --label="expected coding style" \
+        "${source}" "${newfile}"
+  r=$?
+  rm -rf "${tempdir}"
+  if [ $r != 0 ] ; then
+    echo "[!] $FILE does not follow the consistent coding style." >&2
+    RETURN=1
+  fi
+  if [ $RETURN -eq 1 ]; then
+    echo "" >&2
+    echo "Make sure you indent as the following:" >&2
+    echo "    clang-format -i $FILE" >&2
+    echo
+  fi
 done
 
 if [ ! -z "${FILES[*]}" ]; then
-    echo "Following files need to be cleaned up:"
-    echo "${FILES[*]}"
+  echo "Following files need to be cleaned up:"
+  echo "${FILES[*]}"
 fi
 
 $SHA1SUM -c scripts/checksums 2>/dev/null >/dev/null
 if [ $? -ne 0 ]; then
-    echo "[!] You are not allowed to change the header file queue.h or list.h" >&2
-    exit 1
+  echo "[!] You are not allowed to change the header file queue.h or list.h" >&2
+  exit 1
 fi
 
 # Prevent unsafe functions
@@ -159,26 +162,26 @@ banned="([^f]gets\()|(sprintf\()|(strcpy\()"
 status=0
 for file in $(git diff --staged --name-only | grep -E "\.(c|cc|cpp|h|hh|hpp)\$")
 do
-    filepath="${root}/${file}"
-    output=$(grep -nrE "${banned}" "${filepath}")
-    if [ ! -z "${output}" ]; then
-        echo "Dangerous function detected in ${filepath}"
-        echo "${output}"
-        echo
-        echo "Read 'Common vulnerabilities guide for C programmers' carefully."
-        echo "    https://security.web.cern.ch/security/recommendations/en/codetools/c.shtml"
-        RETURN=1
-    fi
+  filepath="${root}/${file}"
+  output=$(grep -nrE "${banned}" "${filepath}")
+  if [ ! -z "${output}" ]; then
+    echo "Dangerous function detected in ${filepath}"
+    echo "${output}"
+    echo
+    echo "Read 'Common vulnerabilities guide for C programmers' carefully."
+    echo "    https://security.web.cern.ch/security/recommendations/en/codetools/c.shtml"
+    RETURN=1
+  fi
 done
 
 # static analysis
 echo "Running static analysis..."
 $CPPCHECK $CPPCHECK_OPTS >/dev/null
 if [ $? -ne 0 ]; then
-    RETURN=1
-    echo "" >&2
-    echo "Fail to pass static analysis." >&2
-    echo
+  RETURN=1
+  echo "" >&2
+  echo "Fail to pass static analysis." >&2
+  echo
 fi
 
 # non-ASCII filenames are not allowed.
@@ -187,12 +190,12 @@ fi
 if test $(git diff --cached --name-only --diff-filter=A -z $against |
         LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
 then
-    cat <<\EOF
+  cat <<\EOF
 ERROR: Attempt to add a non-ASCII file name.
 This can cause problems if you want to work with people on other platforms.
 To be portable it is advisable to rename the file.
 EOF
-    RETURN=1
+  RETURN=1
 fi
 
 exit $RETURN
