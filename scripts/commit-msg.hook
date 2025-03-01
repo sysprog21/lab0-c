@@ -153,7 +153,7 @@ build_commit_trailer_regex() {
   trailers=(
     'CC' 'Change-Id'
     'Bug' 'Close' 'Closes'
-    'Acked-by' 'Co-Authored-By' 'Reported-by' 'Reviewed-by'
+    'Acked-by' 'Co-authored-by' 'Reported-by' 'Reviewed-by'
     'Signed-off-by' 'Suggested-by' 'Tested-by'
   )
 
