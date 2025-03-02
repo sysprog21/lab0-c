@@ -1,4 +1,4 @@
-# Test of truncated strings
+# Test of truncated strings: 'q_new', 'q_free', 'q_insert_head', 'q_insert_tail', 'q_remove_head', 'q_reverse', and 'q_sort'
 option fail 0
 option malloc 0
 new

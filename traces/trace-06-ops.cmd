@@ -1,4 +1,4 @@
-# Test of insert_head, insert_tail, delete duplicate, sort, descend and reverseK
+# Test of 'q_new', 'q_free', 'q_insert_head', 'q_insert_tail', 'q_remove_head', 'q_delete_dup', 'q_sort', 'q_descend', and 'q_reverseK'
 new
 ih RAND 4
 it gerbil 3

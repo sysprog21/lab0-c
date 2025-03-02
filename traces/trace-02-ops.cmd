@@ -1,4 +1,4 @@
-# Test of insert_head, insert_tail, remove_head, remove_tail, and delete_mid
+# Test of 'q_new', 'q_insert_head', 'q_insert_tail', 'q_remove_head', 'q_remove_tail', and 'q_delete_mid'
 option fail 0
 option malloc 0
 new
