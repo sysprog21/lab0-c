@@ -349,15 +349,15 @@ validate_commit_message() {
   URL_REGEX='^[[:blank:]]*(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]'
 
   # Ensure the commit message lines are loaded into an array.
-  readarray -t commit_msg_lines < "$COMMIT_MSG_FILE"
+  readarray -t COMMIT_MSG_LINES < "$COMMIT_MSG_FILE"
 
-  for i in "${!commit_msg_lines[@]}"; do
+  for i in "${!COMMIT_MSG_LINES[@]}"; do
     # Skip the first line (the subject) since the limit applies to the body.
     if [ "$i" -eq 0 ]; then
       continue
     fi
 
-    line="${commit_msg_lines[$i]}"
+    line="${COMMIT_MSG_LINES[$i]}"
 
     # Skip lines that are comments.
     if [[ "$line" =~ ^[[:space:]]*# ]]; then
