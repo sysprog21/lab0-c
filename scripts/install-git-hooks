@@ -18,12 +18,13 @@ CURRENT_STEP=0
 progress "$CURRENT_STEP" "$TOTAL_STEPS"
 
 if ! test -d .git; then
-  throw "Execute scripts/install-git-hooks in the top-level directory."
+  throw "Ensure the git repository is cloned correctly."
 fi
 
 workspace=$(git rev-parse --show-toplevel)
 if [ ! -d "$workspace" ]; then
-  throw "The workspace path '$workspace' contains non-ASCII characters."
+  throw "Unable to determine the repository's top-level directory.\n\
+This directory $workspace does not appear to be a valid Git repository."
 fi
 
 # 2. Check GitHub account
@@ -88,19 +89,16 @@ fi
 ((CURRENT_STEP++))
 progress "$CURRENT_STEP" "$TOTAL_STEPS"
 
-mkdir -p .git/hooks
+HOOKS_DIR=".git/hooks"
+mkdir -p "$HOOKS_DIR" || exit 1
 
-ln -sf ../../scripts/pre-commit.hook .git/hooks/pre-commit || exit 1
-chmod +x .git/hooks/pre-commit
+# List of hook names.
+HOOKS=(pre-commit commit-msg pre-push prepare-commit-msg)
 
-ln -sf ../../scripts/commit-msg.hook .git/hooks/commit-msg || exit 1
-chmod +x .git/hooks/commit-msg
-
-ln -sf ../../scripts/pre-push.hook .git/hooks/pre-push || exit 1
-chmod +x .git/hooks/pre-push
-
-ln -sf ../../scripts/prepare-commit-msg.hook .git/hooks/prepare-commit-msg || exit 1
-chmod +x .git/hooks/prepare-commit-msg
+for hook in "${HOOKS[@]}"; do
+  ln -sf "../../scripts/${hook}.hook" "$HOOKS_DIR/$hook" || exit 1
+  chmod +x "$HOOKS_DIR/$hook"
+done
 
 touch .git/hooks/applied || exit 1
 
