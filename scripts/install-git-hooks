@@ -1,16 +1,40 @@
 #!/usr/bin/env bash
 
+# Ensure that the common script exists and is readable, then verify it has no
+# syntax errors and defines the required function.
+common_script="$(dirname "$0")/common.sh"
+[ -r "$common_script" ] || { echo "[!] '$common_script' not found or not readable." >&2; exit 1; }
+bash -n "$common_script" >/dev/null 2>&1 || { echo "[!] '$common_script' contains syntax errors." >&2; exit 1; }
+source "$common_script"
+declare -F set_colors >/dev/null 2>&1 || { echo "[!] '$common_script' does not define the required function." >&2; exit 1; }
+
+set_colors
+
+TOTAL_STEPS=5
+CURRENT_STEP=0
+
+# 1. Validate the workspace
+((CURRENT_STEP++))
+progress "$CURRENT_STEP" "$TOTAL_STEPS"
+
 if ! test -d .git; then
-    echo "Execute scripts/install-git-hooks in the top-level directory."
-    exit 1
+  throw "Execute scripts/install-git-hooks in the top-level directory."
 fi
+
+workspace=$(git rev-parse --show-toplevel)
+if [ ! -d "$workspace" ]; then
+  throw "The workspace path '$workspace' contains non-ASCII characters."
+fi
+
+# 2. Check GitHub account
+((CURRENT_STEP++))
+progress "$CURRENT_STEP" "$TOTAL_STEPS"
 
 ACCOUNT=$(git config -l | grep -w remote.origin.url | sed -e 's/^.*github.com[\/:]\(.*\)\/lab0-c.*/\1/')
 
 CURL=$(which curl)
 if [ $? -ne 0 ]; then
-    echo "[!] curl not installed." >&2
-    exit 1
+  throw "curl not installed."
 fi
 
 CURL_RES=$(${CURL} -s \
@@ -19,43 +43,50 @@ https://api.github.com/repos/${ACCOUNT}/lab0-c/actions/workflows)
 
 TOTAL_COUNT=$(echo ${CURL_RES} | sed -e 's/.*"total_count": \([^,"]*\).*/\1/')
 case ${TOTAL_COUNT} in
-    *"Not Found"*)
-        echo "Check your repository. It should be located at https://github.com/${ACCOUNT}/lab0-c"
-        exit 1
+  *"Not Found"*)
+    throw "Check your repository. It should be located at https://github.com/${ACCOUNT}/lab0-c"
 esac
 
+# 3. Ensure this repository is frok from sysprog21/lab0-c'.
+((CURRENT_STEP++))
+progress "$CURRENT_STEP" "$TOTAL_STEPS"
+
 if [[ "${ACCOUNT}" != "sysprog21" ]]; then
-    REPO_FORKED=$(${CURL} -s \
-    -H "Accept: application/vnd.github.v3+json" \
-    https://api.github.com/repos/${ACCOUNT}/lab0-c | grep -m 1 fork)
-    case ${REPO_FORKED} in
-        *true*)
-            ;;
-        *)
-            echo "Your repository MUST be forked from sysprog21/lab0-c"
-            exit 1
-    esac
+  REPO_FORKED=$(${CURL} -s \
+                -H "Accept: application/vnd.github.v3+json" \
+                https://api.github.com/repos/${ACCOUNT}/lab0-c | grep -m 1 fork)
+  case ${REPO_FORKED} in
+    *true*)
+      ;;
+    *)
+      throw "Your repository MUST be forked from 'sysprog21/lab0-c'."
+  esac
 fi
 
+# 4. Check GitHub Actions
+((CURRENT_STEP++))
+progress "$CURRENT_STEP" "$TOTAL_STEPS"
+
 if [ ${TOTAL_COUNT} -eq "0" ]; then
-    echo "Fatal: GitHub Actions MUST be activated."
-    case ${OSTYPE} in
-        "linux"*)
-            xdg-open https://github.com/${ACCOUNT}/lab0-c/actions > /dev/null 2>&1
-            ;;
-        "darwin"*)
-            open https://github.com/${ACCOUNT}/lab0-c/actions
-            ;;
-        *)
-            echo "Please activate at https://github.com/${ACCOUNT}/lab0-c/actions"
-            ;;
-    esac
-    echo "Check this article: https://docs.github.com/en/actions/managing-workflow-runs/disabling-and-enabling-a-workflow"
-    echo "Then, execute 'make' again."
-    exit 1
-else
-    echo "GitHub Actions has been activated"
+  printf "\n[!] GitHub Actions MUST be activated."
+  case ${OSTYPE} in
+    "linux"*)
+      xdg-open https://github.com/${ACCOUNT}/lab0-c/actions > /dev/null 2>&1
+      ;;
+    "darwin"*)
+      open https://github.com/${ACCOUNT}/lab0-c/actions
+      ;;
+    *)
+      echo "Please activate at https://github.com/${ACCOUNT}/lab0-c/actions"
+      ;;
+  esac
+  throw "Check this article: https://docs.github.com/en/actions/managing-workflow-runs/disabling-and-enabling-a-workflow\n\
+    Then, execute 'make' again."
 fi
+
+# 5. Install Git hooks
+((CURRENT_STEP++))
+progress "$CURRENT_STEP" "$TOTAL_STEPS"
 
 mkdir -p .git/hooks
 
