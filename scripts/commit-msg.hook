@@ -11,31 +11,20 @@ HOOK_EDITOR=
 SKIP_DISPLAY_WARNINGS=0
 WARNINGS=
 
-RED=
-YELLOW=
-BLUE=
-WHITE=
-CYAN=
-NC=
-
-# Set colour variables if the output should be coloured.
-set_colors() {
-  local default_color=$(git config --get hooks.goodcommit.color || git config --get color.ui || echo 'auto')
-  if [[ $default_color == 'always' ]] || [[ $default_color == 'auto' && -t 1 ]]; then
-    RED='\033[1;31m'
-    YELLOW='\033[1;33m'
-    BLUE='\033[1;34m'
-    WHITE='\033[1;37m'
-    CYAN='\033[1;36m'
-    NC='\033[0m' # No Color
-  fi
-}
+# Ensure that the common script exists and is readable, then verify it has no
+# syntax errors and defines the required function.
+common_script="$(dirname "$0")/../../scripts/common.sh"
+[ -r "$common_script" ] || { echo "[!] '$common_script' not found or not readable." >&2; exit 1; }
+bash -n "$common_script" >/dev/null 2>&1 || { echo "[!] '$common_script' contains syntax errors." >&2; exit 1; }
+source "$common_script"
+declare -F set_colors >/dev/null 2>&1 || { echo "[!] '$common_script' does not define the required function." >&2; exit 1; }
 
 # Set the hook editor, using the same approach as git.
 set_editor() {
-  # $GIT_EDITOR appears to always be set to `:` when the hook is executed by Git?
-  # ref: http://stackoverflow.com/q/41468839/885540
-  # ref: https://github.com/tommarshall/git-good-commit/issues/11
+  # $GIT_EDITOR appears to always be set to ':' when the hook is executed by Git?
+  # Reference:
+  # - http://stackoverflow.com/q/41468839/885540
+  # - https://github.com/tommarshall/git-good-commit/issues/11
   # HOOK_EDITOR=$GIT_EDITOR
   test -z "${HOOK_EDITOR}" && HOOK_EDITOR=$(git config --get core.editor)
   test -z "${HOOK_EDITOR}" && HOOK_EDITOR=$VISUAL
