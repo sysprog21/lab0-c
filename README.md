@@ -29,9 +29,9 @@ Some distros like Arch Linux won't install `aspell-en` with `aspell`, and you mu
 $ sudo pacman -S aspell-en
 ```
 
-Note: [Cppcheck](https://cppcheck.sourceforge.net/) version must be at least 1.90, otherwise
+Note: [Cppcheck](https://cppcheck.sourceforge.io/) version must be at least 1.90, otherwise
 it might report errors with false positives. You can get its version by executing `$ cppcheck --version`.
-Check [Developer Info](https://cppcheck.sourceforge.net/devinfo/) for building Cppcheck from source.
+Check [Developer Info](https://cppcheck.sourceforge.io/devinfo/) for building Cppcheck from source.
 
 ### Integrate `clang-format` to `vim`
 If you want to run `clang-format` automatically after saving with vim, 

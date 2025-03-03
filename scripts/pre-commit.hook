@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+# Ensure that the common script exists and is readable, then verify it has no
+# syntax errors and defines the required function.
+common_script="$(dirname "$0")/../../scripts/common.sh"
+[ -r "$common_script" ] || { echo "[!] '$common_script' not found or not readable." >&2; exit 1; }
+bash -n "$common_script" >/dev/null 2>&1 || { echo "[!] '$common_script' contains syntax errors." >&2; exit 1; }
+source "$common_script"
+declare -F set_colors >/dev/null 2>&1 || { echo "[!] '$common_script' does not define the required function." >&2; exit 1; }
+
 # Build unmatched suppressions for each *.c file.
 cppcheck_build_unmatched() {
   local file suppression=""
@@ -64,26 +72,25 @@ CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1"
 CPPCHECK_OPTS+=" --force $(cppcheck_suppressions) $(cppcheck_build_unmatched)"
 CPPCHECK_OPTS+=" --cppcheck-build-dir=.out ."
 
+set_colors
+
 RETURN=0
 
 # Disallow non-ASCII characters in workspace path
 workspace=$(git rev-parse --show-toplevel)
 if echo "$workspace" | grep -q "[一-龥]"; then
-  echo "[!] The workspace path '$workspace' contains non-ASCII characters." >&2
-  exit 1
+  throw "The workspace path '$workspace' contains non-ASCII characters."
 fi
 
 CLANG_FORMAT=$(which clang-format)
 if [ $? -ne 0 ]; then
-  echo "[!] clang-format not installed. Unable to check source file format policy." >&2
-  exit 1
+  throw "clang-format not installed. Unable to check source file format policy."
 fi
 
 CPPCHECK=$(which cppcheck)
 mkdir -p .out
 if [ $? -ne 0 ]; then
-  echo "[!] cppcheck not installed. Unable to perform static analysis." >&2
-  exit 1
+  throw "cppcheck not installed. Unable to perform static analysis."
 fi
 
 # Check that cppcheck's version is at least 1.90.
@@ -94,21 +101,18 @@ else
   # For version 1.x, extract the minor version and compare.
   minor_version=$(echo "$cppcheck_ver" | sed -Ee 's/Cppcheck 1\.([0-9]+)/\1/;q')
   if [ "$minor_version" -lt 90 ]; then
-    echo "[!] cppcheck version must be at least 1.90." >&2
-    echo -e "    See Developer Info for building cppcheck from source:\n"
-    echo -e "        https://cppcheck.sourceforge.io/devinfo/" >&2
-    exit 1
+    throw "cppcheck version must be at least 1.90.\n\
+    See Developer Info for building cppcheck from source:\n\
+        https://cppcheck.sourceforge.io/devinfo/"
   fi
 fi
 
 ASPELL=$(which aspell)
 if [ $? -ne 0 ]; then
-  echo "[!] aspell not installed. Unable to do spelling check." >&2
-  exit 1
+  throw "aspell not installed. Unable to do spelling check."
 fi
 if [ -z "$(aspell dump dicts | grep -E '^en$')" ]; then
-  echo "[!] aspell-en not installed. Unable to do spelling check." >&2
-  exit 1
+  throw "aspell-en not installed. Unable to do spelling check."
 fi
 
 DIFF=$(which colordiff)
@@ -121,8 +125,7 @@ if command -v sha1sum >/dev/null 2>&1; then
 elif command -v shasum >/dev/null 2>&1; then
   SHA1SUM="shasum"
 else
-  echo "[!] sha1sum or shasum not installed." >&2
-  exit 1
+  throw "sha1sum or shasum not installed."
 fi
 
 # Get staged filenames (added, copied, or modified) into an array.
@@ -137,12 +140,12 @@ for file in "${FILES[@]}"; do
 
   if echo "$mime_info" | grep -qi binary; then
     binary_files+=("$name")
-    echo "[!] '$name' appears to be a binary blob."
+    printf "${RED}[!]${NC} '${YELLOW}$name${NC}' appears to be a binary blob.\n"
   fi
 done
 
 if [ "${#binary_files[@]}" -gt 0 ]; then
-  echo "WARNING: Binary data found"
+  printf "${RED}[!]${NC} Binary data found.\n"
 fi
 
 FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h)$")
@@ -180,8 +183,7 @@ fi
 
 $SHA1SUM -c scripts/checksums 2>/dev/null >/dev/null
 if [ $? -ne 0 ]; then
-  echo "[!] You are not allowed to change the header file queue.h or list.h" >&2
-  exit 1
+  throw "You are not allowed to change the header file queue.h or list.h"
 fi
 
 # Prevent unsafe functions
