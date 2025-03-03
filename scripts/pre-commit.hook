@@ -82,6 +82,16 @@ if echo "$workspace" | grep -q "[一-龥]"; then
   throw "The workspace path '$workspace' contains non-ASCII characters."
 fi
 
+# Check for merge conflict markers in staged changes.
+# Assemble the conflict marker regex without embedding it directly.
+CONFLICT_MARKERS=$(printf '%s|%s|%s' "<<<<<<<" "=======" ">>>>>>>")
+# Get staged files that contain conflict markers, but exclude hook files.
+CONFLICT_FILES=$(git diff --cached --name-only -G "${CONFLICT_MARKERS}" | \
+                 grep -vE '(^|/)\.git/hooks/|(^|/)(pre-commit|commit-msg|prepare-commit-msg|pre-push)\.hook$')
+if [ -n "${CONFLICT_FILES}" ]; then
+  throw "Conflict markers are still present in the following files:\n%s" ${CONFLICT_FILES}
+fi
+
 CLANG_FORMAT=$(which clang-format)
 if [ $? -ne 0 ]; then
   throw "clang-format not installed. Unable to check source file format policy."
