@@ -140,8 +140,7 @@ build_commit_trailer_regex() {
 
   # Predefined trailer keys.
   trailers=(
-    'CC' 'Change-Id'
-    'Bug' 'Close' 'Closes'
+    'CC' 'Change-Id' 'Closes'
     'Acked-by' 'Co-authored-by' 'Reported-by' 'Reviewed-by'
     'Signed-off-by' 'Suggested-by' 'Tested-by'
   )
