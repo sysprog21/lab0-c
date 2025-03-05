@@ -90,13 +90,13 @@ static inline void INIT_LIST_HEAD(struct list_head *head)
 }
 
 /**
- * list_add - Insert a node at the beginning of a circular list
+ * list_add - Insert a node after a given node in a circular list
  * @node: Pointer to the list_head structure to add.
- * @head: Pointer to the list_head structure representing the list head.
+ * @head: Pointer to the list_head structure after which to add the new node.
  *
  * Adds the specified @node immediately after @head in a circular doubly-linked
- * list, effectively placing it at the beginning. The existing first node, if
- * any, shifts to follow @node, and the list's circular structure is maintained.
+ * list. The node that previously followed @head will now follow @node, and the
+ * list's circular structure is maintained.
  */
 static inline void list_add(struct list_head *node, struct list_head *head)
 {
