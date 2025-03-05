@@ -144,6 +144,8 @@ static char **parse_args(char *line, int *argcp)
             *dst++ = c;
         }
     }
+    /* Let the last substring is null-terminated */
+    *dst++ = '\0';
 
     /* Now assemble into array of strings */
     char **argv = calloc_or_fail(argc, sizeof(char *), "parse_args");
