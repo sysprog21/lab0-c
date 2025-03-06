@@ -429,7 +429,7 @@ void init_cmd()
                 "Display or set options. See 'Options' section for details",
                 "[name val]");
     ADD_COMMAND(quit, "Exit program", "");
-    ADD_COMMAND(source, "Read commands from source file", "");
+    ADD_COMMAND(source, "Read commands from source file", "file");
     ADD_COMMAND(log, "Copy output to file", "file");
     ADD_COMMAND(time, "Time command execution", "cmd arg ...");
     ADD_COMMAND(web, "Read commands from builtin web server", "[port]");
