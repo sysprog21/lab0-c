@@ -544,7 +544,7 @@ static bool do_size(int argc, char *argv[])
     bool ok = true;
     if (argc == 2) {
         if (!get_int(argv[1], &reps))
-            report(1, "Invalid number of calls to size '%s'", argv[2]);
+            report(1, "Invalid number of calls to size '%s'", argv[1]);
     }
 
     int cnt = 0;
