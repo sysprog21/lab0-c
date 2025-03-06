@@ -350,3 +350,5 @@ typedef
 BitInt
 noreturn
 pragma
+ollama
+qwen

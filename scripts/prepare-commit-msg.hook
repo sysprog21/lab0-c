@@ -4,7 +4,7 @@ COMMIT_MSG_FILE="$1"
 
 # If the commit message file already contains non-comment lines, do nothing.
 if grep -qE '^[^[:space:]#]' "$COMMIT_MSG_FILE"; then
-    exit 0
+  exit 0
 fi
 
 # Gather a list of staged (changed) files.
@@ -34,6 +34,119 @@ INLINE_MSG=$(cat <<'EOF'
 EOF
 )
 
+# AICommit uses an LLM (via ollama) to generate commit messages that match git
+# commit style by learning from previous commits.
+# Inspired by https://github.com/acrosa/aicommits.
+MODEL="qwen2.5-coder"
+SUGGESTED_COMMITMSG=
+AICOMMIT=$(git config --get core.aicommit || echo 'auto')
+if [[ "$AICOMMIT" == "always" ]] || [[ "$AICOMMIT" == "auto" && -t 1 ]] && \
+   git diff --cached --name-only | grep -qiE "\.(c|h|cpp|hpp)$"; then
+  # Build commit history list from the last non-merge commit messages.
+  commit_history=$(git log -n 70 --no-merges --pretty=format:'"%s",' | \
+                   sed -E 's/ \(\#[0-9]+\)//; $ s/,$//')
+  commit_history="[$commit_history]"
+
+  # Capture the staged diff.
+  staged_diff=$(git diff --cached)
+
+  # Create a style prompt from commit history.
+  style_prompt="
+You are a specialized system for generating high-quality Git commit messages based on 'git diff --cached' output and optional developer descriptions.
+# Task:
+Analyze the following commit messages and produce **accurate, concise, and meaningful commit messages** that clearly describe the changes:
+- $commit_history
+
+# Output:
+Provide a concise description of the style without quoting commit content.
+"
+  echo "Running ollama... "
+  style_description=$(echo "$style_prompt" | ollama run "$MODEL")
+
+  # Build the commit message prompt.
+  prompt="
+# Context:
+Style: $style_description
+
+# Instructions:
+- Analyze the diff below and generate a commit message based solely on its content.
+- Mimic the style described above (tone, length, structure) without copying previous messages.
+- Use clear action verbs and be concise.
+- Output ONLY the commit message (subject, a blank line, then body).
+- Separate the subject from the body with a blank line.
+- Remove triple backticks; replace backticks with single quotes.
+- Keep the first line (subject) under 50 characters
+- Ensure no line exceeds 72 characters.
+- Avoid vague messages like 'Updates' or 'Fixed bug'
+- Always write in **plain text** without markdown or HTML.
+- No concluding remarks.
+- Do NOT use conventional commit prefixes (like 'feat:', 'fix:', 'docs:')
+- Avoid the redundant message like 'Updated commit messages'
+
+# Diff:
+<diff>$staged_diff</diff>
+
+Commit message:"
+  if [ "$2" = "--show-prompt" ]; then
+    echo "Full style prompt:"
+    echo "$style_prompt"
+    echo "Extracted style:"
+    echo "$style_description"
+    echo "Full commit prompt:"
+    echo "$prompt"
+  fi
+
+  # Generate commit message using ollama.
+  SUGGESTED_COMMITMSG=$(echo "$prompt" | ollama run "$MODEL")
+
+  # Post-process the commit message.
+  # - Trim whitespace.
+  # - Remove triple backticks.
+  # - Replace backticks with single quotes.
+  # - Wrap lines at 72 characters.
+  SUGGESTED_COMMITMSG=$(echo "$SUGGESTED_COMMITMSG" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+  SUGGESTED_COMMITMSG=$(echo "$SUGGESTED_COMMITMSG" | sed -E '/^(Author:|Date:|Commit message:)/d')
+  SUGGESTED_COMMITMSG="$(
+    echo "$SUGGESTED_COMMITMSG" \
+      | sed -E '/^```(markdown|diff|text|plaintext)?$/d; s/\*\*([^*]+)\*\*/\1/g; s/`([^`]+)`/'\''\1'\''/g' \
+      | awk -v w=72 '
+function sp(n){ return sprintf("%" n "s", "") }
+function wrap(bp, txt){
+  gsub(/^ +| +$/,"",txt)
+  if(!length(txt)){ print bp; return }
+  n = split(txt, a, /[ \t]+/)
+  l = bp; len = length(bp)
+  for(i = 1; i <= n; i++){
+    wl = length(a[i])
+    if((len > length(bp) ? len + 1 : len) + wl > w){
+      print l; l = sp(length(bp)) a[i]; len = length(bp) + wl
+    } else if(len == length(bp)){
+      l = bp a[i]; len = length(bp) + wl
+    } else {
+      l = l " " a[i]; len++; len += wl
+    }
+  }
+  if(len > length(bp)) print l
+}
+BEGIN { paragraph = ""; bullet = "" }
+{
+  line = $0; gsub(/^ +| +$/, "", line)
+  if(!length(line)){
+    if(length(paragraph)){ wrap(bullet, paragraph); paragraph = ""; bullet = "" }
+    print ""; next
+  }
+  if(match(line, /^( *[0-9]+\.[ \t]+| *-[ \t]+| *\*[ \t]+)/)){
+    if(length(paragraph)){ wrap(bullet, paragraph); paragraph = ""; bullet = "" }
+    bp = substr(line, RSTART, RLENGTH); rest = substr(line, RSTART + RLENGTH)
+    gsub(/^[ \t]+/, "", rest); wrap(bp, rest)
+  } else {
+    if(!length(paragraph)) paragraph = line; else paragraph = paragraph " " line
+  }
+}
+END { if(length(paragraph)) wrap(bullet, paragraph) }
+')"
+fi
+
 # Write an empty line, the guidelines, and the changed files into the commit message.
 {
   echo
@@ -43,6 +156,11 @@ EOF
     echo "$CHANGED_FILES_COMMENTED"
   else
     echo "# (No staged files detected.)"
+  fi
+  if [ -n "$SUGGESTED_COMMITMSG" ]; then
+    echo "#"
+    echo "# ✅Suggested commit messages:"
+    echo "$SUGGESTED_COMMITMSG" | sed 's/^/# /'
   fi
 } > "$COMMIT_MSG_FILE"
 
