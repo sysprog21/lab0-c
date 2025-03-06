@@ -434,7 +434,7 @@ static bool do_dedup(int argc, char *argv[])
 
     // Copy current->q to l_copy
     if (current->q && !list_empty(current->q)) {
-        list_for_each_entry (item, current->q, list) {
+        list_for_each_entry(item, current->q, list) {
             size_t slen;
             tmp = malloc(sizeof(element_t));
             if (!tmp)
@@ -451,7 +451,7 @@ static bool do_dedup(int argc, char *argv[])
         }
         // Return false if the loop does not leave properly
         if (&item->list != current->q) {
-            list_for_each_entry_safe (item, tmp, &l_copy, list) {
+            list_for_each_entry_safe(item, tmp, &l_copy, list) {
                 free(item->value);
                 free(item);
             }
@@ -468,7 +468,7 @@ static bool do_dedup(int argc, char *argv[])
     exception_cancel();
 
     if (!ok) {
-        list_for_each_entry_safe (item, tmp, &l_copy, list) {
+        list_for_each_entry_safe(item, tmp, &l_copy, list) {
             free(item->value);
             free(item);
         }
@@ -479,7 +479,7 @@ static bool do_dedup(int argc, char *argv[])
     struct list_head *l_tmp = current->q->next;
     bool is_this_dup = false;
     // Compare between new list and old one
-    list_for_each_entry (item, &l_copy, list) {
+    list_for_each_entry(item, &l_copy, list) {
         // Skip comparison with new list if the string is duplicate
         bool is_next_dup =
             item->list.next != &l_copy &&
@@ -503,7 +503,7 @@ static bool do_dedup(int argc, char *argv[])
                "ERROR: Duplicate strings are in queue or distinct strings are "
                "not in queue");
 
-    list_for_each_entry_safe (item, tmp, &l_copy, list) {
+    list_for_each_entry_safe(item, tmp, &l_copy, list) {
         free(item->value);
         free(item);
     }
@@ -604,7 +604,7 @@ bool do_sort(int argc, char *argv[])
     unsigned no = 0;
     if (current && current->size && current->size <= MAX_NODES) {
         element_t *entry;
-        list_for_each_entry (entry, current->q, list)
+        list_for_each_entry(entry, current->q, list)
             nodes[no++] = &entry->list;
     } else if (current && current->size > MAX_NODES)
         report(1,
