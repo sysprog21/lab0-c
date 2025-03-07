@@ -1,0 +1,23 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+[Makefile]
+indent_style = tab
+indent_size = 4
+max_line_length = 80
+
+[**/*.[ch]]
+indent_style = space
+indent_size = 4
+max_line_length = 80
+
+[**/*.py]
+indent_style = space
+indent_size = 4
+
+[**/*.{sh,hook,yml}]
+indent_style = space
+indent_size = 2
