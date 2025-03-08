@@ -210,7 +210,7 @@ static bool queue_insert(position_t pos, int argc, char *argv[])
 
     char *inserts = argv[1];
     if (argc == 3) {
-        if (!get_int(argv[2], &reps)) {
+        if (!get_int(argv[2], &reps) || reps < 1) {
             report(1, "Invalid number of insertions '%s'", argv[2]);
             return false;
         }
