@@ -54,9 +54,35 @@ AICOMMIT=$(git config --get core.aicommit || echo 'auto')
 if [[ "$AICOMMIT" == "always" ]] || [[ "$AICOMMIT" == "auto" && -t 1 ]] && \
    git diff --cached --name-only | grep -qiE "\.(c|h|cpp|hpp)$"; then
   # Build commit history list from the last non-merge commit messages.
-  commit_history=$(git log -n 70 --no-merges --pretty=format:'"%s",' | \
-                   sed -E 's/ \(\#[0-9]+\)//; $ s/,$//')
-  commit_history="[$commit_history]"
+  commit_history=$(
+    {
+      echo '---'
+      git log -n 50 --no-merges --pretty=format:'%B%n---'
+    } | sed -E 's/ \(\#[0-9]+\)//; /^Change-Id:/d' | awk '
+function print_block(block) {
+  sub(/\n+$/, "", block)
+  n = split(block, a, "\n")
+  subject = a[1]
+  body = ""
+  for (i = 2; i <= n; i++) {
+    if (a[i] ~ /[^[:space:]]/)
+      body = body (body ? "\n" : "") a[i]
+  }
+  print "<subject>" subject "</subject>"
+  print "<body>" body "</body>"
+  print "---"
+}
+{
+  if ($0=="---") {
+    if (block != "") { print_block(block); block = "" }
+  } else {
+    block = block $0 "\n"
+  }
+}
+END {
+  if (block != "") print_block(block)
+}'
+  )
 
   # Capture the staged diff.
   staged_diff=$(git diff --cached)
@@ -65,8 +91,8 @@ if [[ "$AICOMMIT" == "always" ]] || [[ "$AICOMMIT" == "auto" && -t 1 ]] && \
   style_prompt="
 You are a specialized system for generating high-quality Git commit messages based on 'git diff --cached' output and optional developer descriptions.
 # Task:
-Analyze the following commit messages and produce **accurate, concise, and meaningful commit messages** that clearly describe the changes:
-- $commit_history
+Analyze the following commit messages and produce **accurate, concise, and meaningful commit messages** that clearly describe the changes: (Format: '---' separates messages, <subject>...</subject> and <body>...</body> tags)
+$commit_history
 
 # Output:
 Provide a concise description of the style without quoting commit content.
@@ -92,7 +118,8 @@ Style: $style_description
 - Keep the first line (subject) under 50 characters
 - Ensure no line exceeds 72 characters.
 - Avoid vague messages like 'Updates' or 'Fixed bug'
-- Always write in **plain text** without markdown or HTML.
+- Respond in **plain text only**. No markdown, HTML, JSON, code blocks, or special formatting characters. 
+- Use only standard punctuation and paragraph breaks.
 - No concluding remarks.
 - Do NOT use conventional commit prefixes (like 'feat:', 'fix:', 'docs:')
 - Avoid the redundant message like 'Updated commit messages'
@@ -122,7 +149,7 @@ Commit message:"
   # - Remove triple backticks.
   # - Replace backticks with single quotes.
   SUGGESTED_COMMITMSG=$(echo "$SUGGESTED_COMMITMSG" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-  SUGGESTED_COMMITMSG=$(echo "$SUGGESTED_COMMITMSG" | sed -E '/^(Author:|Date:|Commit message:)/d')
+  SUGGESTED_COMMITMSG=$(echo "$SUGGESTED_COMMITMSG" | sed -E '/^(Author:|Date:|Commit message:|commit )/d')
   SUGGESTED_COMMITMSG=$(echo "$SUGGESTED_COMMITMSG" | sed -E '/^```(markdown|diff|text|plaintext)?$/d; s/\*\*([^*]+)\*\*/\1/g; s/`([^`]+)`/'\''\1'\''/g')
   
   # Extract the subject line (first line) and body
