@@ -99,7 +99,12 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 /* Return number of elements in queue */
 int q_size(struct list_head *head)
 {
-    return -1;
+    element_t *entry;
+    int count = 0;
+    list_for_each_entry (entry, head, list) {
+        count++;
+    }
+    return count;
 }
 
 // 偶數：取後一個
@@ -314,6 +319,12 @@ void q_sort(struct list_head *head, bool descend)
     head->next = sort_first;
     head->prev = sort_first->prev;
     sort_first->prev->next = head;
+    sort_first->prev = head;
+
+    element_t *entry;
+    list_for_each_entry (entry, head, list) {
+        printf("%s\n", entry->value);
+    }
 }
 
 /* 比較兩個字串，若左邊大於右邊，回傳 true，否則回傳 false */
