@@ -352,3 +352,5 @@ noreturn
 pragma
 ollama
 qwen
+aicommit
+LLM
