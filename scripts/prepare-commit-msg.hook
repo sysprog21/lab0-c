@@ -4,7 +4,7 @@ COMMIT_MSG_FILE="$1"
 
 # If the commit message file already contains non-comment lines, do nothing.
 if grep -qE '^[^[:space:]#]' "$COMMIT_MSG_FILE"; then
-    exit 0
+  exit 0
 fi
 
 # Gather a list of staged (changed) files.

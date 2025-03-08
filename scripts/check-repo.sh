@@ -81,7 +81,7 @@ curl -sSL -o "$temp_file" "$COMMITS_URL"
 # general grep pattern that finds commit links
 upstream_hash=$(
   grep -Po 'href="[^"]*/commit/\K[0-9a-f]{40}' "$temp_file" \
-  | head -n 1
+    | head -n 1
 )
 
 rm -f "$temp_file"
