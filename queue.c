@@ -183,7 +183,6 @@ void q_reverse_segment(struct list_head *start, struct list_head *end)
         current->next = current->prev;
         current->prev = tmp;
         current = tmp;
-        printf("ddd\n");
     } while (current != end_next);
     // 修正反轉後的新連接
     if (start_prev)
@@ -210,29 +209,26 @@ void q_reverseK(struct list_head *head, int k)
 
     if (!head || list_empty(head))
         return;
-
+    printf("reverseK\n");
     struct list_head *start = head, *end = NULL, *current = start;
     int index = 0, group = q_size(head) / k, current_group = 0;
-    if (list_empty(head)) {
-        return;
-    }
     int i = 0;
     do {
         current = current->next;
-        printf("4\n");
         if (current_group < group) {
-            printf("i: %d\n", i);
             index++;
+            printf("index: %d\n", index);
             if (index == 1) {
                 start = current;
             } else if (index == k) {
                 end = current;
+                current = start;
                 q_reverse_segment(start, end);
-            } else {
                 index = 0;
                 current_group++;
             }
         }
+        i++;
     } while (current != head);
 }
 
