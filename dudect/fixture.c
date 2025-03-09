@@ -38,10 +38,8 @@
 
 #include "constant.h"
 #include "fixture.h"
+#include "plot.h"
 #include "ttest.h"
-
-#define ENOUGH_MEASURE 10000
-#define TEST_TRIES 10
 
 static t_context_t *t;
 
@@ -82,6 +80,8 @@ static bool report(void)
     double max_t = fabs(t_compute(t));
     double number_traces_max_t = t->n[0] + t->n[1];
     double max_tau = max_t / sqrt(number_traces_max_t);
+
+    add_data(max_t);
 
     printf("\033[A\033[2K");
     printf("meas: %7.2lf M, ", (number_traces_max_t / 1e6));
@@ -156,6 +156,7 @@ static bool test_const(char *text, int mode)
     bool result = false;
     t = malloc(sizeof(t_context_t));
 
+    init_data_buffer();
     for (int cnt = 0; cnt < TEST_TRIES; ++cnt) {
         printf("Testing %s...(%d/%d)\n\n", text, cnt, TEST_TRIES);
         init_once();
@@ -163,9 +164,11 @@ static bool test_const(char *text, int mode)
              ++i)
             result = doit(mode);
         printf("\033[A\033[2K\033[A\033[2K");
+        next_try();
         if (result)
             break;
     }
+    plot_graph(t_threshold_moderate, text);
     free(t);
     return result;
 }
