@@ -236,6 +236,7 @@ void q_reverseK(struct list_head *head, int k)
     } while (current != head);
 }
 
+
 /**
  * 若 `descend` 為 `true`，則當 `left->value` >= `right->value` 回傳 `true`。
  * 若 `descend` 為 `false`，則當 `left->value` <= `right->value` 回傳 `true`。
@@ -250,6 +251,7 @@ static inline bool compare(struct list_head *left,
                         list_entry(right, element_t, list)->value);
     return descend ? result >= 0 : result <= 0;
 }
+
 
 struct list_head *merge(struct list_head *left,
                         struct list_head *right,
@@ -350,16 +352,6 @@ void q_sort(struct list_head *head, bool descend)
     sort_first->prev = head;
 }
 
-/* 比較兩個字串，若左邊大於右邊，回傳 true，否則回傳 false */
-bool value_compare(char *left, char *right)
-{
-    if (strcmp(left, right) > 0) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 /* Remove every node which has a node with a strictly less value anywhere to
  * the right side of it */
 int q_ascend(struct list_head *head)
@@ -367,42 +359,28 @@ int q_ascend(struct list_head *head)
     if (!head || list_empty(head) || list_is_singular(head)) {
         return 0;
     }
+    // reverse for_each
+    struct list_head *current = head->next->next, *prev_node = NULL;
+    struct list_head *max = head->next;  // 從第一個節點開始往後找
 
-    struct list_head *current = head, *prev_node;
-    char *min = list_entry(head->prev, element_t, list)->value;
-
-    do {
-        current = current->prev;
-        if (!current || current == head) {
-            break;
-        }
-
-        prev_node = current->prev;  // 儲存下一個節點
+    while (current != head) {
+        prev_node = current->next;  // 儲存下一個節點
+        // 確保 current 有效
         element_t *entry = list_entry(current, element_t, list);
         if (!entry) {
             break;
         }
-
-        // 如果 `entry->value` 大於 `min`，刪除
-        if (value_compare(entry->value, min)) {
-            if (current->next) {
-                current->next->prev = current->prev;
-            }
-            if (current->prev) {
-                current->prev->next = current->next;
-            }
-
-            if (entry->value) {
-                free(entry->value);
-            }
-            free(entry);
+        if (compare(max, current,
+                    true)) {  // 如果 max 大於 entry->value，則刪除 entry
+            list_del(current);
+            q_release_element(entry);
         } else {
-            min = entry->value;  // 更新最小值
+            max = current;
         }
         current = prev_node;
-    } while (current != head);
+    }
 
-    return 0;
+    return q_size(head);
 }
 
 /* Remove every node which has a node with a strictly greater value anywhere to
@@ -414,42 +392,27 @@ int q_descend(struct list_head *head)
         return 0;
     }
     // reverse for_each
-    struct list_head *current = head, *prev_node;
-    char *max = list_entry(head->prev, element_t, list)->value;
+    struct list_head *current = head->prev->prev, *prev_node = NULL;
+    struct list_head *max = head->prev;  // 從最後一個節點開始往回找
 
-    do {
-        current = current->prev;
-        if (!current || current == head) {
-            break;  // 防止 current == NULL
-        }
-
-        prev_node = current->prev;  // 儲存下一個節點
-
+    while (current != head) {
+        prev_node = current->prev;  // 儲存上一個節點
         // 確保 current 有效
         element_t *entry = list_entry(current, element_t, list);
         if (!entry) {
             break;
         }
-
-        if (value_compare(max, entry->value)) {
-            if (current->next) {
-                current->next->prev = current->prev;
-            }
-            if (current->prev) {
-                current->prev->next = current->next;
-            }
-
-            if (entry->value) {
-                free(entry->value);
-            }
-            free(entry);  // 釋放節點記憶體
+        if (compare(max, current,
+                    true)) {  // 如果 max 大於 entry->value，則刪除 entry
+            list_del(current);
+            q_release_element(entry);
         } else {
-            max = entry->value;
+            max = current;
         }
         current = prev_node;
-    } while (current != head);
+    }
 
-    return 0;
+    return q_size(head);
 }
 
 
