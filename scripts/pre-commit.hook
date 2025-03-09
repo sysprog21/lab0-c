@@ -68,7 +68,27 @@ cppcheck_suppressions() {
   printf "%s" "$out" | sed 's/[[:space:]]*$//'
 }
 
+# Generation of standard compliance for GCC/Clang
+detect_cc_std() {
+  local STDC_VERSION=""
+  local EXTRA_DEFINES=""
+  if command -v cc >/dev/null 2>&1; then
+    if cc --version 2>/dev/null | grep -q "clang"; then
+      STDC_VERSION=$(cc -dM -E -xc /dev/null | awk '/__STDC_VERSION__/ {print $3}')
+      EXTRA_DEFINES="-D__clang__=1"
+    elif cc --version 2>/dev/null | grep -q "Free Software Foundation"; then
+      STDC_VERSION=$(cc -dM -E -xc /dev/null | awk '/__STDC_VERSION__/ {print $3}')
+      EXTRA_DEFINES="-D__GNUC__=1"
+    fi
+  fi
+  if [ -n "$STDC_VERSION" ]; then
+    EXTRA_DEFINES+=" -D__STDC__=1 -D__STDC_VERSION__=${STDC_VERSION}"
+  fi
+  echo "$EXTRA_DEFINES"
+}
+
 CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1"
+CPPCHECK_OPTS+=" $(detect_cc_std)"
 CPPCHECK_OPTS+=" --force $(cppcheck_suppressions) $(cppcheck_build_unmatched)"
 CPPCHECK_OPTS+=" --cppcheck-build-dir=.out ."
 
