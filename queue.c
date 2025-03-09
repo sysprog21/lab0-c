@@ -143,6 +143,24 @@ bool q_delete_mid(struct list_head *head)
 bool q_delete_dup(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+    if (list_empty(head)) {
+        return true;
+    }
+    element_t *entry = NULL, *safe = NULL;
+    bool dup = false;
+    q_sort(head, false);
+    list_for_each_entry_safe (entry, safe, head, list) {
+        if (entry->list.next != head &&
+            strcmp(entry->value, safe->value) == 0) {
+            list_del(entry->list.next->prev);
+            q_release_element(entry);
+            dup = true;
+        } else if (dup) {
+            list_del(entry->list.next->prev);
+            q_release_element(entry);
+            dup = false;
+        }
+    }
     return true;
 }
 
@@ -165,7 +183,8 @@ void q_reverse_segment(struct list_head *start, struct list_head *end)
         current->next = current->prev;
         current->prev = tmp;
         current = tmp;
-    } while (current != end->next);
+        printf("ddd\n");
+    } while (current != end_next);
     // 修正反轉後的新連接
     if (start_prev)
         start_prev->next = end;  // 讓原本的前一個指向新的首部
@@ -179,6 +198,8 @@ void q_reverse_segment(struct list_head *start, struct list_head *end)
 /* Reverse elements in queue */
 void q_reverse(struct list_head *head)
 {
+    if (!head || list_empty(head))
+        return;
     q_reverse_segment(head->next, head->prev);
 }
 
@@ -186,14 +207,21 @@ void q_reverse(struct list_head *head)
 void q_reverseK(struct list_head *head, int k)
 {
     // https://leetcode.com/problems/reverse-nodes-in-k-group/
-    struct list_head *start = NULL, *end = NULL, *current = NULL;
+
+    if (!head || list_empty(head))
+        return;
+
+    struct list_head *start = head, *end = NULL, *current = start;
     int index = 0, group = q_size(head) / k, current_group = 0;
     if (list_empty(head)) {
         return;
     }
+    int i = 0;
     do {
         current = current->next;
+        printf("4\n");
         if (current_group < group) {
+            printf("i: %d\n", i);
             index++;
             if (index == 1) {
                 start = current;
@@ -320,11 +348,6 @@ void q_sort(struct list_head *head, bool descend)
     head->prev = sort_first->prev;
     sort_first->prev->next = head;
     sort_first->prev = head;
-
-    element_t *entry;
-    list_for_each_entry (entry, head, list) {
-        printf("%s\n", entry->value);
-    }
 }
 
 /* 比較兩個字串，若左邊大於右邊，回傳 true，否則回傳 false */
@@ -430,11 +453,8 @@ int q_descend(struct list_head *head)
 }
 
 
-/* Merge all the queues into one sorted queue, which is in ascending/descending
- * order */
+
 int q_merge(struct list_head *head, bool descend)
 {
-    // https://leetcode.com/problems/merge-k-sorted-lists/
-
     return 0;
 }
