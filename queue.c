@@ -454,7 +454,56 @@ int q_descend(struct list_head *head)
 
 
 
+void merge_lists_with_sentinel_node(struct list_head *l1,
+                                    struct list_head *l2,
+                                    bool descend)
+{
+    struct list_head *curr = l1->next;
+    struct list_head *next = l2->next;
+    struct list_head *head = l1, **ptr = &(head->next), *prev = head;
+
+    while (curr != l1 && next != l2) {
+        if (compare(curr, next, descend)) {
+            *ptr = curr;
+            curr = curr->next;
+        } else {
+            *ptr = next;
+            next = next->next;
+        }
+        (*ptr)->prev = prev;
+        prev = *ptr;
+        ptr = &(*ptr)->next;
+    }
+
+    if (curr != l1) {  // l1還在輸出！！
+        *ptr = curr;
+        curr->prev = prev;
+    } else {
+        *ptr = next;
+        next->prev = prev;
+        l2->prev->next = l1;
+        l1->prev = l2->prev;
+    }
+    INIT_LIST_HEAD(l2);
+}
+
+
+#define element_next(pos, member) \
+    list_entry((pos)->member.next, typeof(*(pos)), member)
+
 int q_merge(struct list_head *head, bool descend)
 {
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+
+    queue_contex_t *entry = list_first_entry(head, queue_contex_t, chain),
+                   *next;
+    struct list_head *curr = entry->q;
+
+    for (next = element_next(entry, chain); &next->chain != head;
+         next = element_next(next, chain)) {
+        merge_lists_with_sentinel_node(curr, next->q, descend);
+    }
+
+    return q_size(entry->q);
 }
