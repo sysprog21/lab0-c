@@ -613,12 +613,29 @@ add_change_id() {
     }
     changeIdAfter = "^(" tolower("'"$CHANGE_ID_AFTER"'") "):"
     numlines = split(lines, footer, "\n")
+
+    # Find the last line that starts with a comment character.
+    coauthorIndex = 0
+    for (line = 1; line <= numlines; line++) {
+      if (match(tolower(footer[line]), /^co-authored-by:/)) {
+        coauthorIndex = line
+      }
+    }
+
     for (line = 1; line <= numlines; line++) {
       if (unprinted && match(tolower(footer[line]), changeIdAfter) != 1) {
-        unprinted = 0
-        print "Change-Id: I'"$id"'"
+        # If the Change-Id is the first line in the footer, print it first.
+        if (coauthorIndex == 0 || line > coauthorIndex) {
+          print "Change-Id: I'"$id"'"
+          unprinted = 0
+        }
       }
       print footer[line]
+
+      if(line == coauthorIndex && unprinted) {
+        print "Change-Id: I'"$id"'"
+        unprinted = 0
+      }
     }
     if (unprinted) {
       print "Change-Id: I'"$id"'"
