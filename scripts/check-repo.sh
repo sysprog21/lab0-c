@@ -1,14 +1,7 @@
 #!/usr/bin/env bash
 
-# Ensure that the common script exists and is readable, then verify it has no
-# syntax errors and defines the required function.
-common_script="$(dirname "$0")/common.sh"
-[ -r "$common_script" ] || { echo "[!] '$common_script' not found or not readable." >&2; exit 1; }
-bash -n "$common_script" >/dev/null 2>&1 || { echo "[!] '$common_script' contains syntax errors." >&2; exit 1; }
-source "$common_script"
-declare -F set_colors >/dev/null 2>&1 || { echo "[!] '$common_script' does not define the required function." >&2; exit 1; }
-
-set_colors
+# Source the common utilities
+source "$(dirname "$0")/common.sh"
 
 check_github_actions
 
@@ -73,14 +66,15 @@ if [ "$DEFAULT_BRANCH" != "master" ]; then
 fi
 
 # Construct the URL to the commits page for the default branch
-COMMITS_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/commits/${DEFAULT_BRANCH}"
+# COMMITS_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/commits/${DEFAULT_BRANCH}"
+COMMITS_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/tree/${DEFAULT_BRANCH}"
 
 temp_file=$(mktemp)
 curl -sSL -o "$temp_file" "$COMMITS_URL"
 
 # general grep pattern that finds commit links
 upstream_hash=$(
-  grep -Po 'href="[^"]*/commit/\K[0-9a-f]{40}' "$temp_file" \
+  grep -Po '"currentOid": ?"\K[0-9a-f]{40}' "$temp_file" \
   | head -n 1
 )
 
