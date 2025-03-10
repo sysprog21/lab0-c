@@ -154,13 +154,15 @@ build_commit_trailer_regex() {
   # Read custom trailer keys from git config and add them either to specials or trailers.
   # This loop reads lines matching 'trailer.*.key'.
   while read -r _ key; do
-    # Skip if key already exists in trailers or specials.
+    if [[ "$key" =~ -by$ ]]; then
+      trailers_by+=("$key")
+      continue
+    fi
+
     for each in "${trailers[@]}" "${specials[@]}"; do
-      if [ "$key" = "$each" ]; then
-        continue 2
-      fi
+      [[ "$key" == "$each" ]] && continue 2
     done
-    # If key ends with a separator character, add to specials; otherwise, to trailers.
+
     if [[ $key =~ [${separators}]$ ]]; then
       specials+=("$key")
     else
@@ -168,15 +170,15 @@ build_commit_trailer_regex() {
     fi
   done < <(git config --get-regexp 'trailer.*.key')
 
-  # Read custom trailer keys again into the 'keys' array (if needed).
-  while IFS=. read -r _ key _; do
-    for each in "${keys[@]}"; do
-      if [ "$key" = "$each" ]; then
-        continue 2
-      fi
-    done
-    keys+=("$key")
-  done < <(git config --get-regexp 'trailer.*.key')
+  # Possible trailers :
+  # - Acked-by
+  # - Co-authored-by
+  # - Reported-by
+  # - Reviewed-by
+  # - Signed-off-by
+  # - Suggested-by
+  # - Tested-by
+  TRAILERS_BY_REGEX="^($(IFS='|'; echo "${trailers_by[*]}")):"
 
   # Begin constructing the regex.
   TRAILER_REGEX='^('
@@ -207,16 +209,6 @@ build_commit_trailer_regex() {
       TRAILER_REGEX+="$each|"
     done
     TRAILER_REGEX="${TRAILER_REGEX%|})"
-  fi
-
-  # Append additional keys.
-  if ((${#keys[@]} > 0)); then
-    TRAILER_REGEX+='|(('
-    for each in "${keys[@]}"; do
-      TRAILER_REGEX+="$each|"
-    done
-    # Use the second character of separators (if available) as a separator for keys.
-    TRAILER_REGEX="${TRAILER_REGEX%|})[${separators:1:1}[:blank:]])"
   fi
 
   # End the regex.
@@ -611,35 +603,30 @@ add_change_id() {
       print lines "\n"
       lines = ""
     }
-    changeIdAfter = "^(" tolower("'"$CHANGE_ID_AFTER"'") "):"
+
     numlines = split(lines, footer, "\n")
 
-    # Find the last line that starts with a comment character.
-    coauthorIndex = 0
+    trailers = ""
+    other_footer = ""
+
     for (line = 1; line <= numlines; line++) {
-      if (match(tolower(footer[line]), /^co-authored-by:/)) {
-        coauthorIndex = line
+      if (match(tolower(footer[line]), TRAILERS_BY_REGEX)) {
+        trailers = trailers footer[line] "\n"
+      } else {
+        other_footer = other_footer footer[line] "\n"
       }
     }
 
-    for (line = 1; line <= numlines; line++) {
-      if (unprinted && match(tolower(footer[line]), changeIdAfter) != 1) {
-        # If the Change-Id is the first line in the footer, print it first.
-        if (coauthorIndex == 0 || line > coauthorIndex) {
-          print "Change-Id: I'"$id"'"
-          unprinted = 0
-        }
-      }
-      print footer[line]
+    if (other_footer != "") {
+      printf "%s", other_footer
+    }
 
-      if(line == coauthorIndex && unprinted) {
-        print "Change-Id: I'"$id"'"
-        unprinted = 0
-      }
+    if (trailers != "") {
+      printf "%s", trailers
     }
-    if (unprinted) {
-      print "Change-Id: I'"$id"'"
-    }
+
+    printf "Change-Id: I'"$id"'\n"
+
   }' "$MSG" > "$T" && mv "$T" "$MSG" || rm -f "$T"
 }
 
