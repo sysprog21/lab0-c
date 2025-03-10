@@ -119,7 +119,7 @@ get_all_match_positions() {
 
     # skip if the target is not found
     [ -z "$result" ] && continue
-    
+
     # output and update states
     local line col
     read -r line col <<< "$result"
@@ -250,13 +250,13 @@ validate_commit_message() {
   # ------------------------------------------------------------------------------
   ASPELL=$(which aspell)
   if [ $? -ne 0 ]; then
-      echo "Aspell not installed - unable to check spelling"
+    echo "Aspell not installed - unable to check spelling"
   else
-      LINE_NUMBER=1
-      MISSPELLED_WORDS=$(echo "$COMMIT_MSG_LINES[LINE_NUMBER]" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
-      if [ -n "$MISSPELLED_WORDS" ]; then
-        add_warning LINE_NUMBER "Possible misspelled word(s): $MISSPELLED_WORDS"
-      fi
+    LINE_NUMBER=1
+    MISSPELLED_WORDS=$(echo "$COMMIT_MSG_LINES[LINE_NUMBER]" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
+    if [ -n "$MISSPELLED_WORDS" ]; then
+      add_warning LINE_NUMBER "Possible misspelled word(s): $MISSPELLED_WORDS"
+    fi
   fi
 
   # 1. Separate subject from body with a blank line
@@ -453,7 +453,7 @@ validate_commit_message() {
   FULL_COMMIT_MSG_WITH_SPACE=$(sed '/^[[:space:]]*#/d' "$COMMIT_MSG_FILE" | \
                                sed -E "/$TRAILER_REGEX/d" | sed -E "s@${URL_REGEX#^}@@g")
   FULL_COMMIT_MSG=$(echo "$FULL_COMMIT_MSG_WITH_SPACE" | sed '/^[[:space:]]*$/d')
-  
+
   # Extended list of abusive words (case-insensitive).
   # Adjust the list as needed.
   ABUSIVE_WORDS_REGEX='\b(fuck|fucking|dick|shit|bitch|asshole|cunt|motherfucker|damn|crap|dumbass|piss)\b'
@@ -475,7 +475,7 @@ validate_commit_message() {
     -e "s/(['\"][^'\"]*['\"])//g" \
     -e "s/\bcommit[[:space:]]+[0-9a-fA-F]{7,40}\b/commit/g")
   MSG_FOR_SPELLCHECK=$(echo "$MSG_FOR_SPELLCHECK_LINE_FINDING" | sed '/^[[:space:]]*$/d')
-  
+
   # Use aspell to list misspelled words according to American English, ignoring quoted text.
   MISSPELLED_WORDS=$(echo "$MSG_FOR_SPELLCHECK" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
   if [ -n "$MISSPELLED_WORDS" ]; then
@@ -656,8 +656,7 @@ _gen_changeid_input() {
 }
 
 _gen_changeid() {
-  _gen_changeid_input |
-  git hash-object -t commit --stdin
+  _gen_changeid_input | git hash-object -t commit --stdin
 }
 
 # It's showtime.

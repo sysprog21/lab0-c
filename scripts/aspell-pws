@@ -350,3 +350,4 @@ typedef
 BitInt
 noreturn
 pragma
+EditorConfig
