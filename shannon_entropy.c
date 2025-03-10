@@ -15,7 +15,7 @@ double shannon_entropy(const uint8_t *s)
     uint64_t entropy_sum = 0;
     const uint64_t entropy_max = 8 * LOG2_RET_SHIFT;
 
-    uint32_t bucket[256];
+    uint32_t bucket[BUCKET_SIZE];
     memset(&bucket, 0, sizeof(bucket));
 
     for (uint32_t i = 0; i < count; i++)
