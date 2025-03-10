@@ -248,7 +248,7 @@ fi
 # Cross platform projects tend to avoid non-ASCII filenames; prevent
 # them from being added to the repository.
 if test $(git diff --cached --name-only --diff-filter=A -z $against |
-        LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
+          LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
 then
   cat <<\EOF
 ERROR: Attempt to add a non-ASCII file name.
