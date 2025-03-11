@@ -355,7 +355,7 @@ static bool do_option(int argc, char *argv[])
 static bool do_source(int argc, char *argv[])
 {
     if (argc < 2) {
-        report(1, "No source file given");
+        report(1, "No source file given. Use 'source <file>'.");
         return false;
     }
 
