@@ -55,7 +55,7 @@ qtest: $(OBJS)
 
 fmtscan: tools/fmtscan.c
 	$(VECHO) "  CC+LD\t$@\n"
-	$(Q)$(CC) -o $@ $(CFLAGS) $<
+	$(Q)$(CC) -o $@ $(CFLAGS) $< -lrt -lpthread
 
 check: qtest
 	./$< -v 3 -f traces/trace-eg.cmd

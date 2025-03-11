@@ -359,7 +359,6 @@ static inline bool find_word(const char *restrict word,
 
 static inline int read_dictionary(const char *dictfile)
 {
-    char *ptr, *dict;
     struct stat buf;
     char buffer[4096];
     const char *buffer_end = buffer + (sizeof(buffer)) - 1;
@@ -372,6 +371,7 @@ static inline int read_dictionary(const char *dictfile)
         return -1;
     }
 
+    const char *ptr, *dict;
     ptr = dict =
         mmap(NULL, buf.st_size, PROT_READ, MAP_SHARED | MAP_POPULATE, fd, 0);
     if (dict == MAP_FAILED) {
@@ -393,7 +393,7 @@ static inline int read_dictionary(const char *dictfile)
         add_word(buffer, word_nodes, word_node_heap, &word_node_heap_next,
                  WORD_NODES_HEAP_SIZE);
     }
-    munmap(dict, buf.st_size);
+    munmap((void *) dict, buf.st_size);
     close(fd);
 
     return 0;
@@ -656,11 +656,9 @@ static get_char_t parse_number(parser_t *restrict p,
 
     /* Determine the integer format based on its prefix. */
     if (LIKELY(ch == '0')) {
-        get_char_t nextch1, nextch2;
-
         token_append(t, ch);
 
-        nextch1 = get_char(p);
+        get_char_t nextch1 = get_char(p);
 
         if (nextch1 >= '0' && nextch1 <= '8') {
             /* Treat as an octal value */
@@ -668,7 +666,7 @@ static get_char_t parse_number(parser_t *restrict p,
             isoct = true;
         } else if (nextch1 == 'x' || nextch1 == 'X') {
             /* Check for hexadecimal notation */
-            nextch2 = get_char(p);
+            get_char_t nextch2 = get_char(p);
 
             if (LIKELY(nextch2 != PARSER_EOF)) {
                 /* If not EOF, revert state and finish token */
