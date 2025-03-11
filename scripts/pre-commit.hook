@@ -11,7 +11,7 @@ declare -F set_colors >/dev/null 2>&1 || { echo "[!] '$common_script' does not d
 # Build unmatched suppressions for each *.c file.
 cppcheck_build_unmatched() {
   local file suppression=""
-  for file in *.c; do
+  for file in *.c tools/*.c; do
     suppression+=" --suppress=unmatchedSuppression:$file"
   done
   echo "$suppression"
@@ -46,11 +46,12 @@ cppcheck_suppressions() {
     "staticFunction:linenoise.c"
     "nullPointerOutOfMemory:web.c"
     "staticFunction:web.c"
+    "constParameterCallback:tools/fmtscan.c"
   )
 
   # Array for additional cppcheck options (non-suppressions)
   local -a other_flags=(
-    "--inline-suppr harness.c"
+    "--inline-suppr harness.c --inline-suppr tools/fmtscan.c"
   )
 
   local out=""
