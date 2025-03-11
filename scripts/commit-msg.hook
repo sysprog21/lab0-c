@@ -130,6 +130,16 @@ get_all_match_positions() {
   done <<< "$targets"
 }
 
+KNOWN_TRAILERS_BY=(
+  'Signed-off-by'
+  'Reviewed-by'
+  'Co-authored-by'
+  'Acked-by'
+  'Suggested-by'
+  'Tested-by'
+  'Reported-by'
+)
+
 # Build regex for detecting commit trailers.
 build_commit_trailer_regex() {
   local -a keys specials standalones trailers
@@ -145,11 +155,16 @@ build_commit_trailer_regex() {
     'Signed-off-by' 'Suggested-by' 'Tested-by'
   )
 
+  trailers_test=(
+    'CC' 'Change-Id' 'Closes'
+    "${KNOWN_TRAILERS_BY[@]}"
+  )
   # Standalone keys (those that do not require a value).
   standalones=(
     '(Doc|Upgrade|Security)Impact'
     "Git-Dch[$separators] (Ignore|Short|Full)"
   )
+
 
   # Read custom trailer keys from git config and add them either to specials or trailers.
   # This loop reads lines matching 'trailer.*.key'.
@@ -170,6 +185,10 @@ build_commit_trailer_regex() {
     fi
   done < <(git config --get-regexp 'trailer.*.key')
 
+  if [[ ${#trailers_by[@]} -eq 0 ]]; then
+    trailers_by=("${DEFAULT_TRAILERS_BY[@]}")
+  fi
+
   # Possible trailers :
   # - Acked-by
   # - Co-authored-by
@@ -178,8 +197,7 @@ build_commit_trailer_regex() {
   # - Signed-off-by
   # - Suggested-by
   # - Tested-by
-  TRAILERS_BY_REGEX="^($(IFS='|'; echo "${trailers_by[*]}")):"
-
+  TRAILERS_BY_REGEX="/($(IFS='|'; echo "${trailers_by[*]}" | tr '[:upper:]' '[:lower:]'))/"
   # Begin constructing the regex.
   TRAILER_REGEX='^('
 
@@ -610,7 +628,7 @@ add_change_id() {
     other_footer = ""
 
     for (line = 1; line <= numlines; line++) {
-      if (match(tolower(footer[line]), TRAILERS_BY_REGEX)) {
+      if (match(tolower(footer[line]), '"$TRAILERS_BY_REGEX"')) {
         trailers = trailers footer[line] "\n"
       } else {
         other_footer = other_footer footer[line] "\n"
