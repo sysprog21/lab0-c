@@ -1,4 +1,5 @@
 qtest
+fmtscan
 *.o
 *.o.d
 *.dSYM

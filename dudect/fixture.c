@@ -84,7 +84,7 @@ static bool report(void)
     double max_tau = max_t / sqrt(number_traces_max_t);
 
     printf("\033[A\033[2K");
-    printf("meas: %7.2lf M, ", (number_traces_max_t / 1e6));
+    printf("measure: %7.2lf M, ", (number_traces_max_t / 1e6));
     if (number_traces_max_t < ENOUGH_MEASURE) {
         printf("not enough measurements (%.0f still to go).\n",
                ENOUGH_MEASURE - number_traces_max_t);

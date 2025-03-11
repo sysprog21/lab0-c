@@ -146,11 +146,11 @@ class Tracer:
             sys.exit(1)
 
 def usage(name):
-    print("Usage: %s [-h] [-p PROG] [-t TID] [-v VLEVEL] [--valgrind] [-c]" % name)
+    print("Usage: %s [-h] [-p PROG] [-t TID] [-v LEVEL] [--valgrind] [-c]" % name)
     print("  -h        Print this message")
     print("  -p PROG   Program to test")
     print("  -t TID    Trace ID to test")
-    print("  -v VLEVEL Set verbosity level (0-3)")
+    print("  -v LEVEL  Set verbosity level (0-3)")
     print("  -c Enable colored text")
     sys.exit(0)
 
