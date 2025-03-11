@@ -179,8 +179,8 @@ if [ "${#binary_files[@]}" -gt 0 ]; then
   printf "${RED}[!]${NC} Binary data found.\n"
 fi
 
-FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h)$")
-for FILE in $FILES; do
+C_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h|hpp)$")
+for FILE in $C_FILES; do
   nf=$(git checkout-index --temp $FILE | cut -f 1)
   tempdir=$(mktemp -d) || exit 1
   newfile=$(mktemp ${tempdir}/${nf}.XXXXXX) || exit 1
@@ -221,8 +221,7 @@ fi
 root=$(git rev-parse --show-toplevel)
 banned="([^f]gets\()|(sprintf\()|(strcpy\()"
 status=0
-for file in $(git diff --staged --name-only | grep -E "\.(c|cc|cpp|h|hh|hpp)\$")
-do
+for file in $C_FILES; do
   filepath="${root}/${file}"
   output=$(grep -nrE "${banned}" "${filepath}")
   if [ ! -z "${output}" ]; then
@@ -242,7 +241,7 @@ if [ ! -f fmtscan ]; then
        throw "Fail to build 'fmtscan' tools"
     fi
 fi
-if git diff --cached --name-only | grep -qiE "\.(c|h|cpp|hpp)$"; then
+if [ -n "$C_FILES" ]; then
   echo "Running fmtscan..."
   ./fmtscan
   if [ $? -ne 0 ]; then
