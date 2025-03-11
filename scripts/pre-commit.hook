@@ -91,7 +91,7 @@ detect_cc_std() {
 CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1"
 CPPCHECK_OPTS+=" $(detect_cc_std)"
 CPPCHECK_OPTS+=" --force $(cppcheck_suppressions) $(cppcheck_build_unmatched)"
-CPPCHECK_OPTS+=" --cppcheck-build-dir=.out ."
+CPPCHECK_OPTS+=" --cppcheck-build-dir=.out"
 
 set_colors
 
@@ -250,13 +250,15 @@ if [ -n "$C_FILES" ]; then
 fi
 
 # static analysis
-echo "Running static analysis..."
-$CPPCHECK $CPPCHECK_OPTS >/dev/null
-if [ $? -ne 0 ]; then
-  RETURN=1
-  echo "" >&2
-  echo "Fail to pass static analysis." >&2
-  echo
+if [ -n "$C_FILES" ]; then
+  echo "Running static analysis..."
+  $CPPCHECK $CPPCHECK_OPTS $C_FILES >/dev/null
+  if [ $? -ne 0 ]; then
+    RETURN=1
+    echo "" >&2
+    echo "Fail to pass static analysis." >&2
+    echo
+  fi
 fi
 
 # non-ASCII filenames are not allowed.
