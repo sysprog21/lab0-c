@@ -207,7 +207,7 @@ for FILE in $FILES; do
 done
 
 if [ ! -z "${FILES[*]}" ]; then
-  echo "Following files need to be cleaned up:"
+  echo "Following files were changed:"
   echo "${FILES[*]}"
 fi
 
@@ -233,6 +233,21 @@ do
     RETURN=1
   fi
 done
+
+# format string checks
+if [ ! -f fmtscan ]; then
+    make fmtscan
+    if [ ! -f fmtscan ]; then
+       throw "Fail to build 'fmtscan' tools"
+    fi
+fi
+if git diff --cached --name-only | grep -qiE "\.(c|h|cpp|hpp)$"; then
+  echo "Running fmtscan..."
+  ./fmtscan
+  if [ $? -ne 0 ]; then
+    throw "Check format strings for spelling"
+  fi
+fi
 
 # static analysis
 echo "Running static analysis..."

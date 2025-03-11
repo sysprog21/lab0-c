@@ -1079,7 +1079,7 @@ static void console_init()
         "Remove from tail of queue. Optionally compare to expected value str",
         "[str]");
     ADD_COMMAND(reverse, "Reverse queue", "");
-    ADD_COMMAND(sort, "Sort queue in ascending/descening order", "");
+    ADD_COMMAND(sort, "Sort queue in ascending/descending order", "");
     ADD_COMMAND(size, "Compute queue size n times (default: n == 1)", "[n]");
     ADD_COMMAND(show, "Show queue contents", "");
     ADD_COMMAND(dm, "Delete middle node in queue", "");
@@ -1165,11 +1165,11 @@ static bool q_quit(int argc, char *argv[])
 
 static void usage(char *cmd)
 {
-    printf("Usage: %s [-h] [-f IFILE][-v VLEVEL][-l LFILE]\n", cmd);
+    printf("Usage: %s [-h] [-f FILE][-v LEVEL][-l LOG\n", cmd);
     printf("\t-h         Print this information\n");
-    printf("\t-f IFILE   Read commands from IFILE\n");
-    printf("\t-v VLEVEL  Set verbosity level\n");
-    printf("\t-l LFILE   Echo results to LFILE\n");
+    printf("\t-f FILE   Read commands from FILE\n");
+    printf("\t-v LEVEL  Set verbosity level\n");
+    printf("\t-l LOG    Echo results to LOG\n");
     exit(0);
 }
 
@@ -1208,7 +1208,6 @@ bool commit_exists(const char *commit_hash)
     posix_spawn_file_actions_t actions;
     if (posix_spawn_file_actions_init(&actions) != 0) {
         /* Error initializing spawn file actions */
-        perror("posix_spawn_file_actions_init");
         close(pipefd[0]);
         close(pipefd[1]);
         return false;
@@ -1217,7 +1216,6 @@ bool commit_exists(const char *commit_hash)
     /* Redirect child's stdout to the pipe's write end */
     if (posix_spawn_file_actions_adddup2(&actions, pipefd[1], STDOUT_FILENO) !=
         0) {
-        perror("posix_spawn_file_actions_adddup2");
         posix_spawn_file_actions_destroy(&actions);
         close(pipefd[0]);
         close(pipefd[1]);
@@ -1227,7 +1225,6 @@ bool commit_exists(const char *commit_hash)
     /* Close unused pipe ends in the child */
     if (posix_spawn_file_actions_addclose(&actions, pipefd[0]) != 0 ||
         posix_spawn_file_actions_addclose(&actions, pipefd[1]) != 0) {
-        perror("posix_spawn_file_actions_addclose");
         posix_spawn_file_actions_destroy(&actions);
         close(pipefd[0]);
         close(pipefd[1]);

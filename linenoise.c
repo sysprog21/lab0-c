@@ -693,7 +693,7 @@ static void refresh_multi_Line(struct line_state *l)
     /* Move cursor to right position. */
     rpos2 =
         (plen + l->pos + l->cols) / l->cols; /* current cursor relative row. */
-    lndebug("rpos2 %d", rpos2);
+    lndebug("right position %d", rpos2);
 
     /* Go up till we reach the expected positon. */
     if (rows - rpos2 > 0) {
