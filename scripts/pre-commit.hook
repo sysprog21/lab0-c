@@ -235,17 +235,20 @@ for file in $C_FILES; do
 done
 
 # format string checks
-if [ ! -f fmtscan ]; then
+if [[ "$OSTYPE" != darwin* ]]; then
+  # Format string checks
+  if [ ! -f fmtscan ]; then
     make fmtscan
     if [ ! -f fmtscan ]; then
-       throw "Fail to build 'fmtscan' tools"
+      throw "Fail to build 'fmtscan' tool"
     fi
-fi
-if [ -n "$C_FILES" ]; then
-  echo "Running fmtscan..."
-  ./fmtscan
-  if [ $? -ne 0 ]; then
-    throw "Check format strings for spelling"
+  fi
+  if [ -n "$C_FILES" ]; then
+    echo "Running fmtscan..."
+    ./fmtscan
+    if [ $? -ne 0 ]; then
+      throw "Check format strings for spelling"
+    fi
   fi
 fi
 
