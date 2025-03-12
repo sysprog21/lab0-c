@@ -170,6 +170,7 @@ ld
 leetcode
 LeetCode
 lf
+lhs
 lib
 libvirt
 lifo
@@ -300,8 +301,10 @@ regcomp
 regerror
 regexec
 regfree
+retpoline
 reverseK
 rewind
+rhs
 risc
 riscv
 rmdir
