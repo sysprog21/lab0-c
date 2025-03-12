@@ -58,11 +58,11 @@ check: qtest
 
 test: qtest scripts/driver.py
 	$(Q)scripts/check-repo.sh
-	scripts/driver.py -c
-
-test_ga: qtest scripts/driver.py
-	$(Q)scripts/check-repo.sh
-	scripts/driver.py -c --group-output
+	$(Q)if [ -n "$$GITHUB_ACTIONS" ]; then \
+		scripts/driver.py -c --group-output; \
+	else \
+		scripts/driver.py -c; \
+	fi
 
 valgrind_existence:
 	@which valgrind 2>&1 > /dev/null || (echo "FATAL: valgrind not found"; exit 1)

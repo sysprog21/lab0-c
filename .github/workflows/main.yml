@@ -27,7 +27,7 @@ jobs:
             cat scripts/kirby.raw
     - name: make test
       run: |
-            make test_ga || (cat scripts/weeping.raw ; exit 1)
+            make test || (cat scripts/weeping.raw ; exit 1)
             cat scripts/kirby.raw
 
   coding-style:
