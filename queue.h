@@ -201,13 +201,12 @@ void q_reverseK(struct list_head *head, int k);
 void q_sort(struct list_head *head, bool descend);
 
 /**
- * q_ascend() - Remove every node which has a node with a strictly less
+ * q_ascend() - Delete every node which has a node with a strictly less
  * value anywhere to the right side of it.
  * @head: header of queue
  *
  * No effect if queue is NULL or empty. If there has only one element, do
  * nothing.
- * Memory allocated to removed nodes must be freed.
  *
  * Reference:
  * https://leetcode.com/problems/remove-nodes-from-linked-list/
@@ -217,13 +216,12 @@ void q_sort(struct list_head *head, bool descend);
 int q_ascend(struct list_head *head);
 
 /**
- * q_descend() - Remove every node which has a node with a strictly greater
+ * q_descend() - Delete every node which has a node with a strictly greater
  * value anywhere to the right side of it.
  * @head: header of queue
  *
  * No effect if queue is NULL or empty. If there has only one element, do
  * nothing.
- * Memory allocated to removed nodes must be freed.
  *
  * Reference:
  * https://leetcode.com/problems/remove-nodes-from-linked-list/

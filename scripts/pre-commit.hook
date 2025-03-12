@@ -11,7 +11,7 @@ declare -F set_colors >/dev/null 2>&1 || { echo "[!] '$common_script' does not d
 # Build unmatched suppressions for each *.c file.
 cppcheck_build_unmatched() {
   local file suppression=""
-  for file in *.c; do
+  for file in *.c tools/*.c; do
     suppression+=" --suppress=unmatchedSuppression:$file"
   done
   echo "$suppression"
@@ -46,11 +46,12 @@ cppcheck_suppressions() {
     "staticFunction:linenoise.c"
     "nullPointerOutOfMemory:web.c"
     "staticFunction:web.c"
+    "constParameterCallback:tools/fmtscan.c"
   )
 
   # Array for additional cppcheck options (non-suppressions)
   local -a other_flags=(
-    "--inline-suppr harness.c"
+    "--inline-suppr harness.c --inline-suppr tools/fmtscan.c"
   )
 
   local out=""
@@ -68,9 +69,29 @@ cppcheck_suppressions() {
   printf "%s" "$out" | sed 's/[[:space:]]*$//'
 }
 
+# Generation of standard compliance for GCC/Clang
+detect_cc_std() {
+  local STDC_VERSION=""
+  local EXTRA_DEFINES=""
+  if command -v cc >/dev/null 2>&1; then
+    if cc --version 2>/dev/null | grep -q "clang"; then
+      STDC_VERSION=$(cc -dM -E -xc /dev/null | awk '/__STDC_VERSION__/ {print $3}')
+      EXTRA_DEFINES="-D__clang__=1"
+    elif cc --version 2>/dev/null | grep -q "Free Software Foundation"; then
+      STDC_VERSION=$(cc -dM -E -xc /dev/null | awk '/__STDC_VERSION__/ {print $3}')
+      EXTRA_DEFINES="-D__GNUC__=1"
+    fi
+  fi
+  if [ -n "$STDC_VERSION" ]; then
+    EXTRA_DEFINES+=" -D__STDC__=1 -D__STDC_VERSION__=${STDC_VERSION}"
+  fi
+  echo "$EXTRA_DEFINES"
+}
+
 CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1"
+CPPCHECK_OPTS+=" $(detect_cc_std)"
 CPPCHECK_OPTS+=" --force $(cppcheck_suppressions) $(cppcheck_build_unmatched)"
-CPPCHECK_OPTS+=" --cppcheck-build-dir=.out ."
+CPPCHECK_OPTS+=" --cppcheck-build-dir=.out"
 
 set_colors
 
@@ -158,8 +179,8 @@ if [ "${#binary_files[@]}" -gt 0 ]; then
   printf "${RED}[!]${NC} Binary data found.\n"
 fi
 
-FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h)$")
-for FILE in $FILES; do
+C_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h|hpp)$")
+for FILE in $C_FILES; do
   nf=$(git checkout-index --temp $FILE | cut -f 1)
   tempdir=$(mktemp -d) || exit 1
   newfile=$(mktemp ${tempdir}/${nf}.XXXXXX) || exit 1
@@ -187,7 +208,7 @@ for FILE in $FILES; do
 done
 
 if [ ! -z "${FILES[*]}" ]; then
-  echo "Following files need to be cleaned up:"
+  echo "Following files were changed:"
   echo "${FILES[*]}"
 fi
 
@@ -200,8 +221,7 @@ fi
 root=$(git rev-parse --show-toplevel)
 banned="([^f]gets\()|(sprintf\()|(strcpy\()"
 status=0
-for file in $(git diff --staged --name-only | grep -E "\.(c|cc|cpp|h|hh|hpp)\$")
-do
+for file in $C_FILES; do
   filepath="${root}/${file}"
   output=$(grep -nrE "${banned}" "${filepath}")
   if [ ! -z "${output}" ]; then
@@ -214,21 +234,38 @@ do
   fi
 done
 
+# format string checks
+if [ ! -f fmtscan ]; then
+    make fmtscan
+    if [ ! -f fmtscan ]; then
+       throw "Fail to build 'fmtscan' tools"
+    fi
+fi
+if [ -n "$C_FILES" ]; then
+  echo "Running fmtscan..."
+  ./fmtscan
+  if [ $? -ne 0 ]; then
+    throw "Check format strings for spelling"
+  fi
+fi
+
 # static analysis
-echo "Running static analysis..."
-$CPPCHECK $CPPCHECK_OPTS >/dev/null
-if [ $? -ne 0 ]; then
-  RETURN=1
-  echo "" >&2
-  echo "Fail to pass static analysis." >&2
-  echo
+if [ -n "$C_FILES" ]; then
+  echo "Running static analysis..."
+  $CPPCHECK $CPPCHECK_OPTS $C_FILES >/dev/null
+  if [ $? -ne 0 ]; then
+    RETURN=1
+    echo "" >&2
+    echo "Fail to pass static analysis." >&2
+    echo
+  fi
 fi
 
 # non-ASCII filenames are not allowed.
 # Cross platform projects tend to avoid non-ASCII filenames; prevent
 # them from being added to the repository.
 if test $(git diff --cached --name-only --diff-filter=A -z $against |
-        LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
+          LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
 then
   cat <<\EOF
 ERROR: Attempt to add a non-ASCII file name.

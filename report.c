@@ -255,7 +255,7 @@ char *strsave_or_fail(const char *s, const char *fun_name)
     check_exceed(len + 1);
     char *ss = malloc(len + 1);
     if (!ss)
-        fail_fun("strsave failed in %s", fun_name);
+        fail_fun("Failed in %s", fun_name);
 
     allocate_cnt++;
     allocate_bytes += len + 1;

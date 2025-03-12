@@ -24,3 +24,4 @@ ForEachMacros:
   - hlist_for_each_entry
   - rb_list_foreach
   - rb_list_foreach_safe
+SpaceBeforeParens: ControlStatementsExceptForEachMacros

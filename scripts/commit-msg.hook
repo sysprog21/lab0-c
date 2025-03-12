@@ -119,7 +119,7 @@ get_all_match_positions() {
 
     # skip if the target is not found
     [ -z "$result" ] && continue
-    
+
     # output and update states
     local line col
     read -r line col <<< "$result"
@@ -129,6 +129,16 @@ get_all_match_positions() {
 
   done <<< "$targets"
 }
+
+KNOWN_TRAILERS_BY=(
+  'Signed-off-by'
+  'Reviewed-by'
+  'Co-authored-by'
+  'Acked-by'
+  'Suggested-by'
+  'Tested-by'
+  'Reported-by'
+)
 
 # Build regex for detecting commit trailers.
 build_commit_trailer_regex() {
@@ -145,22 +155,29 @@ build_commit_trailer_regex() {
     'Signed-off-by' 'Suggested-by' 'Tested-by'
   )
 
+  trailers_test=(
+    'CC' 'Change-Id' 'Closes'
+    "${KNOWN_TRAILERS_BY[@]}"
+  )
   # Standalone keys (those that do not require a value).
   standalones=(
     '(Doc|Upgrade|Security)Impact'
     "Git-Dch[$separators] (Ignore|Short|Full)"
   )
 
+
   # Read custom trailer keys from git config and add them either to specials or trailers.
   # This loop reads lines matching 'trailer.*.key'.
   while read -r _ key; do
-    # Skip if key already exists in trailers or specials.
+    if [[ "$key" =~ -by$ ]]; then
+      trailers_by+=("$key")
+      continue
+    fi
+
     for each in "${trailers[@]}" "${specials[@]}"; do
-      if [ "$key" = "$each" ]; then
-        continue 2
-      fi
+      [[ "$key" == "$each" ]] && continue 2
     done
-    # If key ends with a separator character, add to specials; otherwise, to trailers.
+
     if [[ $key =~ [${separators}]$ ]]; then
       specials+=("$key")
     else
@@ -168,16 +185,19 @@ build_commit_trailer_regex() {
     fi
   done < <(git config --get-regexp 'trailer.*.key')
 
-  # Read custom trailer keys again into the 'keys' array (if needed).
-  while IFS=. read -r _ key _; do
-    for each in "${keys[@]}"; do
-      if [ "$key" = "$each" ]; then
-        continue 2
-      fi
-    done
-    keys+=("$key")
-  done < <(git config --get-regexp 'trailer.*.key')
+  if [[ ${#trailers_by[@]} -eq 0 ]]; then
+    trailers_by=("${DEFAULT_TRAILERS_BY[@]}")
+  fi
 
+  # Possible trailers :
+  # - Acked-by
+  # - Co-authored-by
+  # - Reported-by
+  # - Reviewed-by
+  # - Signed-off-by
+  # - Suggested-by
+  # - Tested-by
+  TRAILERS_BY_REGEX="/($(IFS='|'; echo "${trailers_by[*]}" | tr '[:upper:]' '[:lower:]'))/"
   # Begin constructing the regex.
   TRAILER_REGEX='^('
 
@@ -207,16 +227,6 @@ build_commit_trailer_regex() {
       TRAILER_REGEX+="$each|"
     done
     TRAILER_REGEX="${TRAILER_REGEX%|})"
-  fi
-
-  # Append additional keys.
-  if ((${#keys[@]} > 0)); then
-    TRAILER_REGEX+='|(('
-    for each in "${keys[@]}"; do
-      TRAILER_REGEX+="$each|"
-    done
-    # Use the second character of separators (if available) as a separator for keys.
-    TRAILER_REGEX="${TRAILER_REGEX%|})[${separators:1:1}[:blank:]])"
   fi
 
   # End the regex.
@@ -250,13 +260,13 @@ validate_commit_message() {
   # ------------------------------------------------------------------------------
   ASPELL=$(which aspell)
   if [ $? -ne 0 ]; then
-      echo "Aspell not installed - unable to check spelling"
+    echo "Aspell not installed - unable to check spelling"
   else
-      LINE_NUMBER=1
-      MISSPELLED_WORDS=$(echo "$COMMIT_MSG_LINES[LINE_NUMBER]" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
-      if [ -n "$MISSPELLED_WORDS" ]; then
-        add_warning LINE_NUMBER "Possible misspelled word(s): $MISSPELLED_WORDS"
-      fi
+    LINE_NUMBER=1
+    MISSPELLED_WORDS=$(echo "$COMMIT_MSG_LINES[LINE_NUMBER]" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
+    if [ -n "$MISSPELLED_WORDS" ]; then
+      add_warning LINE_NUMBER "Possible misspelled word(s): $MISSPELLED_WORDS"
+    fi
   fi
 
   # 1. Separate subject from body with a blank line
@@ -453,7 +463,7 @@ validate_commit_message() {
   FULL_COMMIT_MSG_WITH_SPACE=$(sed '/^[[:space:]]*#/d' "$COMMIT_MSG_FILE" | \
                                sed -E "/$TRAILER_REGEX/d" | sed -E "s@${URL_REGEX#^}@@g")
   FULL_COMMIT_MSG=$(echo "$FULL_COMMIT_MSG_WITH_SPACE" | sed '/^[[:space:]]*$/d')
-  
+
   # Extended list of abusive words (case-insensitive).
   # Adjust the list as needed.
   ABUSIVE_WORDS_REGEX='\b(fuck|fucking|dick|shit|bitch|asshole|cunt|motherfucker|damn|crap|dumbass|piss)\b'
@@ -475,7 +485,7 @@ validate_commit_message() {
     -e "s/(['\"][^'\"]*['\"])//g" \
     -e "s/\bcommit[[:space:]]+[0-9a-fA-F]{7,40}\b/commit/g")
   MSG_FOR_SPELLCHECK=$(echo "$MSG_FOR_SPELLCHECK_LINE_FINDING" | sed '/^[[:space:]]*$/d')
-  
+
   # Use aspell to list misspelled words according to American English, ignoring quoted text.
   MISSPELLED_WORDS=$(echo "$MSG_FOR_SPELLCHECK" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
   if [ -n "$MISSPELLED_WORDS" ]; then
@@ -611,18 +621,30 @@ add_change_id() {
       print lines "\n"
       lines = ""
     }
-    changeIdAfter = "^(" tolower("'"$CHANGE_ID_AFTER"'") "):"
+
     numlines = split(lines, footer, "\n")
+
+    trailers = ""
+    other_footer = ""
+
     for (line = 1; line <= numlines; line++) {
-      if (unprinted && match(tolower(footer[line]), changeIdAfter) != 1) {
-        unprinted = 0
-        print "Change-Id: I'"$id"'"
+      if (match(tolower(footer[line]), '"$TRAILERS_BY_REGEX"')) {
+        trailers = trailers footer[line] "\n"
+      } else {
+        other_footer = other_footer footer[line] "\n"
       }
-      print footer[line]
     }
-    if (unprinted) {
-      print "Change-Id: I'"$id"'"
+
+    if (other_footer != "") {
+      printf "%s", other_footer
     }
+
+    if (trailers != "") {
+      printf "%s", trailers
+    }
+
+    printf "Change-Id: I'"$id"'\n"
+
   }' "$MSG" > "$T" && mv "$T" "$MSG" || rm -f "$T"
 }
 
@@ -639,8 +661,7 @@ _gen_changeid_input() {
 }
 
 _gen_changeid() {
-  _gen_changeid_input |
-  git hash-object -t commit --stdin
+  _gen_changeid_input | git hash-object -t commit --stdin
 }
 
 # It's showtime.
