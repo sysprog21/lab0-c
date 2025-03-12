@@ -588,7 +588,7 @@ static int cmd_select(int nfds,
         FD_ZERO(readfds);
         FD_SET(infd, readfds);
 
-        /* If web not ready listen */
+        /* If web_fd is available, add to readfds */
         if (web_fd != -1)
             FD_SET(web_fd, readfds);
 
