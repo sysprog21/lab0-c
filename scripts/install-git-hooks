@@ -31,21 +31,28 @@ fi
 ((CURRENT_STEP++))
 progress "$CURRENT_STEP" "$TOTAL_STEPS"
 
-ACCOUNT=$(git config -l | grep -w remote.origin.url | sed -e 's/^.*github.com[\/:]\(.*\)\/lab0-c.*/\1/')
+ACCOUNT=$(git config remote.origin.url | sed -e 's/^.*github.com[\/:]\(.*\)\/\([^\/]*\)\(\.git\?\)$/\1/')
+REPO_NAME=$(git config remote.origin.url | sed -e 's/^.*github.com[\/:]\(.*\)\/\([^\/]*\)\(\.git\?\)$/\2/')
 
 CURL=$(which curl)
 if [ $? -ne 0 ]; then
   throw "curl not installed."
 fi
 
+JQ=$(which jq)
+if [ $? -ne 0 ]; then
+    echo "jq not installed."
+    exit 1
+fi
+
 CURL_RES=$(${CURL} -s \
 -H "Accept: application/vnd.github.v3+json" \
-https://api.github.com/repos/${ACCOUNT}/lab0-c/actions/workflows)
+https://api.github.com/repos/${ACCOUNT}/${REPO_NAME}/actions/workflows)
 
 TOTAL_COUNT=$(echo ${CURL_RES} | sed -e 's/.*"total_count": \([^,"]*\).*/\1/')
 case ${TOTAL_COUNT} in
   *"Not Found"*)
-    throw "Check your repository. It should be located at https://github.com/${ACCOUNT}/lab0-c"
+    throw "Check your repository. It should be located at https://github.com/${ACCOUNT}/${REPO_NAME}"
 esac
 
 # 3. Ensure this repository is frok from sysprog21/lab0-c'.
@@ -53,15 +60,11 @@ esac
 progress "$CURRENT_STEP" "$TOTAL_STEPS"
 
 if [[ "${ACCOUNT}" != "sysprog21" ]]; then
-  REPO_FORKED=$(${CURL} -s \
-                -H "Accept: application/vnd.github.v3+json" \
-                https://api.github.com/repos/${ACCOUNT}/lab0-c | grep -m 1 fork)
-  case ${REPO_FORKED} in
-    *true*)
-      ;;
-    *)
-      throw "Your repository MUST be forked from 'sysprog21/lab0-c'."
-  esac
+  RESPONSE=$(${CURL} -s -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${ACCOUNT}/${REPO_NAME}")
+  [[ $(echo "$RESPONSE" | jq -r '.fork') != "true" || \
+     $(echo "$RESPONSE" | jq -r '.parent.full_name') != "sysprog21/lab0-c" ]] && \
+    throw "Your repository MUST be forked from 'sysprog21/lab0-c'."
 fi
 
 # 4. Check GitHub Actions
@@ -72,13 +75,13 @@ if [ ${TOTAL_COUNT} -eq "0" ]; then
   printf "\n[!] GitHub Actions MUST be activated."
   case ${OSTYPE} in
     "linux"*)
-      xdg-open https://github.com/${ACCOUNT}/lab0-c/actions > /dev/null 2>&1
+      xdg-open https://github.com/${ACCOUNT}/${REPO_NAME}/actions > /dev/null 2>&1
       ;;
     "darwin"*)
-      open https://github.com/${ACCOUNT}/lab0-c/actions
+      open https://github.com/${ACCOUNT}/${REPO_NAME}/actions
       ;;
     *)
-      echo "Please activate at https://github.com/${ACCOUNT}/lab0-c/actions"
+      echo "Please activate at https://github.com/${ACCOUNT}/${REPO_NAME}/actions"
       ;;
   esac
   throw "Check this article: https://docs.github.com/en/actions/managing-workflow-runs/disabling-and-enabling-a-workflow\n\
