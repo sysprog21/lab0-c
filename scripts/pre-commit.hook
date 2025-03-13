@@ -207,12 +207,20 @@ for FILE in $C_FILES; do
   fi
 done
 
+# Show insertion and deletion counts.
 if [ "${#FILES[@]}" -gt 0 ]; then
   echo "Following files were changed:"
   for file in "${FILES[@]}"; do
-    if command -v diffstat >/dev/null 2>&1; then
-      summary=$(git diff --cached "$file" | diffstat -s | sed -E 's/^[[:space:]]*[0-9]+ files? changed,?[[:space:]]*//')
-      echo "  - $file | $summary"
+    summary=$(git diff --cached --numstat "$file" | awk '{
+      if ($1 != "0" && $2 != "0")
+        printf "%s insertions(+), %s deletions(-)", $1, $2;
+      else if ($1 != "0")
+        printf "%s insertions(+)", $1;
+      else if ($2 != "0")
+        printf "%s deletions(-)", $2;
+    }')
+    if [ -n "$summary" ]; then
+      echo "  - $file : $summary"
     else
       echo "  - $file"
     fi
