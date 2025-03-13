@@ -207,9 +207,16 @@ for FILE in $C_FILES; do
   fi
 done
 
-if [ ! -z "${FILES[*]}" ]; then
+if [ "${#FILES[@]}" -gt 0 ]; then
   echo "Following files were changed:"
-  echo "${FILES[*]}"
+  for file in "${FILES[@]}"; do
+    if command -v diffstat >/dev/null 2>&1; then
+      summary=$(git diff --cached "$file" | diffstat -s | sed -E 's/^[[:space:]]*[0-9]+ files? changed,?[[:space:]]*//')
+      echo "  - $file | $summary"
+    else
+      echo "  - $file"
+    fi
+  done
 fi
 
 $SHA1SUM -c scripts/checksums 2>/dev/null >/dev/null
