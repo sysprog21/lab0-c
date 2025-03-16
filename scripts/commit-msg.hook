@@ -186,7 +186,7 @@ build_commit_trailer_regex() {
   done < <(git config --get-regexp 'trailer.*.key')
 
   if [[ ${#trailers_by[@]} -eq 0 ]]; then
-    trailers_by=("${DEFAULT_TRAILERS_BY[@]}")
+    trailers_by=("${KNOWN_TRAILERS_BY[@]}")
   fi
 
   # Possible trailers :
