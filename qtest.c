@@ -823,8 +823,8 @@ static bool do_reverseK(int argc, char *argv[])
     error_check();
 
     if (argc == 2) {
-        if (!get_int(argv[1], &k)) {
-            report(1, "Invalid number of K");
+        if (!get_int(argv[1], &k) || k < 1) {
+            report(1, "Invalid number of K (at least 1)");
             return false;
         }
     } else {
