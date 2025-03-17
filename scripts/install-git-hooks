@@ -31,7 +31,8 @@ fi
 ((CURRENT_STEP++))
 progress "$CURRENT_STEP" "$TOTAL_STEPS"
 
-ACCOUNT=$(git config -l | grep -w remote.origin.url | sed -e 's/^.*github.com[\/:]\(.*\)\/lab0-c.*/\1/')
+ACCOUNT=$(git config --get remote.origin.url | awk -F'[:/]' '{print $(NF-1)}')
+REPO_NAME=$(git config --get remote.origin.url | awk -F'[:/]' '{gsub(/\.git$/, "", $NF); print $NF}')
 
 CURL=$(which curl)
 if [ $? -ne 0 ]; then
@@ -43,25 +44,24 @@ CURL_RES=$(${CURL} -s \
 https://api.github.com/repos/${ACCOUNT}/lab0-c/actions/workflows)
 
 TOTAL_COUNT=$(echo ${CURL_RES} | sed -e 's/.*"total_count": \([^,"]*\).*/\1/')
-case ${TOTAL_COUNT} in
-  *"Not Found"*)
-    throw "Check your repository. It should be located at https://github.com/${ACCOUNT}/lab0-c"
-esac
+if [[ "$REPO_NAME" != "lab0-c" || "$TOTAL_COUNT" == *"Not Found"* ]]; then
+  throw "Check your repository. It should be located at https://github.com/${ACCOUNT}/lab0-c"
+fi
 
 # 3. Ensure this repository is frok from sysprog21/lab0-c'.
 ((CURRENT_STEP++))
 progress "$CURRENT_STEP" "$TOTAL_STEPS"
 
 if [[ "${ACCOUNT}" != "sysprog21" ]]; then
-  REPO_FORKED=$(${CURL} -s \
-                -H "Accept: application/vnd.github.v3+json" \
-                https://api.github.com/repos/${ACCOUNT}/lab0-c | grep -m 1 fork)
-  case ${REPO_FORKED} in
-    *true*)
-      ;;
-    *)
-      throw "Your repository MUST be forked from 'sysprog21/lab0-c'."
-  esac
+  RESPONSE=$(${CURL} -s -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${ACCOUNT}/lab0-c")
+
+  IS_FORK=$(echo "$RESPONSE" | sed -n 's/.*"fork": \(true\|false\).*/\1/p' | head -n1)
+  PARENT_NAME=$(echo "$RESPONSE" | awk -F'"' '/"parent": \{/{flag=1} flag && /"full_name":/{print $4; exit}')
+
+  if [[ "$IS_FORK" != "true" || "$PARENT_NAME" != "sysprog21/lab0-c" ]]; then
+    throw "Your repository MUST be forked from 'sysprog21/lab0-c'."
+  fi
 fi
 
 # 4. Check GitHub Actions

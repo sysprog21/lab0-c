@@ -10,25 +10,25 @@ jobs:
     - uses: webfactory/ssh-agent@v0.7.0
       continue-on-error: true
       with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
     - name: install-dependencies
       run: |
-            .ci/check-sanity.sh
-            sudo apt-get update
-            sudo apt-get -q -y install build-essential cppcheck
+        .ci/check-sanity.sh
+        sudo apt-get update
+        sudo apt-get -q -y install build-essential cppcheck
     - name: make
       run:  |
-            git clone git@github.com:sysprog21/lab0-c-private || echo "No provisioning profile found"
-            .ci/check-provisioning.sh
-            make
+        git clone git@github.com:sysprog21/lab0-c-private || echo "No provisioning profile found"
+        .ci/check-provisioning.sh
+        make
     - name: make check
       run: |
-            make check || (cat scripts/weeping.raw ; exit 1)
-            cat scripts/kirby.raw
+        make check || (cat scripts/weeping.raw ; exit 1)
+        cat scripts/kirby.raw
     - name: make test
       run: |
-            make test || (cat scripts/weeping.raw ; exit 1)
-            cat scripts/kirby.raw
+        make test || (cat scripts/weeping.raw ; exit 1)
+        cat scripts/kirby.raw
 
   coding-style:
     runs-on: ubuntu-24.04
@@ -36,7 +36,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: coding convention
       run: |
-            sudo apt-get install -q -y clang-format-18
-            .ci/check-newline.sh
-            .ci/check-format.sh
+        sudo apt-get install -q -y clang-format-18
+        .ci/check-newline.sh
+        .ci/check-format.sh
       shell: bash

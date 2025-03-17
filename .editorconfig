@@ -1,0 +1,24 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[Makefile]
+indent_style = tab
+indent_size = 4
+max_line_length = 80
+
+[**/*.[ch]]
+indent_style = space
+indent_size = 4
+max_line_length = 80
+
+[{**/*.py,.ci/*}]
+indent_style = space
+indent_size = 4
+
+[{scripts/*,.github/workflows/*}]
+indent_style = space
+indent_size = 2

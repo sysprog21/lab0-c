@@ -1,3 +1,3 @@
-398b59c23f699ff1bf1e73a94503a9a91caa9207  queue.h
-5179cf8f5aafbc6cb8e8d7b898ef3798cfe85613  list.h
+bff0704601c8197ae6b847647b4167664b7d6abc  queue.h
+b26e079496803ebe318174bda5850d2cce1fd0c1  list.h
 1029c2784b4cae3909190c64f53a06cba12ea38e  scripts/check-commitlog.sh

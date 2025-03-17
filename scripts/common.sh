@@ -89,14 +89,14 @@ make_random_string() {
 
   if [ -z "$sub_str" ]; then
     # Produce an exact random string of length total_len
-    cat /dev/urandom | tr -dc 'a-z0-9' | head -c "$total_len"
+    cat /dev/urandom | LC_ALL=C tr -dc 'a-z0-9' | head -c "$total_len"
   else
     # Insert the substring at a random position
     local sub_len=${#sub_str}
     local rand_len=$(( total_len - sub_len ))
 
     local raw_rand
-    raw_rand=$(cat /dev/urandom | tr -dc 'a-z0-9' | head -c "$rand_len")
+    raw_rand=$(cat /dev/urandom | LC_ALL=C tr -dc 'a-z0-9' | head -c "$rand_len")
 
     local pos=$(( RANDOM % (rand_len + 1) ))
     echo "${raw_rand:0:pos}${sub_str}${raw_rand:pos}"

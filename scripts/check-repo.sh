@@ -58,7 +58,7 @@ REPO_NAME="lab0-c"
 repo_html=$(curl -s "https://github.com/${REPO_OWNER}/${REPO_NAME}")
 
 # Extract the default branch name from data-default-branch="..."
-DEFAULT_BRANCH=$(echo "$repo_html" | grep -oP "/${REPO_OWNER}/${REPO_NAME}/blob/\K[^/]+(?=/LICENSE)" | head -n 1)
+DEFAULT_BRANCH=$(echo "$repo_html" | sed -nE "s#.*${REPO_OWNER}/${REPO_NAME}/blob/([^/]+)/LICENSE.*#\1#p" | head -n 1)
 
 if [ "$DEFAULT_BRANCH" != "master" ]; then
   echo "$DEFAULT_BRANCH"
