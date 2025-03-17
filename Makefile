@@ -8,6 +8,8 @@ GIT_HOOKS := .git/hooks/applied
 DUT_DIR := dudect
 all: $(GIT_HOOKS) qtest fmtscan
 
+UNAME_S := $(shell uname -s)
+
 tid := 0
 
 # Control test case option of valgrind
@@ -54,8 +56,13 @@ qtest: $(OBJS)
 	$(Q)$(CC) -o $@ $(CFLAGS) -c -MMD -MF .$@.d $<
 
 fmtscan: tools/fmtscan.c
+ifeq ($(UNAME_S),Darwin)
+	$(Q)printf "#!/usr/bin/env bash\nexit 0\n" > $@
+	$(Q)chmod +x $@
+else
 	$(VECHO) "  CC+LD\t$@\n"
 	$(Q)$(CC) -o $@ $(CFLAGS) $< -lrt -lpthread
+endif
 
 check: qtest
 	./$< -v 3 -f traces/trace-eg.cmd
