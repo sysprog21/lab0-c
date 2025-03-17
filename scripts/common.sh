@@ -54,15 +54,12 @@ progress() {
   local bar_left
   bar_left=$(printf "%${left}s")
 
-  # If no leftover space remains, we have presumably reached 100%.
-  if [ "$left" -eq 0 ]; then
-    # Clear the existing progress line
-    printf "\r\033[K"
-    # FIXME: remove this hack to print the final 100% bar with a newline
-    printf "Progress: [########################################] 100%%\n"
-  else
-    # Update the bar in place (no extra newline)
-    printf "\rProgress: [${bar_done// /#}${bar_left// /-}] ${percentage}%%"
+  # Print the progress bar in a single line, updating it dynamically.
+  printf "\rProgress: [%s%s] %d%%" "${bar_done// /#}" "${bar_left// /-}" "$percentage"
+
+  # When reaching 100%, automatically print a newline to finalize the output.
+  if [ "$percentage" -eq 100 ]; then
+    printf "\n"
   fi
 }
 
