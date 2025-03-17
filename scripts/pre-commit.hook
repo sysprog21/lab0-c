@@ -222,6 +222,14 @@ if [ "${#SHELL_FILES[@]}" -gt 0 ]; then
   done
 fi
 
+ASPELL_DICT_FILE='scripts/aspell-pws'
+if ! tail -n +2 $ASPELL_DICT_FILE | sort -cdu; then
+  throw '%s\n%s\n%s' \
+    'Aspell dictionary is unsorted or contains duplicated entries.' \
+    'Make sure that by using:' \
+    "    tail -n +2 $ASPELL_DICT_FILE | sort -du"
+fi
+
 # Show insertion and deletion counts.
 if [ "${#FILES[@]}" -gt 0 ]; then
   echo "Following files were changed:"
