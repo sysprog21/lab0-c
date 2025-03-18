@@ -5,10 +5,6 @@
 #include "harness.h"
 #include "queue.h"
 
-/* A good start is half way to finish the job.
- */
-
-
 /* Create an empty queue */
 struct list_head *q_new()
 {
