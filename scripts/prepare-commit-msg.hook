@@ -34,6 +34,250 @@ INLINE_MSG=$(cat <<'EOF'
 EOF
 )
 
+# AICommit uses an LLM (via ollama) to generate commit messages that match git
+# commit style by learning from previous commits.
+# Inspired by https://github.com/acrosa/aicommits.
+#
+# Configuration options:
+# - aicommit.temperature: Controls the randomness of the generated text (default: 0.3)
+#   Example: git config --global aicommit.temperature 0.5
+# - aicommit.show-prompt: Show the full prompts used for generation (default: false)
+#   Example: git config --global aicommit.show-prompt true
+# - core.aicommit: Control when to use AI commit ('always', 'auto', or 'never', default: 'auto')
+#   Example: git config --global core.aicommit always
+
+MODEL="qwen2.5-coder"
+TEMPERATURE=$(git config --get aicommit.temperature || echo 0.3)
+SHOW_AI_COMMIT_PROMPT=$(git config --get aicommit.show-prompt || echo "false")
+SUGGESTED_COMMITMSG=
+AICOMMIT=$(git config --get core.aicommit || echo 'auto')
+if [[ "$AICOMMIT" == "always" ]] || [[ "$AICOMMIT" == "auto" && -t 1 ]] && \
+   git diff --cached --name-only | grep -qiE "\.(c|h|cpp|hpp)$"; then
+  # Build commit history list from the last non-merge commit messages.
+  commit_history=$(
+    {
+      echo '---'
+      git log -n 50 --no-merges --pretty=format:'%B%n---'
+    } | sed -E 's/ \(\#[0-9]+\)//; /^Change-Id:/d' | awk '
+function print_block(block) {
+  sub(/\n+$/, "", block)
+  n = split(block, a, "\n")
+  subject = a[1]
+  body = ""
+  for (i = 2; i <= n; i++) {
+    if (a[i] ~ /[^[:space:]]/)
+      body = body (body ? "\n" : "") a[i]
+  }
+  print "<subject>" subject "</subject>"
+  print "<body>" body "</body>"
+  print "---"
+}
+{
+  if ($0=="---") {
+    if (block != "") { print_block(block); block = "" }
+  } else {
+    block = block $0 "\n"
+  }
+}
+END {
+  if (block != "") print_block(block)
+}'
+  )
+
+  # Capture the staged diff.
+  staged_diff=$(git diff --cached)
+
+  # Create a style prompt from commit history.
+  style_prompt="
+You are a specialized system for generating high-quality Git commit messages based on 'git diff --cached' output and optional developer descriptions.
+# Task:
+Analyze the following commit messages and produce **accurate, concise, and meaningful commit messages** that clearly describe the changes: (Format: '---' separates messages, <subject>...</subject> and <body>...</body> tags)
+$commit_history
+
+# Output:
+Provide a concise description of the style without quoting commit content.
+"
+  echo "Running ollama to set temperature to $TEMPERATURE (You can set aicommit.temperature git config to change it)"
+  echo "/set parameter temperature $TEMPERATURE"
+  echo "Running ollama for style analysis... (You can set aicommit.show-prompt git config to see full prompt)"
+  style_description=$(echo "$style_prompt" | ollama run "$MODEL")
+
+  # Build the commit message prompt.
+  prompt="
+# Context:
+Style: $style_description
+
+# Instructions: Follow these carefully to generate a high-quality commit message. MUST be concise, style-consistent, and under length limits.
+
+- Generate a commit message that consists of a Subject Line and a Body, separated by a blank line.
+- Analyze the diff below and generate a commit message based solely on its content.
+- **Crucially, mimic the style** described above (tone, length, structure) without copying previous messages. **Pay close attention to maintaining consistency with the established style.**- Use clear action verbs and be concise.
+- Output ONLY the commit message (subject, a blank line, then body).
+- Separate the subject from the body with a blank line.
+- Remove triple backticks; replace backticks with single quotes.
+- Keep the first line (subject) under 50 characters
+- Ensure no line exceeds 72 characters.
+- Avoid vague messages like 'Updates' or 'Fixed bug'
+- Respond in **plain text only**. No markdown, HTML, JSON, code blocks, or special formatting characters.
+- Use only standard punctuation and paragraph breaks.
+- No concluding remarks.
+- Do NOT use conventional commit prefixes (like 'feat:', 'fix:', 'docs:')
+- Avoid the redundant message like 'Updated commit messages'
+- Directly output your commit message, without additional explanations.
+- Avoid using ### or other markdown formatting.
+
+# Diff:
+<diff>$staged_diff</diff>
+
+Commit message:"
+  # Show prompts if aicommit.show-prompt is set to true
+  if [ "$SHOW_AI_COMMIT_PROMPT" = "true" ]; then
+    echo "Full style prompt:"
+    echo "$style_prompt"
+    echo "Extracted style:"
+    echo "$style_description"
+    echo "Full commit prompt:"
+    echo "$prompt"
+  fi
+
+  # Generate commit message using ollama.
+  echo "Running ollama for commit message... "
+  SUGGESTED_COMMITMSG=$(echo "$prompt" | ollama run "$MODEL")
+
+  # Post-process the commit message.
+  # - Trim whitespace.
+  # - Remove triple backticks.
+  # - Replace backticks with single quotes.
+  SUGGESTED_COMMITMSG=$(echo "$SUGGESTED_COMMITMSG" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+  SUGGESTED_COMMITMSG=$(echo "$SUGGESTED_COMMITMSG" | sed -E '/^(Author:|Date:|Commit message:|commit )/d')
+  SUGGESTED_COMMITMSG=$(echo "$SUGGESTED_COMMITMSG" | sed -E '/^```(markdown|diff|text|plaintext)?$/d; s/\*\*([^*]+)\*\*/\1/g; s/`([^`]+)`/'\''\1'\''/g')
+
+  # Extract the subject line (first line) and body
+  subject_line=$(echo "$SUGGESTED_COMMITMSG" | head -n 1)
+  body=$(echo "$SUGGESTED_COMMITMSG" | tail -n +3) # Skip the first line and the blank line
+
+  # Check if the subject line is too long
+  if [ ${#subject_line} -gt 50 ]; then
+    echo "Subject line too long (${#subject_line} chars), will attempt to regenerate up to 10 times..."
+
+    # Try up to 10 times to generate a subject line under 50 characters
+    max_attempts=10
+    attempt=1
+    original_subject="$subject_line"
+
+    while [ $attempt -le $max_attempts ] && [ ${#subject_line} -gt 50 ]; do
+      echo "Attempt $attempt of $max_attempts to generate a shorter subject line..."
+
+      # Generate a new subject line based on the body and previous attempts
+      subject_prompt="
+# Context
+Original subject (${#original_subject} chars):
+$original_subject
+
+Previous attempt (${#subject_line} chars):
+$subject_line
+
+Body:
+$body
+
+# Instructions:
+- The previous commit message's subject line was too long, exceeding 50 characters. Your task is to shorten it to 50 characters or less.
+- Based on this commit message, create ONLY a subject line for the commit message
+- The subject line MUST be under 50 characters (this is attempt $attempt of $max_attempts)
+- Use imperative mood (e.g., 'Add' not 'Added')
+- Capitalize the first word
+- Do not end with a period
+- Be specific but concise
+- Use clear action verbs
+- Avoid vague terms like 'Update' or 'Fix' without context
+- Output ONLY the subject line, nothing else
+- Do NOT use conventional commit prefixes (like 'feat:', 'fix:', 'docs:')
+- Use plain text without markdown or HTML
+
+# Output:"
+
+      echo "Running ollama for new subject line (attempt $attempt)... "
+      new_subject_line=$(echo "$subject_prompt" | ollama run "$MODEL")
+
+      # Clean up the new subject line
+      new_subject_line=$(echo "$new_subject_line" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+      new_subject_line=$(echo "$new_subject_line" | sed -E '/^(Author:|Date:|Subject line:)/d')
+      new_subject_line=$(echo "$new_subject_line" | sed -E '/^```(markdown|diff|text|plaintext)?$/d; s/\*\*([^*]+)\*\*/\1/g; s/`([^`]+)`/'\''\1'\''/g')
+
+      # Update the subject line
+      subject_line="$new_subject_line"
+
+      # Check if the new subject line is under 50 characters
+      if [ ${#subject_line} -le 50 ]; then
+        echo "Success! Generated a subject line under 50 characters (${#subject_line} chars)."
+        break
+      else
+        echo "Attempt $attempt failed: Subject line still too long (${#subject_line} chars)."
+      fi
+
+      attempt=$((attempt + 1))
+    done
+
+    # If we've tried 3 times and still have a long subject line, inform the user
+    if [ ${#subject_line} -gt 50 ]; then
+      echo "Warning: After $max_attempts attempts, the subject line is still too long (${#subject_line} chars)."
+      echo "You may want to edit it manually to comply with the 50-character limit."
+    fi
+  fi
+
+  # Combine the (possibly new) subject line with the original body
+  SUGGESTED_COMMITMSG="$subject_line
+
+$body"
+
+  # Show final subject line if aicommit.show-prompt is set to true
+  if [ "$SHOW_AI_COMMIT_PROMPT" = "true" ]; then
+    echo "Final subject line (${#subject_line} chars):"
+    echo "$subject_line"
+  fi
+
+  # Wrap lines at 72 characters
+  SUGGESTED_COMMITMSG="$(
+    echo "$SUGGESTED_COMMITMSG" \
+      | sed -E '/^```(markdown|diff|text|plaintext)?$/d; s/\*\*([^*]+)\*\*/\1/g; s/`([^`]+)`/'\''\1'\''/g' \
+      | awk -v w=72 '
+function sp(n){ return sprintf("%" n "s", "") }
+function wrap(bp, txt){
+  gsub(/^ +| +$/,"",txt)
+  if(!length(txt)){ print bp; return }
+  n = split(txt, a, /[ \t]+/)
+  l = bp; len = length(bp)
+  for(i = 1; i <= n; i++){
+    wl = length(a[i])
+    if((len > length(bp) ? len + 1 : len) + wl > w){
+      print l; l = sp(length(bp)) a[i]; len = length(bp) + wl
+    } else if(len == length(bp)){
+      l = bp a[i]; len = length(bp) + wl
+    } else {
+      l = l " " a[i]; len++; len += wl
+    }
+  }
+  if(len > length(bp)) print l
+}
+BEGIN { paragraph = ""; bullet = "" }
+{
+  line = $0; gsub(/^ +| +$/, "", line)
+  if(!length(line)){
+    if(length(paragraph)){ wrap(bullet, paragraph); paragraph = ""; bullet = "" }
+    print ""; next
+  }
+  if(match(line, /^( *[0-9]+\.[ \t]+| *-[ \t]+| *\*[ \t]+)/)){
+    if(length(paragraph)){ wrap(bullet, paragraph); paragraph = ""; bullet = "" }
+    bp = substr(line, RSTART, RLENGTH); rest = substr(line, RSTART + RLENGTH)
+    gsub(/^[ \t]+/, "", rest); wrap(bp, rest)
+  } else {
+    if(!length(paragraph)) paragraph = line; else paragraph = paragraph " " line
+  }
+}
+END { if(length(paragraph)) wrap(bullet, paragraph) }
+')"
+fi
+
 # Write an empty line, the guidelines, and the changed files into the commit message.
 {
   echo
@@ -43,6 +287,11 @@ EOF
     echo "$CHANGED_FILES_COMMENTED"
   else
     echo "# (No staged files detected.)"
+  fi
+  if [ -n "$SUGGESTED_COMMITMSG" ]; then
+    echo "#"
+    echo "# ✅Suggested commit messages:"
+    echo "$SUGGESTED_COMMITMSG" | sed 's/^/# /'
   fi
 } > "$COMMIT_MSG_FILE"
 
