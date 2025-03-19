@@ -801,38 +801,38 @@ We encourage every team to tailor these best practices to their specific needs w
 for a shared standard that promotes efficiency and code quality.
 
 Below are the detailed guidelines that build on these principles.
-* Group Related Changes Together
+* Group Related Changes Together:
   Each commit should encapsulate a single, coherent change.
   e.g., if you are addressing two separate bugs, create two distinct commits.
   This approach produces focused, small commits that simplify understanding, enable quick rollbacks,
   and foster efficient peer reviews.
   By taking advantage of Git’s staging area and selective file staging,
   you can craft granular commits that make collaboration smoother and more transparent.
-* Commit Frequently
+* Commit Frequently:
   Making commits often ensures that your changes remain concise and logically grouped.
   Frequent commits not only help maintain a clean history but also allow you to share your progress with your teammates regularly.
   This regular sharing keeps everyone in sync,
   minimizes merge conflicts, and promotes a collaborative environment where integration happens seamlessly.
-* Avoid Committing Work in Progress
+* Avoid Committing Work in Progress:
   Only commit code when a logical component is in a stable, ready-to-integrate state.
   Break your feature's development into manageable segments that reach a functional milestone quickly,
   so you can commit regularly without compromising quality.
   If you feel the urge to commit merely to clear your working directory for actions like switching branches or pulling changes,
   use Git's stash feature instead.
   This practice helps maintain a stable repository and ensures that your team reviews well-tested, coherent code.
-* Test Your Code Before Committing
+* Test Your Code Before Committing:
   Before committing, ensure that your code has been thoroughly tested.
   Rather than assuming your changes are ready, run comprehensive tests to confirm they work as intended without unintended side effects.
   Testing is especially critical when sharing your code with others,
   as it maintains the overall stability of the project and builds trust among collaborators.
-* Utilize Branches for Parallel Development
+* Utilize Branches for Parallel Development:
   Branches are a powerful tool that enables developers to isolate different lines of work—whether you are developing new features,
   fixing bugs, or exploring innovative ideas.
   By using branches extensively, you can work on your tasks independently and merge only after careful review and testing.
   This not only keeps the main branch stable but also encourages collaborative code reviews and a more organized integration process.
 
 Clear and descriptive commit messages are crucial for maintaining a transparent history of changes and for facilitating effective debugging and tracking.
-Please adhere to the guidelines outlined in [How to Write a Git Commit Message](http://chris.beams.io/posts/git-commit/).
+Please adhere to the guidelines outlined in [How to Write a Git Commit Message](https://cbea.ms/git-commit/).
 1. Separate the subject from the body with a blank line.
 2. Limit the subject line to 50 characters.
 3. Capitalize the subject line.

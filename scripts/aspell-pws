@@ -286,6 +286,7 @@ regcomp
 regerror
 regexec
 regfree
+renderer
 retpoline
 reverseK
 rewind
