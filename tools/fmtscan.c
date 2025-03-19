@@ -661,7 +661,7 @@ static get_char_t parse_number(parser_t *restrict p,
                 token_eos(t);
                 return PARSER_OK;
             }
-            if (isxdigit(nextch2)) {
+            if (nextch2 != PARSER_EOF && isxdigit(nextch2)) {
                 /* Recognized as hexadecimal */
                 token_append(t, nextch1);
                 ch = nextch2;
