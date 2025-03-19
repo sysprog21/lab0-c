@@ -223,11 +223,11 @@ if [ "${#SHELL_FILES[@]}" -gt 0 ]; then
 fi
 
 ASPELL_DICT_FILE='scripts/aspell-pws'
-if ! tail -n +2 $ASPELL_DICT_FILE | sort -cdu; then
+if ! LC_ALL=C tail -n +2 $ASPELL_DICT_FILE | sort -f -cdu; then
   throw '%s\n%s\n%s' \
     'Aspell dictionary is unsorted or contains duplicated entries.' \
     'Make sure that by using:' \
-    "    tail -n +2 $ASPELL_DICT_FILE | sort -du"
+    "    tail -n +2 $ASPELL_DICT_FILE | sort -f -du"
 fi
 
 # Show insertion and deletion counts.
