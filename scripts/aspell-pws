@@ -1,4 +1,5 @@
 personal_ws-1.1 en 500
+
 aarch
 abbrev
 abcdefghijklmnopqrstuvwxyz
@@ -6,6 +7,7 @@ acct
 AddressSanitizer
 adjtime
 adjtimex
+AI
 alignas
 alignof
 alloc
@@ -139,6 +141,7 @@ gettimeofday
 getuid
 git
 github
+gitignore
 glibc
 gprof
 hotfix
@@ -285,6 +288,7 @@ pwritev
 pws
 qsort
 qtest
+qwen
 rand
 randombit
 randombyte
@@ -447,31 +451,3 @@ workspace
 writev
 zd
 zu
-oneline
-str
-pws
-el
-fd
-hv
-col
-dA
-dC
-dD
-lu
-pC
-pE
-pGp
-pM
-pS
-pg
-phD
-pm
-pr
-ps
-newline
-abbrev
-
-gitignore
-AI
-qwen
-
