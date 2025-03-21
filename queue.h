@@ -182,7 +182,7 @@ void q_reverse(struct list_head *head);
  * @k: is a positive integer and is less than or equal to the length of the
  * linked list.
  *
- * No effect if queue is NULL or empty. If there has only one element, do
+ * No effect if queue is NULL or empty. If there is only one element, do
  * nothing.
  *
  * Reference:
@@ -195,7 +195,7 @@ void q_reverseK(struct list_head *head, int k);
  * @head: header of queue
  * @descend: whether or not to sort in descending order
  *
- * No effect if queue is NULL or empty. If there has only one element, do
+ * No effect if queue is NULL or empty. If there is only one element, do
  * nothing.
  */
 void q_sort(struct list_head *head, bool descend);
@@ -205,7 +205,7 @@ void q_sort(struct list_head *head, bool descend);
  * value anywhere to the right side of it.
  * @head: header of queue
  *
- * No effect if queue is NULL or empty. If there has only one element, do
+ * No effect if queue is NULL or empty. If there is only one element, do
  * nothing.
  *
  * Reference:
@@ -220,7 +220,7 @@ int q_ascend(struct list_head *head);
  * value anywhere to the right side of it.
  * @head: header of queue
  *
- * No effect if queue is NULL or empty. If there has only one element, do
+ * No effect if queue is NULL or empty. If there is only one element, do
  * nothing.
  *
  * Reference:
