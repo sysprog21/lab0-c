@@ -85,6 +85,30 @@ upstream_hash=$(
 
 rm -f "$temp_file"
 
+# If HTML parsing fails, fallback to using GitHub REST API
+if [ -z "$upstream_hash" ]; then
+  echo "HTML retrieval failed, falling back to GitHub REST API..."
+  API_URL="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits"
+  
+  # Try to use cached GitHub credentials from GitHub CLI
+  # https://docs.github.com/en/get-started/git-basics/caching-your-github-credentials-in-git
+  if command -v gh >/dev/null 2>&1; then
+    TOKEN=$(gh auth token 2>/dev/null)
+    if [ -n "$TOKEN" ]; then
+      echo "Using token from GitHub CLI..."
+      response=$(curl -sSL -H "Authorization: token $TOKEN" "$API_URL")
+    fi
+  fi
+
+  # If response is empty (i.e. token not available or failed), use unauthenticated request.
+  if [ -z "$response" ]; then
+    response=$(curl -sSL "$API_URL")
+  fi
+
+  # Extract the latest commit SHA from the JSON response
+  upstream_hash=$(echo "$response" | grep -m 1 '"sha":' | sed -E 's/.*"sha": "([^"]+)".*/\1/')
+fi
+
 if [ -z "$upstream_hash" ]; then
   throw "Failed to retrieve upstream commit hash from GitHub.\n"
 fi
