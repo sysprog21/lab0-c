@@ -63,6 +63,7 @@ static bool time_limited = false;
 typedef enum {
     TEST_MALLOC,
     TEST_CALLOC,
+    TEST_REALLOC,
 } alloc_t;
 
 /* Internal functions */
@@ -128,6 +129,7 @@ static void *alloc(alloc_t alloc_type, size_t size)
         char *msg_alloc_forbidden[] = {
             "Calls to malloc are disallowed",
             "Calls to calloc are disallowed",
+            "Calls to realloc are disallowed",
         };
         report_event(MSG_FATAL, "%s", msg_alloc_forbidden[alloc_type]);
         return NULL;
@@ -137,6 +139,7 @@ static void *alloc(alloc_t alloc_type, size_t size)
         char *msg_alloc_failure[] = {
             "Malloc returning NULL",
             "Calloc returning NULL",
+            "Realloc returning NULL",
         };
         report_event(MSG_WARN, "%s", msg_alloc_failure[alloc_type]);
         return NULL;
@@ -185,6 +188,41 @@ void *test_calloc(size_t nelem, size_t elsize)
     if (!nelem || !elsize || nelem > SIZE_MAX / elsize)
         return NULL;
     return alloc(TEST_CALLOC, nelem * elsize);
+}
+
+/*
+ * This function implements how to adjust the size of memory allocated
+ * by test_malloc or test_calloc.
+ *
+ * First, we check whether the memory is already allocated.
+ * If it wasn't allocated (p is NULL),
+ * the fucntion behaves like test_malloc, returning a newly allocated memory.
+ *
+ * Otherwise, we check the payload size of the orignal memory.
+ * - If new_size is less than or equal to it, return the original memory.
+ * - If new_size is greater than it, we allocate a new memory with new_size.
+ *   Copy the contents from the orginal memory to the newly allocated memory
+ *   ,and then free the original one. Finally, we return the newly one.
+ *
+ * Reference: https://danluu.com/malloc-tutorial
+ */
+void *test_realloc(void *p, size_t new_size)
+{
+    if (!p)
+        return alloc(TEST_REALLOC, new_size);
+
+    const block_element_t *b = find_header(p);
+    if (b->payload_size >= new_size)
+        // TODO: Free some once we implement split.
+        return p;
+
+    void *new_ptr = alloc(TEST_REALLOC, new_size);
+    if (!new_ptr)
+        return NULL;
+    memcpy(new_ptr, p, b->payload_size);
+    test_free(p);
+
+    return new_ptr;
 }
 
 void test_free(void *p)
