@@ -9,6 +9,6 @@ char *web_recv(int fd, struct sockaddr_in *clientaddr);
 
 void web_send(int out_fd, char *buffer);
 
-int web_eventmux(char *buf);
+int web_eventmux(char *buf, size_t buflen);
 
 #endif
