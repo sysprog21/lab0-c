@@ -26,3 +26,8 @@ GPATH
 GRTAGS
 GSYMS
 GTAGS
+
+# gnuplot files
+gnuplot_script.gnu
+data.txt
+*.png
