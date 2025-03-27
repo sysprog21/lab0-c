@@ -44,6 +44,7 @@ cppcheck_suppressions() {
     "preprocessorErrorDirective:random.h"
     "constVariablePointer:linenoise.c"
     "staticFunction:linenoise.c"
+    "unusedStructMember:linenoise.h"
     "nullPointerOutOfMemory:web.c"
     "staticFunction:web.c"
     "constParameterCallback:tools/fmtscan.c"
