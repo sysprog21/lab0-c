@@ -177,6 +177,17 @@ static bool report(void)
     return true;
 }
 
+static void init_once(void)
+{
+    init_dut();
+    for (size_t i = 0; i < DUDECT_TESTS; i++) {
+        if (!ctxs[i]) {  // 避免重複分配
+            ctxs[i] = malloc(sizeof(t_context_t));
+            t_init(ctxs[i]);
+        }
+    }
+}
+
 static bool doit(int mode)
 {
     int64_t *before_ticks = calloc(N_MEASURES + 1, sizeof(int64_t));
@@ -187,7 +198,7 @@ static bool doit(int mode)
     int64_t *percentiles = calloc(NUM_PERCENTILES, sizeof(int64_t));
 
     if (!before_ticks || !after_ticks || !exec_times || !classes ||
-        !input_data) {
+        !input_data || !percentiles) {
         die();
     }
 
@@ -195,9 +206,17 @@ static bool doit(int mode)
 
     bool ret = measure(before_ticks, after_ticks, input_data, mode);
     differentiate(exec_times, before_ticks, after_ticks);
-    prepare_percentiles(exec_times, percentiles);
-    update_statistics(exec_times, classes, percentiles);
-    ret &= report();
+
+    static bool first_time = true;
+    if (first_time) {
+        prepare_percentiles(exec_times, percentiles);
+        first_time = false;
+        ret = true;  // 丟棄首次數據
+    } else {
+        prepare_percentiles(exec_times, percentiles);
+        update_statistics(exec_times, classes, percentiles);
+        ret &= report();
+    }
 
     free(before_ticks);
     free(after_ticks);
@@ -209,22 +228,14 @@ static bool doit(int mode)
     return ret;
 }
 
-static void init_once(void)
-{
-    init_dut();
-    for (size_t i = 0; i < DUDECT_TESTS; i++) {
-        ctxs[i] = malloc(sizeof(t_context_t));
-        t_init(ctxs[i]);
-    }
-}
-
 static bool test_const(char *text, int mode)
 {
     bool result = false;
 
+    init_once();  // 只初始化一次
+
     for (int cnt = 0; cnt < TEST_TRIES; ++cnt) {
         printf("Testing %s...(%d/%d)\n\n", text, cnt, TEST_TRIES);
-        init_once();
         for (int i = 0; i < ENOUGH_MEASURE / (N_MEASURES - DROP_SIZE * 2) + 1;
              ++i)
             result = doit(mode);
@@ -235,6 +246,7 @@ static bool test_const(char *text, int mode)
 
     for (size_t i = 0; i < DUDECT_TESTS; i++) {
         free(ctxs[i]);
+        ctxs[i] = NULL;
     }
 
     return result;
