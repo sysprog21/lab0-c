@@ -12,9 +12,9 @@
 
 void *test_malloc(size_t size);
 void *test_calloc(size_t nmemb, size_t size);
+void *test_realloc(void *p, size_t new_size);
 void test_free(void *p);
 char *test_strdup(const char *s);
-/* FIXME: provide test_realloc as well */
 
 #ifdef INTERNAL
 
@@ -56,6 +56,7 @@ void trigger_exception(char *msg);
 /* Tested program use our versions of malloc and free */
 #define malloc test_malloc
 #define calloc test_calloc
+#define realloc test_realloc
 #define free test_free
 
 /* Use undef to avoid strdup redefined error */
