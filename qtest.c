@@ -1401,7 +1401,7 @@ int main(int argc, char *argv[])
         }
         case 'l':
             strncpy(lbuf, optarg, BUFSIZE);
-            buf[BUFSIZE - 1] = '\0';
+            lbuf[BUFSIZE - 1] = '\0';
             logfile_name = lbuf;
             break;
         default:
