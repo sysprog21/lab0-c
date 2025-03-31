@@ -260,6 +260,7 @@ int web_eventmux(char *buf, size_t buflen)
         char *buffer = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
         web_send(web_connfd, buffer);
         strncpy(buf, p, buflen);
+        buf[buflen] = '\0';
         free(p);
         close(web_connfd);
         return strlen(buf);
