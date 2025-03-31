@@ -948,7 +948,7 @@ static int line_edit(int stdin_fd,
         char seq[5];
 
         if (eventmux_callback != NULL) {
-            int result = eventmux_callback(l.buf);
+            int result = eventmux_callback(l.buf, l.buflen);
             if (result != 0)
                 return result;
         }
