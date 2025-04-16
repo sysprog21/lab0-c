@@ -85,8 +85,8 @@ read_commit_message() {
     REPLY="${REPLY%%*( )}"
     shopt -u extglob
 
-    # ignore comments
-    [[ $REPLY =~ ^# ]]
+    # ignore comments and indented lines
+    [[ $REPLY =~ ^(#|[  ][  ]) ]]
     test $? -eq 0 || COMMIT_MSG_LINES+=("$REPLY")
 
     [[ $REPLY =~ "# ------------------------ >8 ------------------------" ]]
@@ -208,7 +208,7 @@ build_commit_trailer_regex() {
       TRAILER_REGEX+="$each|"
     done
     # Remove the trailing pipe, then add a separator and blank space pattern.
-    TRAILER_REGEX="${TRAILER_REGEX%|})[$separators][[:blank:]]*)"
+    TRAILER_REGEX="${TRAILER_REGEX%|})[$separators][[:blank:]]*"
   fi
 
   # Append standalone trailer keys.
@@ -452,7 +452,7 @@ validate_commit_message() {
     candidate="${BASH_REMATCH[2]}"
     # Only warn if the candidate filename ends with .c or .h
     if [[ "$candidate" =~ \.(c|h)$ ]]; then
-      add_warning 1 "Avoid using just a filename like '$candidate'. Provide a functional, meaningful description"	    
+      add_warning 1 "Avoid using just a filename like '$candidate'. Provide a functional, meaningful description"
     fi
   fi
 
