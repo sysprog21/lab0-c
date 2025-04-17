@@ -629,6 +629,68 @@ static get_char_t skip_macros(parser_t *p)
     return PARSER_EOF;
 }
 
+static get_char_t skip_inline_asm(parser_t *p, bool underscore)
+{
+    int paren = 0;
+    get_char_t ch;
+
+    ch = get_char(p);
+    if (UNLIKELY(ch == PARSER_EOF))
+        return ch;
+    if (ch != 's')
+        goto check_s_failed;
+    ch = get_char(p);
+    if (UNLIKELY(ch == PARSER_EOF))
+        return ch;
+    if (ch != 'm')
+        goto check_m_failed;
+
+    if (underscore) {
+        ch = get_char(p);
+        if (UNLIKELY(ch == PARSER_EOF))
+            return ch;
+        if (ch != '_')
+            goto not_wrapped;
+        ch = get_char(p);
+        if (UNLIKELY(ch == PARSER_EOF))
+            return ch;
+        if (ch != '_')
+            goto check_underscore_failed;
+    }
+not_wrapped:
+
+    do {
+        ch = get_char(p);
+        if (ch == '\n') {
+            lines++;
+            lineno++;
+            continue;
+        }
+        if (ch == '/') {
+            get_char_t ret = skip_comments(p);
+            if (UNLIKELY(ret == PARSER_EOF))
+                return ret;
+            /* Continue whether a comment is found or not. */
+            continue;
+        }
+        if (UNLIKELY(ch == PARSER_EOF))
+            return ch;
+        /* Increase paren by 1 if ch is '(' and decrease by 1 if ch is ')'. */
+        ch ^= '('; /* This results 0, 1, or other for '(', ')', or other. */
+        paren += !ch - (ch == 1);
+    } while (paren);
+    return PARSER_COMMENT_FOUND;
+
+check_underscore_failed:
+    unget_char(p);
+    unget_char(p);
+check_m_failed:
+    unget_char(p);
+check_s_failed:
+    unget_char(p);
+    return PARSER_OK;
+}
+
 /* Parse an integer value.
  * Since the Linux kernel does not support floats or doubles, only decimal,
  * octal, and hexadecimal formats are handled.
@@ -741,6 +803,47 @@ static get_char_t parse_identifier(parser_t *restrict p,
         }
         token_append(t, ch);
     }
+}
+
+/* Parse an potential inline assembly. */
+static get_char_t parse_inline_asm(parser_t *restrict p,
+                                   token_t *restrict t,
+                                   get_char_t ch)
+{
+    get_char_t ret = skip_inline_asm(p, false);
+
+    if (ret == PARSER_COMMENT_FOUND) {
+        ret |= PARSER_CONTINUE;
+        return ret;
+    }
+    if (UNLIKELY(ret == PARSER_EOF))
+        return ret;
+
+    return parse_identifier(p, t, ch);
+}
+
+/* Parse an potential inline assembly wraped with double underscores. */
+static get_char_t parse_inline_asm_underscore(parser_t *restrict p,
+                                              token_t *restrict t,
+                                              get_char_t ch)
+{
+    get_char_t ret = get_char(p);
+    if (ret != '_') {
+        unget_char(p);
+        return parse_identifier(p, t, ch);
+    }
+    if (UNLIKELY(ret == PARSER_EOF))
+        return ret;
+    ret = skip_inline_asm(p, true);
+
+    if (ret == PARSER_COMMENT_FOUND) {
+        ret |= PARSER_CONTINUE;
+        return ret;
+    }
+    if (UNLIKELY(ret == PARSER_EOF))
+        return ret;
+
+    return parse_identifier(p, t, ch);
 }
 
 /* Process escape sequences at the end of a string literal.
@@ -1112,7 +1215,7 @@ static get_token_action_t get_token_actions[] = {
     ['|'] = parse_op,
     ['&'] = parse_op,
     ['-'] = parse_minus,
-    ['a'] = parse_identifier,
+    ['a'] = parse_inline_asm,
     ['b'] = parse_identifier,
     ['c'] = parse_identifier,
     ['d'] = parse_identifier,
@@ -1164,7 +1267,7 @@ static get_token_action_t get_token_actions[] = {
     ['X'] = parse_identifier,
     ['Y'] = parse_identifier,
     ['Z'] = parse_identifier,
-    ['_'] = parse_identifier,
+    ['_'] = parse_inline_asm_underscore,
     ['"'] = parse_literal_string,
     ['\''] = parse_literal_char,
     ['\\'] = parse_backslash,
