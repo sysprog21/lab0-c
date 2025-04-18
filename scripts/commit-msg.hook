@@ -86,7 +86,7 @@ read_commit_message() {
     shopt -u extglob
 
     # ignore comments and indented lines
-    [[ $REPLY =~ ^(#|[  ][  ]) ]]
+    [[ $REPLY =~ ^(#|  ) ]]
     test $? -eq 0 || COMMIT_MSG_LINES+=("$REPLY")
 
     [[ $REPLY =~ "# ------------------------ >8 ------------------------" ]]
@@ -208,7 +208,7 @@ build_commit_trailer_regex() {
       TRAILER_REGEX+="$each|"
     done
     # Remove the trailing pipe, then add a separator and blank space pattern.
-    TRAILER_REGEX="${TRAILER_REGEX%|})[$separators][[:blank:]]*"
+    TRAILER_REGEX="${TRAILER_REGEX%|})[$separators][[:blank:]]*)"
   fi
 
   # Append standalone trailer keys.
@@ -483,7 +483,8 @@ validate_commit_message() {
 
   MSG_FOR_SPELLCHECK_LINE_FINDING=$(echo "$FULL_COMMIT_MSG_WITH_SPACE" | sed -E \
     -e "s/(['\"][^'\"]*['\"])//g" \
-    -e "s/\bcommit[[:space:]]+[0-9a-fA-F]{7,40}\b/commit/g")
+    -e "s/\bcommit[[:space:]]+[0-9a-fA-F]{7,40}\b/commit/g" \
+    -e "/^  /d")
   MSG_FOR_SPELLCHECK=$(echo "$MSG_FOR_SPELLCHECK_LINE_FINDING" | sed '/^[[:space:]]*$/d')
 
   # Use aspell to list misspelled words according to American English, ignoring quoted text.
