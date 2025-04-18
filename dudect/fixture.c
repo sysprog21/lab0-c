@@ -196,8 +196,20 @@ static bool doit(int mode)
     bool ret = measure(before_ticks, after_ticks, input_data, mode);
     differentiate(exec_times, before_ticks, after_ticks);
     prepare_percentiles(exec_times, percentiles);
-    update_statistics(exec_times, classes, percentiles);
-    ret &= report();
+
+    /* This warm-up step discards the first measurement batch by skipping
+     * its statistical analysis. A static boolean flag controls this by
+     * marking the initial execution, ensuring only the first call within
+     * a test run is excluded from the t-test computation.
+     */
+    static bool first_time = true;
+    if (first_time) {
+        first_time = false;
+        ret = true;
+    } else {
+        update_statistics(exec_times, classes, percentiles);
+        ret &= report();
+    }
 
     free(before_ticks);
     free(after_ticks);
