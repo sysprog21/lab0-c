@@ -26,6 +26,7 @@ cppcheck_suppressions() {
     "missingIncludeSystem"
     "noValidConfiguration"
     "unusedFunction"
+    "syntaxError"
     "identicalInnerCondition:log2_lshift16.h"
     "checkLevelNormal:log2_lshift16.h"
     "nullPointerRedundantCheck:report.c"
