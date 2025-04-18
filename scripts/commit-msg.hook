@@ -208,7 +208,7 @@ build_commit_trailer_regex() {
       TRAILER_REGEX+="$each|"
     done
     # Remove the trailing pipe, then add a separator and blank space pattern.
-    TRAILER_REGEX="${TRAILER_REGEX%|})[$separators][[:blank:]]*"
+    TRAILER_REGEX="${TRAILER_REGEX%|})[$separators][[:blank:]]*)"
   fi
 
   # Append standalone trailer keys.
