@@ -103,7 +103,7 @@ static void update_statistics(const int64_t *exec_times,
                               uint8_t *classes,
                               int64_t *percentiles)
 {
-    for (size_t i = 0; i < N_MEASURES; i++) {
+    for (size_t i = DROP_SIZE; i < N_MEASURES - DROP_SIZE; i++) {
         int64_t difference = exec_times[i];
         /* CPU cycle counter overflowed or dropped measurement */
         if (difference <= 0)
