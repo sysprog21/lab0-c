@@ -57,8 +57,8 @@ qtest: $(OBJS)
 
 fmtscan: tools/fmtscan.c
 ifeq ($(UNAME_S),Darwin)
-	$(Q)printf "#!/usr/bin/env bash\nexit 0\n" > $@
-	$(Q)chmod +x $@
+	$(VECHO) "  CC+LD\t$@\n"
+	$(Q)$(CC) -o $@ $(CFLAGS) -O2 $<
 else
 	$(VECHO) "  CC+LD\t$@\n"
 	$(Q)$(CC) -o $@ $(CFLAGS) $< -lrt -lpthread

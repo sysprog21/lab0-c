@@ -9,8 +9,6 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <math.h>
-#include <mqueue.h>
-#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -24,6 +22,15 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+/* Check for POSIX message queue support */
+#if defined(__linux__)
+#define HAS_MQUEUE 1
+#include <mqueue.h>
+#include <pthread.h>
+#else
+#define HAS_MQUEUE 0
+#endif
 
 /* Remove C escape sequences */
 #define OPT_ESCAPE_STRIP (0x00000001)
@@ -56,7 +63,11 @@
 #define HASH_MASK (TABLE_SIZE - 1)
 
 #define MAX_WORD_NODES (27) /* a..z -> 0..25 and _/0..9 as 26 */
+#ifdef __APPLE__
+#define WORD_NODES_HEAP_SIZE (1000000) /* Larger for macOS dictionary */
+#else
 #define WORD_NODES_HEAP_SIZE (250000)
+#endif
 #define PRINTK_NODES_HEAP_SIZE (12000)
 #define SIZEOF_ARRAY(x) (sizeof(x) / sizeof(x[0]))
 
@@ -76,8 +87,194 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 static const char *dictionary_paths[] = {
+    "scripts/aspell-pws", /* Project dictionary first */
+#ifdef __APPLE__
+    "/usr/share/dict/words", /* macOS default */
+#else
     "/usr/share/dict/american-english",
-    "scripts/aspell-pws",
+#endif
+};
+
+/* Common technical terms to always allow */
+static const char *technical_terms[] = {
+    /* Common programming terms */
+    "bytes",
+    "byte",
+    "bits",
+    "bit",
+    "errors",
+    "error",
+    "warnings",
+    "warning",
+    "builtin",
+    "builtins",
+    "inline",
+    "inlined",
+    "scanned",
+    "scanning",
+    "processed",
+    "processing",
+    "statements",
+    "statement",
+    "expressions",
+    "expression",
+    "spellings",
+    "spelling",
+    "misspelled",
+    "misspelling",
+    "commands",
+    "command",
+    "options",
+    "option",
+    "enabled",
+    "disabled",
+    "elapsed",
+    "exceeded",
+    "exceeds",
+    "allocated",
+    "deallocated",
+    "reallocated",
+    "initialized",
+    "uninitialized",
+    "nodes",
+    "node",
+    "elements",
+    "element",
+    "queues",
+    "queue",
+    "stacks",
+    "stack",
+    "operations",
+    "operation",
+    "instructions",
+    "instruction",
+    "measurements",
+    "measurement",
+    "results",
+    "result",
+    "blocks",
+    "block",
+    "chunks",
+    "chunk",
+    "failed",
+    "failures",
+    "failure",
+    "succeeded",
+    "strings",
+    "string",
+    "chars",
+    "char",
+    "helpers",
+    "helper",
+    "utils",
+    "util",
+    "args",
+    "argc",
+    "argv",
+    "params",
+    "cons",
+    "emacs",
+    "vim",
+    "nano",
+    "hooks",
+    "hook",
+    "callbacks",
+    "callback",
+    "commits",
+    "commit",
+    "committed",
+    "uncommitted",
+    "details",
+    "detail",
+    "couldn",
+    "shouldn",
+
+    /* Common English verbs and participles */
+    "quitting",
+    "exiting",
+    "attempting",
+    "attempted",
+    "returning",
+    "returned",
+    "detected",
+    "detecting",
+    "insertions",
+    "insertion",
+    "copying",
+    "copied",
+    "overflowed",
+    "overflow",
+    "expected",
+    "expecting",
+    "checking",
+    "checked",
+    "calls",
+    "called",
+    "calling",
+    "computed",
+    "computing",
+    "ordering",
+    "ordered",
+    "violated",
+    "violating",
+    "flaws",
+    "flaw",
+    "merged",
+    "merging",
+    "has",
+    "had",
+    "having",
+    "equals",
+    "equaling",
+    "occurred",
+    "occurring",
+    "containing",
+    "contained",
+    "installed",
+    "installing",
+    "required",
+    "requiring",
+    "using",
+    "used",
+    "performing",
+    "performed",
+    "takes",
+    "taking",
+    "taken",
+    "arguments",
+    "argument",
+    "disallowed",
+    "disallow",
+    "lines",
+    "line",
+
+    /* Units and technical suffixes */
+    "megabytes",
+    "megabyte",
+    "kilobytes",
+    "kilobyte",
+    "gigabytes",
+    "gigabyte",
+    "terabytes",
+    "terabyte",
+
+    /* File paths and extensions */
+    "scripts",
+    "script",
+    "words",
+    "word",
+
+    /* Printf format specifiers and variants */
+    "pB",
+    "ph",
+    "pIS",
+    "piS",
+    "pd",
+    "pD",
+    "pb",
+    "dB",
+
+    NULL,
 };
 
 /* token types used for parsing C source code */
@@ -102,12 +299,10 @@ typedef enum {
 
 /* Represents a lexical token. */
 typedef struct {
-    char *ptr;         /* Pointer to the current end of the token during lexical
-                        * analysis
-                        */
-    char *token;       /* Collected token string */
-    char *token_end;   /* Pointer to the end of the token */
-    size_t len;        /* Buffer length for the token */
+    char *ptr;       /* the current end of the token during lexical analysis */
+    char *token;     /* Collected token string */
+    char *token_end; /* Pointer to the end of the token */
+    size_t len;      /* Buffer length for the token */
     token_type_t type; /* Inferred token type */
 } token_t;
 
@@ -120,6 +315,7 @@ typedef void (*parse_func_t)(const char *restrict path,
 
 typedef uint16_t get_char_t;
 
+#if HAS_MQUEUE
 typedef struct {
     void *data;
     size_t size;
@@ -131,6 +327,7 @@ typedef struct {
     char *path;
     mqd_t mq;
 } context_t;
+#endif
 
 /* Parser state context. */
 typedef struct {
@@ -143,7 +340,9 @@ typedef struct {
 /* Hash table entry for tokens (forms a linked list). */
 typedef struct hash_entry {
     struct hash_entry *next;
-    char token[0]; /* Flexible array member for token data */
+    char *filename;  /* File where the word was found */
+    uint32_t lineno; /* Line number where the word was found */
+    char token[0];   /* Flexible array member for token data */
 } hash_entry_t;
 
 typedef get_char_t (*get_token_action_t)(parser_t *restrict p,
@@ -173,6 +372,7 @@ static uint32_t bad_spellings;
 static uint32_t bad_spellings_total;
 static uint32_t words;
 static uint32_t dict_size;
+static char *current_filename = NULL;
 
 static uint8_t opt_flags = OPT_SOURCE_NAME;
 static void (*token_cat)(token_t *restrict token,
@@ -274,12 +474,12 @@ static uint32_t stress_hash_mulxror64(const char *str, const size_t len)
 
     for (size_t i = len >> 3; i; i--) {
         uint64_t v;
-
         memcpy(&v, str, sizeof(v));
         str += sizeof(v);
         hash *= v;
         hash ^= hash_ror_uint64(hash, 40);
     }
+
     for (size_t i = len & 7; *str && i; i--) {
         hash *= (uint8_t) *str++;
         hash ^= hash_ror_uint64(hash, 5);
@@ -287,7 +487,11 @@ static uint32_t stress_hash_mulxror64(const char *str, const size_t len)
     return (uint32_t) ((hash >> 32) ^ hash) & HASH_MASK;
 }
 
+#if HAS_MQUEUE
 static int parse_file(char *restrict path, const mqd_t mq);
+#else
+static int parse_file(char *restrict path, int unused);
+#endif
 
 static void out_of_memory(void)
 {
@@ -369,8 +573,12 @@ static inline int read_dictionary(const char *dictfile)
     }
 
     const char *ptr, *dict;
+#ifdef MAP_POPULATE
     ptr = dict =
         mmap(NULL, buf.st_size, PROT_READ, MAP_SHARED | MAP_POPULATE, fd, 0);
+#else
+    ptr = dict = mmap(NULL, buf.st_size, PROT_READ, MAP_SHARED, fd, 0);
+#endif
     if (dict == MAP_FAILED) {
         close(fd);
         return -1;
@@ -396,7 +604,10 @@ static inline int read_dictionary(const char *dictfile)
     return 0;
 }
 
-static inline void add_bad_spelling(const char *word, const size_t len)
+static inline void add_bad_spelling(const char *word,
+                                    const size_t len,
+                                    const char *filename,
+                                    uint32_t line_num)
 {
     if (find_word(word, printf_nodes, printf_node_heap))
         return;
@@ -404,21 +615,27 @@ static inline void add_bad_spelling(const char *word, const size_t len)
     bad_spellings_total++;
     hash_entry_t **head = &hash_bad_spellings[stress_hash_mulxror64(word, len)];
     hash_entry_t *he;
+
     for (he = *head; he; he = he->next) {
         if (!strcmp(he->token, word))
             return;
     }
-    he = malloc(sizeof(*he) + len);
+
+    size_t filename_len = strlen(filename) + 1;
+    he = malloc(sizeof(*he) + len + filename_len);
     if (UNLIKELY(!he))
         out_of_memory();
 
     he->next = *head;
     *head = he;
+    he->filename = he->token + len;
+    memcpy(he->filename, filename, filename_len);
+    he->lineno = line_num;
     memcpy(he->token, word, len);
     bad_spellings++;
 }
 
-static void check_words(token_t *token)
+static void check_words(token_t *token, const char *filename)
 {
     char *p1 = token->token;
     const char *p3 = p1 + token_len(token);
@@ -436,7 +653,7 @@ static void check_words(token_t *token)
 
         if (LIKELY(p2 - p1 > 1)) {
             if (!find_word(p1, word_nodes, word_node_heap))
-                add_bad_spelling(p1, 1 + p2 - p1);
+                add_bad_spelling(p1, 1 + p2 - p1, filename, lineno);
         }
         p1 = p2 + 1;
     }
@@ -500,9 +717,7 @@ static inline void token_clear(token_t *t)
  */
 static void token_new(token_t *t)
 {
-    int ret;
-
-    ret = posix_memalign((void **) &t->token, 64, TOKEN_CHUNK_SIZE);
+    int ret = posix_memalign((void **) &t->token, 64, TOKEN_CHUNK_SIZE);
     if (ret != 0)
         out_of_memory();
     t->len = TOKEN_CHUNK_SIZE;
@@ -1155,9 +1370,12 @@ static inline get_char_t parse_newline(parser_t *restrict p,
     return parse_backslash(p, t, ch);
 }
 
-static inline get_char_t parse_eof(parser_t *restrict p UNUSED,
-                                   token_t *restrict t UNUSED,
-                                   get_char_t ch UNUSED)
+/* cppcheck-suppress constParameterCallback */
+static inline get_char_t parse_eof(
+    parser_t *restrict p UNUSED,
+    /* cppcheck-suppress constParameterCallback */
+    token_t *restrict t UNUSED,
+    get_char_t ch UNUSED)
 {
     return PARSER_EOF;
 }
@@ -1333,17 +1551,15 @@ static get_char_t parse_message(const char *restrict path UNUSED,
 
     token_cat(line, t);
     token_clear(t);
-    if (UNLIKELY(get_token(p, t) == PARSER_EOF)) {
+    if (UNLIKELY(get_token(p, t) == PARSER_EOF))
         return PARSER_EOF;
-    }
 
     /* Skip over any whitespace. */
     if (t->type == TOKEN_WHITE_SPACE) {
         parse_whitespace(p, t, ' ');
 
-        if (UNLIKELY(get_token(p, t) == PARSER_EOF)) {
+        if (UNLIKELY(get_token(p, t) == PARSER_EOF))
             return PARSER_EOF;
-        }
     }
 
     if (t->type != TOKEN_PAREN_OPENED) {
@@ -1381,14 +1597,12 @@ static get_char_t parse_message(const char *restrict path UNUSED,
 
             got_string = true;
         } else {
-            if (got_string) {
+            if (got_string)
                 token_cat_str(line, quotes);
-            }
             got_string = false;
 
-            if (token_len(str)) {
+            if (token_len(str))
                 token_clear(str);
-            }
         }
 
         token_cat(line, t);
@@ -1429,7 +1643,7 @@ static void parse_messages(const char *restrict path,
 }
 
 /* Process the input to locate literal strings. */
-static void parse_literal_strings(const char *restrict path UNUSED,
+static void parse_literal_strings(const char *restrict path,
                                   unsigned char *restrict data,
                                   unsigned char *restrict data_end,
                                   token_t *restrict t,
@@ -1443,12 +1657,16 @@ static void parse_literal_strings(const char *restrict path UNUSED,
 
     while ((get_token(&p, t)) != PARSER_EOF) {
         if (t->type == TOKEN_LITERAL_STRING)
-            check_words(t);
+            check_words(t, path);
         token_clear(t);
     }
 }
 
+#if HAS_MQUEUE
 static int parse_dir(char *restrict path, const mqd_t mq)
+#else
+static int parse_dir(char *restrict path, int unused)
+#endif
 {
     DIR *dp;
     struct dirent *d;
@@ -1482,7 +1700,11 @@ static int parse_dir(char *restrict path, const mqd_t mq)
             /* Don't follow symlinks */
             if (S_ISLNK(buf.st_mode))
                 continue;
+#if HAS_MQUEUE
             parse_file(filepath, mq);
+#else
+            parse_file(filepath, 0);
+#endif
         }
     }
     closedir(dp);
@@ -1490,7 +1712,11 @@ static int parse_dir(char *restrict path, const mqd_t mq)
     return 0;
 }
 
+#if HAS_MQUEUE
 static int parse_file(char *restrict path, const mqd_t mq)
+#else
+static int parse_file(char *restrict path, int unused UNUSED)
+#endif
 {
     struct stat buf;
     int fd;
@@ -1500,7 +1726,11 @@ static int parse_file(char *restrict path, const mqd_t mq)
                                         ? parse_literal_strings
                                         : parse_messages;
 
+#ifdef __APPLE__
+    fd = open(path, O_RDONLY);
+#else
     fd = open(path, O_RDONLY | O_NOATIME);
+#endif
     if (UNLIKELY(fd < 0)) {
         fprintf(stderr, "Cannot open %s, errno=%d (%s)\n", path, errno,
                 strerror(errno));
@@ -1513,6 +1743,7 @@ static int parse_file(char *restrict path, const mqd_t mq)
         return -1;
     }
     lineno = 0;
+    current_filename = path;
 
     if (LIKELY(S_ISREG(buf.st_mode))) {
         size_t len = strlen(path);
@@ -1521,10 +1752,16 @@ static int parse_file(char *restrict path, const mqd_t mq)
                    ((len >= 2) && !strcmp(path + len - 2, ".h")) ||
                    ((len >= 4) && !strcmp(path + len - 4, ".cpp")))) {
             if (LIKELY(buf.st_size > 0)) {
+#if HAS_MQUEUE
                 msg_t msg;
 
+#ifdef MAP_POPULATE
                 msg.data = mmap(NULL, (size_t) buf.st_size, PROT_READ,
                                 MAP_PRIVATE | MAP_POPULATE, fd, 0);
+#else
+                msg.data = mmap(NULL, (size_t) buf.st_size, PROT_READ,
+                                MAP_PRIVATE, fd, 0);
+#endif
                 if (UNLIKELY(msg.data == MAP_FAILED)) {
                     close(fd);
                     fprintf(stderr, "Cannot mmap %s, errno=%d (%s)\n", path,
@@ -1537,6 +1774,32 @@ static int parse_file(char *restrict path, const mqd_t mq)
                 msg.size = buf.st_size;
                 strncpy(msg.filename, path, sizeof(msg.filename) - 1);
                 mq_send(mq, (char *) &msg, sizeof(msg), 1);
+#else
+                /* Direct processing for non-Linux systems */
+                void *data = mmap(NULL, (size_t) buf.st_size, PROT_READ,
+                                  MAP_PRIVATE, fd, 0);
+                if (UNLIKELY(data == MAP_FAILED)) {
+                    close(fd);
+                    fprintf(stderr, "Cannot mmap %s, errno=%d (%s)\n", path,
+                            errno, strerror(errno));
+                    return -1;
+                }
+                bytes_total += buf.st_size;
+
+                token_t t, line, str;
+                token_new(&t);
+                token_new(&line);
+                token_new(&str);
+
+                parse_func(path, data, (uint8_t *) data + buf.st_size, &t,
+                           &line, &str);
+
+                token_free(&str);
+                token_free(&line);
+                token_free(&t);
+
+                munmap(data, buf.st_size);
+#endif
             }
             files++;
         }
@@ -1544,12 +1807,17 @@ static int parse_file(char *restrict path, const mqd_t mq)
     } else {
         close(fd);
         if (S_ISDIR(buf.st_mode))
+#if HAS_MQUEUE
             rc = parse_dir(path, mq);
+#else
+            rc = parse_dir(path, 0);
+#endif
     }
     return rc;
 }
 
 
+#if HAS_MQUEUE
 static void *reader(void *arg)
 {
     static void *nowt = NULL;
@@ -1561,12 +1829,14 @@ static void *reader(void *arg)
 
     return &nowt;
 }
+#endif
 
 static int parse_path(char *path,
                       token_t *restrict t,
                       token_t *restrict line,
                       token_t *restrict str)
 {
+#if HAS_MQUEUE
     mqd_t mq = -1;
     struct mq_attr attr;
     char mq_name[64];
@@ -1615,18 +1885,50 @@ err:
     mq_unlink(mq_name);
 
     return rc;
+#else
+    /* Simpler non-threaded version for macOS */
+    struct stat buf;
+    if (stat(path, &buf) == 0) {
+        if (S_ISDIR(buf.st_mode)) {
+            parse_dir(path, 0);
+        } else if (S_ISREG(buf.st_mode)) {
+            parse_file(path, 0);
+        }
+    }
+    return 0;
+#endif
 }
 
-static int cmpstr(const void *p1, const void *p2)
+static int cmp_misspelling(const void *p1, const void *p2)
 {
-    return strcmp(*(char *const *) p1, *(char *const *) p2);
+    /* cppcheck-suppress constVariablePointer */
+    hash_entry_t *he1 = *(hash_entry_t **) p1;
+    /* cppcheck-suppress constVariablePointer */
+    hash_entry_t *he2 = *(hash_entry_t **) p2;
+
+    /* Sort by filename first */
+    int cmp = strcmp(he1->filename, he2->filename);
+    if (cmp != 0)
+        return cmp;
+
+    /* Then by line number */
+    if (he1->lineno < he2->lineno)
+        return -1;
+    if (he1->lineno > he2->lineno)
+        return 1;
+
+    /* Finally by word */
+    return strcmp(he1->token, he2->token);
 }
 
 static void dump_bad_spellings(void)
 {
+    if (bad_spellings == 0)
+        return;
+
     size_t i, j;
-    char **bad_spellings_sorted;
-    const size_t sz = bad_spellings * sizeof(char *);
+    hash_entry_t **bad_spellings_sorted;
+    const size_t sz = bad_spellings * sizeof(hash_entry_t *);
 
     bad_spellings_sorted = malloc(sz);
     if (!bad_spellings_sorted)
@@ -1636,23 +1938,19 @@ static void dump_bad_spellings(void)
         hash_entry_t *he = hash_bad_spellings[i];
 
         while (he) {
-            hash_entry_t *next = he->next;
-            bad_spellings_sorted[j++] = he->token;
-            he = next;
+            bad_spellings_sorted[j++] = he;
+            he = he->next;
         }
     }
 
-    qsort(bad_spellings_sorted, j, sizeof(char *), cmpstr);
+    /* Sort by filename, line number, then word */
+    qsort(bad_spellings_sorted, j, sizeof(hash_entry_t *), cmp_misspelling);
 
+    printf("\nMisspelled words found:\n");
+    printf("------------------------\n");
     for (i = 0; i < bad_spellings; i++) {
-        const char *ptr = bad_spellings_sorted[i];
-        hash_entry_t *const he = (hash_entry_t *) (ptr - sizeof(hash_entry_t));
-        char ch;
-
-        while ((ch = *(ptr++)))
-            putchar(ch);
-        putchar('\n');
-
+        hash_entry_t *he = bad_spellings_sorted[i];
+        printf("%s:%u: '%s'\n", he->filename, he->lineno, he->token);
         free(he);
     }
 
@@ -1719,6 +2017,12 @@ int main(int argc, char **argv)
         if (ret) {
             fprintf(stderr, "No dictionary found.\n");
             exit(EXIT_FAILURE);
+        }
+
+        /* Add common technical terms to dictionary */
+        for (const char **term = technical_terms; *term; term++) {
+            add_word((char *) *term, word_nodes, word_node_heap,
+                     &word_node_heap_next, WORD_NODES_HEAP_SIZE);
         }
     }
 
