@@ -41,7 +41,7 @@ typedef struct __param_element {
 } param_element_t;
 
 /* Initialize interpreter */
-void init_cmd();
+void init_cmd(void);
 
 /* Add a new command */
 void add_cmd(char *name, cmd_func_t operation, char *summary, char *parameter);
@@ -62,7 +62,7 @@ void set_echo(bool on);
 /* Complete command interpretation */
 
 /* Return true if no errors occurred */
-bool finish_cmd();
+bool finish_cmd(void);
 
 /* Run command loop.  Non-null infile_name implies read commands from that file
  */

@@ -913,7 +913,7 @@ static bool do_merge(int argc, char *argv[])
     return ok && !error_check();
 }
 
-static bool is_circular()
+static bool is_circular(void)
 {
     struct list_head *cur = current->q->next;
     struct list_head *fast = (cur) ? cur->next : NULL;
@@ -1056,7 +1056,7 @@ static bool do_next(int argc, char *argv[])
     return q_show(0);
 }
 
-static void console_init()
+static void console_init(void)
 {
     ADD_COMMAND(new, "Create new queue", "");
     ADD_COMMAND(free, "Delete queue", "");
@@ -1125,7 +1125,7 @@ static void sigalrm_handler(int sig)
         "code is too inefficient");
 }
 
-static void q_init()
+static void q_init(void)
 {
     fail_count = 0;
     INIT_LIST_HEAD(&chain.head);
@@ -1259,7 +1259,7 @@ bool commit_exists(const char *commit_hash)
     char buffer[1024];
     while (fgets(buffer, sizeof(buffer), stream)) {
         /* Compare the first 40 characters of each line with commit_hash */
-        if (!strncmp(buffer, commit_hash, 40)) {
+        if (strncmp(buffer, commit_hash, 40) == 0) {
             found = true;
             break;
         }
@@ -1294,19 +1294,20 @@ static bool check_commitlog(void)
 }
 
 #define GIT_HOOK ".git/hooks/"
-static bool sanity_check()
+static bool sanity_check(void)
 {
     struct stat buf;
     /* Directory .git not found */
-    if (stat(".git", &buf)) {
+    if (stat(".git", &buf) != 0) {
         fprintf(stderr,
                 "FATAL: You should run qtest in the directory containing valid "
                 "git workspace.\n");
         return false;
     }
     /* Expected pre-commit and pre-push hooks not found */
-    if (stat(GIT_HOOK "commit-msg", &buf) ||
-        stat(GIT_HOOK "pre-commit", &buf) || stat(GIT_HOOK "pre-push", &buf)) {
+    if (stat(GIT_HOOK "commit-msg", &buf) != 0 ||
+        stat(GIT_HOOK "pre-commit", &buf) != 0 ||
+        stat(GIT_HOOK "pre-push", &buf) != 0) {
         fprintf(stderr, "FATAL: Git hooks are not properly installed.\n");
 
         /* Attempt to install Git hooks */
@@ -1323,7 +1324,7 @@ static bool sanity_check()
         return false;
     }
     /* GitHub Actions checkouts do not include the complete git history. */
-    if (stat("/home/runner/work", &buf)) {
+    if (stat("/home/runner/work", &buf) != 0) {
 #define COPYRIGHT_COMMIT_SHA1 "50c5ac53d31adf6baac4f8d3db6b3ce2215fee40"
         if (!commit_exists(COPYRIGHT_COMMIT_SHA1)) {
             fprintf(

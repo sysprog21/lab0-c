@@ -85,7 +85,7 @@ cppcheck_suppressions() {
 
   # Array for additional cppcheck options (non-suppressions)
   local -a other_flags=(
-    "--inline-suppr harness.c --inline-suppr tools/fmtscan.c"
+    "--inline-suppr"
   )
 
   local out=""
@@ -376,7 +376,6 @@ if [ $RETURN -eq 0 ]; then
   printf "\n${GREEN}All checks passed!${NC}\n"
 else
   printf "\n${RED}Pre-commit checks failed. Please fix the issues above.${NC}\n"
-  printf "${YELLOW}Tip: Use 'git commit --no-verify' to bypass these checks (not recommended).${NC}\n"
 fi
 
 exit $RETURN
