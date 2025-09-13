@@ -31,9 +31,9 @@ report_result() {
   local status="$1"
   local message="$2"
   if [ "$status" -eq 0 ]; then
-    printf " ${GREEN}✓${NC}\n"
+    printf " [ ${GREEN}OK${NC} ]\n"
   else
-    printf " ${RED}✗${NC}\n"
+    printf " [ ${RED}FAIL${NC} ]\n"
     if [ -n "$message" ]; then
       ERRORS_FOUND+=("$message")
     fi
@@ -334,8 +334,8 @@ fi
 # Clear the progress line
 printf "\r%*s\r" 50 ""
 
-# === SUMMARY ===
-printf "\n${CYAN}=== Pre-commit Check Summary ===${NC}\n\n"
+# Summary
+printf "\n"
 
 # Show file changes
 printf "${CYAN}Files to be committed:${NC}\n"
@@ -359,7 +359,7 @@ done
 if [ ${#ERRORS_FOUND[@]} -gt 0 ]; then
   printf "\n${RED}Errors found:${NC}\n"
   for error in "${ERRORS_FOUND[@]}"; do
-    printf "  ${RED}✗${NC} %s\n" "$error"
+    printf "  [ ${RED}FAIL${NC} ] %s\n" "$error"
   done
 fi
 

@@ -489,10 +489,29 @@ validate_commit_message() {
   # ------------------------------------------------------------------------------
 
   # Alert if the commit message appears to be written in Chinese.
-  # This pattern matches any Chinese character (common CJK Unified Ideographs).
-  MISSPELLED_WORDS=$(echo "$FULL_COMMIT_MSG" | LC_ALL=C grep "[一-龥]")
-  if [ -n "$MISSPELLED_WORDS" ]; then
-    add_warning 1 "Commit message appears to be written in Chinese: $MISSPELLED_WORDS"
+  # This pattern matches Chinese CJK Unified Ideographs range.
+  # Use proper UTF-8 handling to avoid false positives with Unicode symbols like ✓ and ✗.
+  if command -v python3 >/dev/null 2>&1; then
+    CHINESE_TEXT=$(echo "$FULL_COMMIT_MSG" | python3 -c "
+import sys, re
+text = sys.stdin.read()
+chinese_chars = re.findall(r'[\u4e00-\u9fff]', text)
+if chinese_chars:
+    print(''.join(chinese_chars))
+")
+  else
+    # Fallback: Only detect actual Chinese character patterns if python3 is not available
+    CHINESE_TEXT=$(echo "$FULL_COMMIT_MSG" | grep -o "[一-龥]" 2>/dev/null || echo "")
+    # Filter out false positives by checking if the detected text contains actual Chinese words
+    if [ -n "$CHINESE_TEXT" ] && ! echo "$CHINESE_TEXT" | grep -q "[✓✗]"; then
+      CHINESE_TEXT="$CHINESE_TEXT"
+    else
+      CHINESE_TEXT=""
+    fi
+  fi
+
+  if [ -n "$CHINESE_TEXT" ]; then
+    add_warning 1 "Commit message appears to be written in Chinese: $CHINESE_TEXT"
   fi
 
   MSG_FOR_SPELLCHECK_LINE_FINDING=$(echo "$FULL_COMMIT_MSG_WITH_SPACE" | sed -E \
