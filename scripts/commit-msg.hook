@@ -503,12 +503,44 @@ validate_commit_message() {
 
   # Use aspell to list misspelled words according to American English, ignoring quoted text.
   MISSPELLED_WORDS=$(echo "$MSG_FOR_SPELLCHECK" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
-  if [ -n "$MISSPELLED_WORDS" ]; then
-    results=$(get_all_match_positions "$MSG_FOR_SPELLCHECK_LINE_FINDING" "$MISSPELLED_WORDS")
 
-    while read -r result; do
-      add_warning "${result#*:}" "Avoid using non-American English words: ${result%%:*}"
-    done <<< "$results"
+  # Filter out words that are filenames in the git repository
+  if [ -n "$MISSPELLED_WORDS" ]; then
+    # Get comprehensive list of repository-related words to exclude
+    # 1. Full filenames with extensions
+    # 2. Filenames without extensions
+    # 3. Directory names
+    # 4. File extensions without the dot
+    GIT_WORDS=$(
+      {
+        # Full filenames
+        git ls-files 2>/dev/null | xargs -n1 basename 2>/dev/null
+        # Filenames without extensions
+        git ls-files 2>/dev/null | xargs -n1 basename 2>/dev/null | sed 's/\.[^.]*$//'
+        # Directory names
+        git ls-files 2>/dev/null | xargs -n1 dirname 2>/dev/null | tr '/' '\n' | grep -v '^\.$'
+        # File extensions (without dot)
+        git ls-files 2>/dev/null | grep '\.' | sed 's/.*\.//'
+      } | sort -u
+    )
+    # Filter out repository filenames from misspelled words
+    FILTERED_MISSPELLED=""
+    while IFS= read -r word; do
+      # Check if the word matches any filename or file component
+      if ! echo "$GIT_WORDS" | grep -qxFi "$word"; then
+        FILTERED_MISSPELLED="$FILTERED_MISSPELLED$word"$'\n'
+      fi
+    done <<< "$MISSPELLED_WORDS"
+
+    # Remove trailing newline
+    FILTERED_MISSPELLED="${FILTERED_MISSPELLED%$'\n'}"
+    if [ -n "$FILTERED_MISSPELLED" ]; then
+      results=$(get_all_match_positions "$MSG_FOR_SPELLCHECK_LINE_FINDING" "$FILTERED_MISSPELLED")
+
+      while read -r result; do
+        add_warning "${result#*:}" "Avoid using non-American English words: ${result%%:*}"
+      done <<< "$results"
+    fi
   fi
 }
 
