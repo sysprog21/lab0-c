@@ -1,5 +1,33 @@
 #!/usr/bin/env bash
 
+# Parse command line arguments
+FORCE_REFRESH=false
+QUIET_MODE=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --force-refresh|-f)
+      FORCE_REFRESH=true
+      shift
+      ;;
+    --quiet|-q)
+      QUIET_MODE=true
+      shift
+      ;;
+    --help|-h)
+      echo "Usage: $0 [--force-refresh|-f] [--quiet|-q] [--help|-h]"
+      echo "  --force-refresh, -f  Force refresh of cached data"
+      echo "  --quiet, -q          Suppress progress and informational output"
+      echo "  --help, -h          Show this help message"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
 # Ensure that the common script exists and is readable, then verify it has no
 # syntax errors and defines the required function.
 common_script="$(dirname "$0")/common.sh"
@@ -11,6 +39,22 @@ declare -F set_colors >/dev/null 2>&1 || { echo "[!] '$common_script' does not d
 set_colors
 
 check_github_actions
+
+# Override progress function if in quiet mode
+if [ "$QUIET_MODE" = true ]; then
+  progress() {
+    # Do nothing in quiet mode
+    :
+  }
+fi
+
+# Cache configuration
+CACHE_DIR="$HOME/.cache/lab0-c"
+CACHE_FILE="$CACHE_DIR/upstream_commit"
+CACHE_EXPIRY=900  # Cache for 15 minutes (in seconds)
+
+# Create cache directory if it doesn't exist
+mkdir -p "$CACHE_DIR"
 
 TOTAL_STEPS=6
 CURRENT_STEP=0
@@ -46,14 +90,65 @@ fi
 ((CURRENT_STEP++))
 progress "$CURRENT_STEP" "$TOTAL_STEPS"
 
-# Generate a random integer in [0..999].
-random_ms=$((RANDOM % 1000))
+# Check if cache exists and is still valid
+use_cache=false
+if [ "$FORCE_REFRESH" = true ]; then
+  if [ "$QUIET_MODE" = false ]; then
+    printf "\r%80s\r" " "
+    echo "Force refresh requested. Clearing cache..."
+  fi
+  rm -f "$CACHE_FILE" "$RATE_LIMIT_FILE"
+elif [ -f "$CACHE_FILE" ]; then
+  cache_age=$(($(date +%s) - $(stat -f %m "$CACHE_FILE" 2>/dev/null || stat -c %Y "$CACHE_FILE" 2>/dev/null || echo 0)))
+  if [ "$cache_age" -lt "$CACHE_EXPIRY" ]; then
+    upstream_hash=$(cat "$CACHE_FILE")
+    if [ -n "$upstream_hash" ]; then
+      use_cache=true
+      if [ "$QUIET_MODE" = false ]; then
+        printf "\r%80s\r" " "
+        echo "Using cached upstream commit (${cache_age}s old, expires in $((CACHE_EXPIRY - cache_age))s)"
+      fi
+    fi
+  else
+    if [ "$QUIET_MODE" = false ]; then
+      printf "\r%80s\r" " "
+      echo "Cache expired (${cache_age}s old). Refreshing..."
+    fi
+  fi
+fi
 
-# Convert that to a decimal of the form 0.xxx so that 'sleep' interprets it as seconds.
-# e.g., if random_ms is 5, we convert that to 0.005 (i.e. 5 ms).
-sleep_time="0.$(printf "%03d" "$random_ms")"
+# Only sleep and fetch if not using cache
+if [ "$use_cache" = false ]; then
+  # Generate a random integer in [0..999].
+  random_ms=$((RANDOM % 1000))
 
-sleep "$sleep_time"
+  # Add exponential backoff if we've been rate limited recently
+  RATE_LIMIT_FILE="$CACHE_DIR/rate_limited"
+  if [ -f "$RATE_LIMIT_FILE" ]; then
+    last_limited=$(($(date +%s) - $(stat -f %m "$RATE_LIMIT_FILE" 2>/dev/null || stat -c %Y "$RATE_LIMIT_FILE" 2>/dev/null || echo 0)))
+    if [ "$last_limited" -lt 300 ]; then  # If rate limited in last 5 minutes
+      random_ms=$((random_ms + 2000))  # Add 2 seconds
+      if [ "$QUIET_MODE" = false ]; then
+        printf "\r%80s\r" " "
+        echo "Rate limit detected. Adding delay..."
+      fi
+    fi
+  fi
+
+  # Convert that to a decimal of the form 0.xxx so that 'sleep' interprets it as seconds.
+  # e.g., if random_ms is 5, we convert that to 0.005 (i.e. 5 ms).
+  # Use printf for portability (bc might not be installed)
+  sleep_time="0.$(printf "%03d" "$((random_ms % 1000))")"
+
+  # For delays > 1 second, handle separately
+  if [ "$random_ms" -ge 1000 ]; then
+    sleep_seconds=$((random_ms / 1000))
+    sleep_ms=$((random_ms % 1000))
+    sleep_time="${sleep_seconds}.$(printf "%03d" "$sleep_ms")"
+  fi
+
+  sleep "$sleep_time"
+fi
 
 # 2. Fetch latest commit from GitHub
 ((CURRENT_STEP++))
@@ -62,53 +157,95 @@ progress "$CURRENT_STEP" "$TOTAL_STEPS"
 REPO_OWNER=$(git config -l | grep -w remote.origin.url | sed -E 's%^.*github.com[/:]([^/]+)/lab0-c.*%\1%')
 REPO_NAME="lab0-c"
 
-repo_html=$(curl -s "https://github.com/${REPO_OWNER}/${REPO_NAME}")
+# Only fetch from network if not using cache
+if [ "$use_cache" = false ]; then
+  # First try using git ls-remote (much faster and less likely to be rate limited)
+  if [ "$QUIET_MODE" = false ]; then
+    printf "\r%80s\r" " "
+    echo "Checking upstream repository..."
+  fi
+  upstream_hash=$(git ls-remote --heads origin master 2>/dev/null | cut -f1)
 
-# Extract the default branch name from data-default-branch="..."
-DEFAULT_BRANCH=$(echo "$repo_html" | sed -nE "s#.*${REPO_OWNER}/${REPO_NAME}/blob/([^/]+)/LICENSE.*#\1#p" | head -n 1)
+  # If git ls-remote fails or returns empty, fall back to web scraping
+  if [ -z "$upstream_hash" ]; then
+    if [ "$QUIET_MODE" = false ]; then
+      printf "\r%80s\r" " "
+      echo "git ls-remote failed. Falling back to web scraping..."
+    fi
 
-if [ "$DEFAULT_BRANCH" != "master" ]; then
-  echo "$DEFAULT_BRANCH"
-  throw "The default branch for $REPO_OWNER/$REPO_NAME is not 'master'."
-fi
+    # Add User-Agent header to avoid being blocked
+    USER_AGENT="Mozilla/5.0 (compatible; lab0-c-checker/1.0)"
 
-# Construct the URL to the commits page for the default branch
-COMMITS_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/commits/${DEFAULT_BRANCH}"
+    # Try with rate limit detection
+    repo_html=$(curl -s -w "\n%{http_code}" -H "User-Agent: $USER_AGENT" "https://github.com/${REPO_OWNER}/${REPO_NAME}")
+    http_code=$(echo "$repo_html" | tail -n 1)
+    repo_html=$(echo "$repo_html" | sed '$d')
 
-temp_file=$(mktemp)
-curl -sSL -o "$temp_file" "$COMMITS_URL"
+    # Check for rate limiting (HTTP 429 or 403)
+    if [ "$http_code" = "429" ] || [ "$http_code" = "403" ]; then
+      touch "$RATE_LIMIT_FILE"
+      if [ "$QUIET_MODE" = false ]; then
+        printf "\r%80s\r" " "
+        echo "GitHub rate limit detected (HTTP $http_code). Using fallback..."
+      fi
 
-# general grep pattern that finds commit links
-upstream_hash=$(
-  sed -nE 's/.*href="[^"]*\/commit\/([0-9a-f]{40}).*/\1/p' "$temp_file" | head -n 1
-)
+      # Try to use last known good commit from git log
+      upstream_hash=$(git ls-remote origin master 2>/dev/null | cut -f1)
+      if [ -z "$upstream_hash" ]; then
+        throw "Rate limited by GitHub and no fallback available. Please try again later."
+      fi
+    else
+      # Extract the default branch name from data-default-branch="..."
+      DEFAULT_BRANCH=$(echo "$repo_html" | sed -nE "s#.*${REPO_OWNER}/${REPO_NAME}/blob/([^/]+)/LICENSE.*#\1#p" | head -n 1)
 
-rm -f "$temp_file"
+      if [ "$DEFAULT_BRANCH" != "master" ]; then
+        echo "$DEFAULT_BRANCH"
+        throw "The default branch for $REPO_OWNER/$REPO_NAME is not 'master'."
+      fi
 
-# If HTML parsing fails, fallback to using GitHub REST API
-if [ -z "$upstream_hash" ]; then
-  API_URL="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits"
-  
-  # Try to use cached GitHub credentials from GitHub CLI
-  # https://docs.github.com/en/get-started/git-basics/caching-your-github-credentials-in-git
-  if command -v gh >/dev/null 2>&1; then
-    TOKEN=$(gh auth token 2>/dev/null)
-    if [ -n "$TOKEN" ]; then
-      response=$(curl -sSL -H "Authorization: token $TOKEN" "$API_URL")
+      # Construct the URL to the commits page for the default branch
+      COMMITS_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/commits/${DEFAULT_BRANCH}"
+
+      temp_file=$(mktemp)
+      curl -sSL -H "User-Agent: $USER_AGENT" -o "$temp_file" "$COMMITS_URL"
+
+      # general grep pattern that finds commit links
+      upstream_hash=$(
+        sed -nE 's/.*href="[^"]*\/commit\/([0-9a-f]{40}).*/\1/p' "$temp_file" | head -n 1
+      )
+
+      rm -f "$temp_file"
+
+      # If HTML parsing fails, fallback to using GitHub REST API
+      if [ -z "$upstream_hash" ]; then
+        API_URL="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits"
+
+        # Try to use cached GitHub credentials from GitHub CLI
+        # https://docs.github.com/en/get-started/git-basics/caching-your-github-credentials-in-git
+        if command -v gh >/dev/null 2>&1; then
+          TOKEN=$(gh auth token 2>/dev/null)
+          if [ -n "$TOKEN" ]; then
+            response=$(curl -sSL -H "Authorization: token $TOKEN" -H "User-Agent: $USER_AGENT" "$API_URL")
+          fi
+        fi
+
+        # If response is empty (i.e. token not available or failed), use unauthenticated request.
+        if [ -z "$response" ]; then
+          response=$(curl -sSL -H "User-Agent: $USER_AGENT" "$API_URL")
+        fi
+
+        # Extract the latest commit SHA from the JSON response
+        upstream_hash=$(echo "$response" | grep -m 1 '"sha":' | sed -E 's/.*"sha": "([^"]+)".*/\1/')
+      fi
     fi
   fi
 
-  # If response is empty (i.e. token not available or failed), use unauthenticated request.
-  if [ -z "$response" ]; then
-    response=$(curl -sSL "$API_URL")
+  if [ -z "$upstream_hash" ]; then
+    throw "Failed to retrieve upstream commit hash from GitHub.\n"
   fi
 
-  # Extract the latest commit SHA from the JSON response
-  upstream_hash=$(echo "$response" | grep -m 1 '"sha":' | sed -E 's/.*"sha": "([^"]+)".*/\1/')
-fi
-
-if [ -z "$upstream_hash" ]; then
-  throw "Failed to retrieve upstream commit hash from GitHub.\n"
+  # Cache the result
+  echo "$upstream_hash" > "$CACHE_FILE"
 fi
 
 # 3. Check local repository awareness
@@ -167,6 +304,9 @@ if [ $failed -ne 0 ]; then
   exit 1
 fi
 
-echo "Fingerprint: $(make_random_string 24 "$REPO_OWNER")"
+if [ "$QUIET_MODE" = false ]; then
+  printf "\r%80s\r" " "
+  echo "Fingerprint: $(make_random_string 24 "$REPO_OWNER")"
+fi
 
 exit 0
