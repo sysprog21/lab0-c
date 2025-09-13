@@ -64,17 +64,18 @@ run_build_checks() {
   echo ""
 
   # Clean previous build artifacts for fresh check
-  echo -e "${YELLOW}Cleaning previous build...${NC}"
+  printf "${YELLOW}Cleaning previous build...${NC}"
   make clean >/dev/null 2>&1 || true
+  printf " [ ${GREEN}OK${NC} ]\n"
 
-  echo -e "${YELLOW}Building project...${NC}"
+  printf "${YELLOW}Building project...${NC}"
 
   # Capture build output for better error reporting
   build_output=$(make 2>&1)
   build_result=$?
 
   if [ $build_result -ne 0 ]; then
-    echo -e "${RED}Build failed!${NC}"
+    printf " [ ${RED}FAIL${NC} ]\n"
     echo ""
     echo "Build output:"
     echo "============="
@@ -85,7 +86,7 @@ run_build_checks() {
     return 1
   fi
 
-  echo -e "${GREEN}✓ Build successful${NC}"
+  printf " [ ${GREEN}OK${NC} ]\n"
 
   # Additional checks could be added here
   # For example: basic tests, format checks, etc.

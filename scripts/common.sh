@@ -1,4 +1,5 @@
 RED=""
+GREEN=""
 YELLOW=""
 BLUE=""
 WHITE=""
@@ -11,6 +12,7 @@ set_colors() {
   # If color is forced (always) or auto and we are on a tty, enable color.
   if [[ "$default_color" == "always" ]] || [[ "$default_color" == "auto" && -t 1 ]]; then
     RED='\033[1;31m'
+    GREEN='\033[1;32m'
     YELLOW='\033[1;33m'
     BLUE='\033[1;34m'
     WHITE='\033[1;37m'
