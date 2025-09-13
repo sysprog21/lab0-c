@@ -66,6 +66,11 @@ typedef struct {
 
 static queue_chain_t chain = {.size = 0};
 static queue_contex_t *current = NULL;
+static int new_ok = 0;          /* Successful q_new() calls */
+static int new_cnt = 0;         /* Total q_new() attempts */
+static bool impl_found = false; /* Real implementation detected */
+static int size_calls = 0;      /* Total q_size calls */
+static int size_neg = 0;        /* q_size returning -1 */
 
 /* How many times can queue operations fail */
 static int fail_limit = BIG_LIST_SIZE;
@@ -156,6 +161,16 @@ static bool do_new(int argc, char *argv[])
         qctx->id = chain.size++;
 
         current = qctx;
+
+        new_cnt++;
+        if (qctx->q) {
+            new_ok++;
+            impl_found = true; /* Real q_new() implementation exists */
+        }
+
+        /* Check if q_new is properly implemented when malloc should succeed */
+        if (!qctx->q && fail_probability == 0 && fail_limit == 0)
+            ok = false;
     }
     exception_cancel();
     q_show(3);
@@ -210,10 +225,8 @@ static bool queue_insert(position_t pos, int argc, char *argv[])
 
     char *inserts = argv[1];
     if (argc == 3) {
-        if (!get_int(argv[2], &reps) || reps < 1) {
-            report(1, "Invalid number of insertions '%s'", argv[2]);
+        if (!get_int(argv[2], &reps) || reps < 1)
             return false;
-        }
     }
 
     if (!strcmp(inserts, "RAND")) {
@@ -240,7 +253,6 @@ static bool queue_insert(position_t pos, int argc, char *argv[])
                         : list_first_entry(current->q, element_t, list);
                 char *cur_inserts = entry->value;
                 if (!cur_inserts) {
-                    report(1, "ERROR: Failed to save copy of string in queue");
                     ok = false;
                 } else if (r == 0 && inserts == cur_inserts) {
                     report(1,
@@ -363,10 +375,8 @@ static bool queue_remove(position_t pos, int argc, char *argv[])
         q_release_element(re);
 
         removes[string_length + STRINGPAD] = '\0';
-        if (removes[0] == '\0') {
-            report(1, "ERROR: Failed to store removed value");
+        if (removes[0] == '\0')
             ok = false;
-        }
 
         /* Check whether padding in array removes are still initial value 'X'.
          * If there's other character in padding, it's overflowed.
@@ -548,13 +558,25 @@ static bool do_size(int argc, char *argv[])
     }
 
     int cnt = 0;
-    if (!current || !current->q)
+    if (!current || !current->q) {
         report(3, "Warning: Calling size on null queue");
+        /* For NULL queue, q_size should return 0, not -1 */
+        cnt = q_size(NULL);
+        size_calls++;
+        if (cnt == -1)
+            size_neg++;
+        if (cnt != 0)
+            return false;
+        return true;
+    }
     error_check();
 
     if (current && exception_setup(true)) {
         for (int r = 0; ok && r < reps; r++) {
             cnt = q_size(current->q);
+            size_calls++;
+            if (cnt == -1)
+                size_neg++;
             ok = ok && !error_check();
         }
     }
@@ -645,9 +667,8 @@ bool do_sort(int argc, char *argv[])
                         unstable = true;
                         break;
                     }
-                    if (nodes[i] == cur_l) {
+                    if (nodes[i] == cur_l)
                         break;
-                    }
                 }
                 if (unstable) {
                     report(
@@ -823,10 +844,8 @@ static bool do_reverseK(int argc, char *argv[])
     error_check();
 
     if (argc == 2) {
-        if (!get_int(argv[1], &k) || k < 1) {
-            report(1, "Invalid number of K (at least 1)");
+        if (!get_int(argv[1], &k) || k < 1)
             return false;
-        }
     } else {
         report(1, "Invalid number of arguments for reverseK");
         return false;
@@ -1440,6 +1459,38 @@ int main(int argc, char *argv[])
 
     bool ok = true;
     ok = ok && run_console(infile_name);
+
+    /* Check if q_new() is actually implemented */
+    if (new_cnt > 0 && new_ok == 0 && fail_probability > 0) {
+        /* If malloc was set to fail partially but q_new() NEVER succeeded, it
+         * means q_new() is not implemented (always returns NULL)
+         */
+        report(1,
+               "ERROR: q_new() never succeeded despite partial malloc failures "
+               "(%d attempts). Function not implemented.",
+               new_cnt);
+        ok = false;
+    }
+
+    /* Check if any actual implementation exists */
+    if (!impl_found && chain.size == 0 && new_cnt > 0) {
+        /* If we attempted to create queues but none succeeded, then the
+         * implementation is just stubs.
+         */
+        report(1,
+               "ERROR: No functional queue implementation detected. All "
+               "functions appear to be stubs.");
+        ok = false;
+    }
+
+    /* Check for stub q_size implementation */
+    if (size_calls > 0 && size_neg == size_calls) {
+        /* If q_size always returned -1, it's the stub implementation */
+        report(1,
+               "ERROR: q_size() always returns -1 (stub implementation "
+               "detected).");
+        ok = false;
+    }
 
     /* Do finish_cmd() before check whether ok is true or false */
     ok = finish_cmd() && ok;
