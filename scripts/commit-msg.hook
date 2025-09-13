@@ -404,13 +404,20 @@ validate_commit_message() {
     add_warning 1 "Avoid using parentheses '()' in commit subjects"
   fi
 
-  # 7c. Alert if the commit subject starts with "Implementation"
+  # 7c. Disallow conventional commit format (e.g., "chore(scope):", "feat:", etc.)
+  # These formats waste precious characters from the 50-character limit
+  # Check for patterns like "type:" or "type(scope):" with optional breaking change indicator
+  if [[ ${COMMIT_SUBJECT} =~ ^[a-z]+\([^\)]+\):[[:space:]] ]] || [[ ${COMMIT_SUBJECT} =~ ^[a-z]+!?:[[:space:]] ]]; then
+    add_warning 1 "Avoid conventional commit format (e.g., 'chore(scripts):', 'feat:', 'fix:'). Write a direct, descriptive subject"
+  fi
+
+  # 7d. Alert if the commit subject starts with "Implementation"
   # ------------------------------------------------------------------------------
   if [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^(First|My|Implementation|Implementations|Creation|Modification|Queue) ]]; then
     add_warning 1 "Commit subject should use imperative mood"
   fi
 
-  # 7d. Alert if the commit subject uses the pattern "Implement of ..."
+  # 7e. Alert if the commit subject uses the pattern "Implement of ..."
   if [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^(Implement|Realize|Update|Finish|Code)[[:space:]]+of[[:space:]]+ ]]; then
     add_warning 1 "Avoid using 'of' immediately after the verb"
   fi

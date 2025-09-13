@@ -913,6 +913,9 @@ In addition, this project expects contributors to follow these additional rules:
 * Avoid using parentheses in commit subjects.
   Excessive use of parentheses "()" can clutter the subject line,
   making it harder to quickly grasp the essential message.
+* Avoid conventional commit format (e.g., "chore(scripts):", "feat:", "fix:").
+  These formats waste precious characters from the 50-character limit.
+  Write a direct, descriptive subject instead.
 
 Some conventions are automatically enforced by the [githooks](https://git-scm.com/docs/githooks).
 
