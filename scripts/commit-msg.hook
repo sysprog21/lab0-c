@@ -394,25 +394,24 @@ validate_commit_message() {
     add_warning 1 "Do not write single-word commits. Provide a descriptive subject"
   fi
 
-  # 7a. Avoid using C source filenames as the commit subject.
+  # 7a. Avoid using C source filenames as the commit subject
   if [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^[_a-zA-Z0-9]+\.[ch]$ ]]; then
     add_warning 1 "Avoid mentioning C source filenames in the commit subject"
   fi
 
-  # 7b. Disallow parentheses in the commit subject.
+  # 7b. Disallow parentheses in the commit subject
   if [[ ${COMMIT_SUBJECT_TO_PROCESS} =~ [\(\)] ]]; then
     add_warning 1 "Avoid using parentheses '()' in commit subjects"
   fi
 
-  # 7c. Disallow conventional commit format (e.g., "chore(scope):", "feat:", etc.)
+  # 7c. Disallow conventional commit format
   # These formats waste precious characters from the 50-character limit
   # Check for patterns like "type:" or "type(scope):" with optional breaking change indicator
   if [[ ${COMMIT_SUBJECT} =~ ^[a-z]+\([^\)]+\):[[:space:]] ]] || [[ ${COMMIT_SUBJECT} =~ ^[a-z]+!?:[[:space:]] ]]; then
     add_warning 1 "Avoid conventional commit format (e.g., 'chore(scripts):', 'feat:', 'fix:'). Write a direct, descriptive subject"
   fi
 
-  # 7d. Alert if the commit subject starts with "Implementation"
-  # ------------------------------------------------------------------------------
+  # 7d. Alert if the commit subject starts with non-imperative words
   if [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^(First|My|Implementation|Implementations|Creation|Modification|Queue) ]]; then
     add_warning 1 "Commit subject should use imperative mood"
   fi
@@ -436,6 +435,14 @@ validate_commit_message() {
     fi
     if [[ "${COMMIT_SUBJECT_TO_PROCESS}" =~ ^(Complete|Finish|Done)[[:space:]]+ ]]; then
       add_warning 1 "Avoid using generic subjects starting with 'Complete', 'Finish', or 'Done'"
+    fi
+  fi
+
+  # 8a. For queue functions (q_*), require detailed explanation in body
+  # Check if subject mentions queue functions like "Implement q_size" or "Fix q_new"
+  if [[ "${COMMIT_SUBJECT}" =~ q_[a-zA-Z_]+ ]]; then
+    if [ "${NON_COMMENT_COUNT}" -le 1 ]; then
+      add_warning 1 "Queue function commits require detailed explanation in the body"
     fi
   fi
 
@@ -496,12 +503,44 @@ validate_commit_message() {
 
   # Use aspell to list misspelled words according to American English, ignoring quoted text.
   MISSPELLED_WORDS=$(echo "$MSG_FOR_SPELLCHECK" | $ASPELL --lang=en --list --home-dir=scripts --personal=aspell-pws)
-  if [ -n "$MISSPELLED_WORDS" ]; then
-    results=$(get_all_match_positions "$MSG_FOR_SPELLCHECK_LINE_FINDING" "$MISSPELLED_WORDS")
 
-    while read -r result; do
-      add_warning "${result#*:}" "Avoid using non-American English words: ${result%%:*}"
-    done <<< "$results"
+  # Filter out words that are filenames in the git repository
+  if [ -n "$MISSPELLED_WORDS" ]; then
+    # Get comprehensive list of repository-related words to exclude
+    # 1. Full filenames with extensions
+    # 2. Filenames without extensions
+    # 3. Directory names
+    # 4. File extensions without the dot
+    GIT_WORDS=$(
+      {
+        # Full filenames
+        git ls-files 2>/dev/null | xargs -n1 basename 2>/dev/null
+        # Filenames without extensions
+        git ls-files 2>/dev/null | xargs -n1 basename 2>/dev/null | sed 's/\.[^.]*$//'
+        # Directory names
+        git ls-files 2>/dev/null | xargs -n1 dirname 2>/dev/null | tr '/' '\n' | grep -v '^\.$'
+        # File extensions (without dot)
+        git ls-files 2>/dev/null | grep '\.' | sed 's/.*\.//'
+      } | sort -u
+    )
+    # Filter out repository filenames from misspelled words
+    FILTERED_MISSPELLED=""
+    while IFS= read -r word; do
+      # Check if the word matches any filename or file component
+      if ! echo "$GIT_WORDS" | grep -qxFi "$word"; then
+        FILTERED_MISSPELLED="$FILTERED_MISSPELLED$word"$'\n'
+      fi
+    done <<< "$MISSPELLED_WORDS"
+
+    # Remove trailing newline
+    FILTERED_MISSPELLED="${FILTERED_MISSPELLED%$'\n'}"
+    if [ -n "$FILTERED_MISSPELLED" ]; then
+      results=$(get_all_match_positions "$MSG_FOR_SPELLCHECK_LINE_FINDING" "$FILTERED_MISSPELLED")
+
+      while read -r result; do
+        add_warning "${result#*:}" "Avoid using non-American English words: ${result%%:*}"
+      done <<< "$results"
+    fi
   fi
 }
 
