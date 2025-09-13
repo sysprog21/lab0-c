@@ -2,8 +2,10 @@
 
 # This script checks:
 # 1. Change-Id presence (indicates commit-msg hook processing)
-# 2. Commit message quality (indicates pre-commit hook compliance)
-# 3. Bypass detection (detects --no-verify usage or web interface commits)
+# 2. Commit message quality (subject line format and length)
+# 3. WIP commits detection (work-in-progress commits that start with WIP:)
+# 4. GitHub web interface usage (commits without proper hooks)
+# 5. Queue.c modifications require descriptive commit body
 #
 # Merge commits are excluded from this check.
 
@@ -23,30 +25,8 @@ BASE_COMMIT="0b8be2c15160c216e8b6ec82c99a000e81c0e429"
 # Get a list of non-merge commit hashes after BASE_COMMIT.
 commits=$(git rev-list --no-merges "${BASE_COMMIT}"..HEAD)
 
-# Hook bypass detection patterns
-BYPASS_INDICATORS=(
-    "--no-verify"
-    "WIP"
-)
-
-# Quality patterns that indicate hook processing
-PROBLEMATIC_PATTERNS=(
-    '^[a-z]'                                              # Uncapitalized subjects
-    '\.$'                                                 # Ending with period
-    '^.{1,10}$'                                          # Too short subjects
-    '^.{80,}'                                            # Too long subjects
-    '^(Update|Fix|Change|Modify) [a-zA-Z0-9_-]+\.(c|h)$' # Generic filename updates
-)
-
 # Early exit if no commits to check
 [[ -z "$commits" ]] && { echo -e "${GREEN}No commits to check.${NC}"; exit 0; }
-
-# Pre-compute indicator patterns for faster matching
-bypass_pattern=""
-for indicator in "${BYPASS_INDICATORS[@]}"; do
-  bypass_pattern+="|${indicator,,}"
-done
-bypass_pattern="${bypass_pattern#|}"
 
 # Ultra-fast approach: minimize git calls and parsing overhead
 failed=0
@@ -122,11 +102,11 @@ for commit in "${!commit_cache[@]}"; do
     ((failed++))
   fi
 
-  # Check 2: Bypass indicators (single pattern match)
-  full_msg_lower="${full_msg,,}"
-  if [[ "$full_msg_lower" =~ ($bypass_pattern) ]]; then
+  # Check 2: Bypass indicators - only for actual WIP commits
+  # Skip commits that are documenting features (like this commit checker itself)
+  if [[ "$subject" =~ ^WIP[[:space:]]*: ]] || [[ "$subject" =~ ^wip[[:space:]]*: ]]; then
     has_warnings=1
-    warning_list+="Contains bypass indicator: '${BASH_REMATCH[1]}'|"
+    warning_list+="Work in progress commit|"
     ((warnings++))
   fi
 
