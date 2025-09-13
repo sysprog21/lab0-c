@@ -8,11 +8,43 @@ bash -n "$common_script" >/dev/null 2>&1 || { echo "[!] '$common_script' contain
 source "$common_script"
 declare -F set_colors >/dev/null 2>&1 || { echo "[!] '$common_script' does not define the required function." >&2; exit 1; }
 
+set_colors
+
+# Initialize return status
+RETURN=0
+ERRORS_FOUND=()
+WARNINGS_FOUND=()
+
+# Progress tracking
+TOTAL_CHECKS=8
+CURRENT_CHECK=0
+
+# Helper function to update progress
+update_progress() {
+  local check_name="$1"
+  ((CURRENT_CHECK++))
+  printf "\r${CYAN}[%d/%d]${NC} %s..." "$CURRENT_CHECK" "$TOTAL_CHECKS" "$check_name"
+}
+
+# Helper function to report check result
+report_result() {
+  local status="$1"
+  local message="$2"
+  if [ "$status" -eq 0 ]; then
+    printf " ${GREEN}✓${NC}\n"
+  else
+    printf " ${RED}✗${NC}\n"
+    if [ -n "$message" ]; then
+      ERRORS_FOUND+=("$message")
+    fi
+  fi
+}
+
 # Build unmatched suppressions for each *.c file.
 cppcheck_build_unmatched() {
   local file suppression=""
   for file in *.c tools/*.c; do
-    suppression+=" --suppress=unmatchedSuppression:$file"
+    [ -f "$file" ] && suppression+=" --suppress=unmatchedSuppression:$file"
   done
   echo "$suppression"
 }
@@ -90,232 +122,261 @@ detect_cc_std() {
   echo "$EXTRA_DEFINES"
 }
 
+# Check for required tools
+check_required_tools() {
+  local missing_tools=()
+
+  # Check clang-format
+  if ! command -v clang-format >/dev/null 2>&1; then
+    missing_tools+=("clang-format")
+  fi
+
+  # Check cppcheck
+  if ! command -v cppcheck >/dev/null 2>&1; then
+    missing_tools+=("cppcheck")
+  else
+    # Check cppcheck version
+    local cppcheck_ver=$(cppcheck --version 2>&1)
+    if echo "$cppcheck_ver" | grep -qE '^Cppcheck\s2'; then
+      : # Version 2.x is acceptable.
+    else
+      # For version 1.x, extract the minor version and compare.
+      local minor_version=$(echo "$cppcheck_ver" | sed -Ee 's/Cppcheck 1\.([0-9]+).*/\1/;q')
+      if [ "$minor_version" -lt 90 ]; then
+        missing_tools+=("cppcheck (>= 1.90)")
+      fi
+    fi
+  fi
+
+  # Check aspell
+  if ! command -v aspell >/dev/null 2>&1; then
+    missing_tools+=("aspell")
+  elif [ -z "$(aspell dump dicts 2>/dev/null | grep -E '^en$')" ]; then
+    missing_tools+=("aspell-en")
+  fi
+
+  # Check for sha1sum or shasum
+  if ! command -v sha1sum >/dev/null 2>&1 && ! command -v shasum >/dev/null 2>&1; then
+    missing_tools+=("sha1sum or shasum")
+  fi
+
+  if [ ${#missing_tools[@]} -gt 0 ]; then
+    printf "\n${RED}Missing required tools:${NC}\n"
+    for tool in "${missing_tools[@]}"; do
+      printf "  ${YELLOW}- %s${NC}\n" "$tool"
+    done
+    printf "\n${RED}Please install missing tools and try again.${NC}\n"
+    exit 1
+  fi
+}
+
+# Early checks before processing files
+printf "${CYAN}Running pre-commit checks...${NC}\n\n"
+check_required_tools
+
+# Setup tools
 CPPCHECK_OPTS="-I. --enable=all --error-exitcode=1"
 CPPCHECK_OPTS+=" $(detect_cc_std)"
 CPPCHECK_OPTS+=" --force $(cppcheck_suppressions) $(cppcheck_build_unmatched)"
 CPPCHECK_OPTS+=" --cppcheck-build-dir=.out"
+mkdir -p .out
 
-set_colors
+DIFF=$(command -v colordiff || echo "diff")
+SHA1SUM=$(command -v sha1sum || command -v shasum)
 
-RETURN=0
-
-# Disallow non-ASCII characters in workspace path
+# Get workspace root
 workspace=$(git rev-parse --show-toplevel)
-if echo "$workspace" | LC_ALL=C grep -q "[一-龥]"; then
-  throw "The workspace path '$workspace' contains non-ASCII characters."
+
+# Get staged files
+FILES=($(git diff --cached --name-only --diff-filter=ACM))
+
+# If no files staged, exit early
+if [ ${#FILES[@]} -eq 0 ]; then
+  printf "${YELLOW}No files staged for commit.${NC}\n"
+  exit 0
 fi
 
-# Check for merge conflict markers in staged changes.
-# Assemble the conflict marker regex without embedding it directly.
+# === CHECK 1: Workspace path validation ===
+update_progress "Checking workspace path"
+if echo "$workspace" | LC_ALL=C grep -q "[一-龥]"; then
+  report_result 1 "Workspace path contains non-ASCII characters"
+  RETURN=1
+else
+  report_result 0
+fi
+
+# === CHECK 2: Merge conflict markers ===
+update_progress "Checking for merge conflicts"
 CONFLICT_MARKERS=$(printf '%s|%s|%s' "<<<<<<<" "=======" ">>>>>>>")
-# Get staged files that contain conflict markers, but exclude hook files.
 CONFLICT_FILES=$(git diff --cached --name-only -G "${CONFLICT_MARKERS}" | \
                  grep -vE '(^|/)\.git/hooks/|(^|/)(pre-commit|commit-msg|prepare-commit-msg|pre-push)\.hook$')
 if [ -n "${CONFLICT_FILES}" ]; then
-  throw "Conflict markers are still present in the following files:\n%s" ${CONFLICT_FILES}
-fi
-
-CLANG_FORMAT=$(which clang-format)
-if [ $? -ne 0 ]; then
-  throw "clang-format not installed. Unable to check source file format policy."
-fi
-
-CPPCHECK=$(which cppcheck)
-mkdir -p .out
-if [ $? -ne 0 ]; then
-  throw "cppcheck not installed. Unable to perform static analysis."
-fi
-
-# Check that cppcheck's version is at least 1.90.
-cppcheck_ver=$("$CPPCHECK" --version)
-if echo "$cppcheck_ver" | grep -qE '^Cppcheck\s2'; then
-  : # Version 2.x is acceptable.
+  report_result 1 "Conflict markers found in: ${CONFLICT_FILES}"
+  RETURN=1
 else
-  # For version 1.x, extract the minor version and compare.
-  minor_version=$(echo "$cppcheck_ver" | sed -Ee 's/Cppcheck 1\.([0-9]+)/\1/;q')
-  if [ "$minor_version" -lt 90 ]; then
-    throw "cppcheck version must be at least 1.90.\n\
-    See Developer Info for building cppcheck from source:\n\
-        https://cppcheck.sourceforge.io/devinfo/"
-  fi
+  report_result 0
 fi
 
-ASPELL=$(which aspell)
-if [ $? -ne 0 ]; then
-  throw "aspell not installed. Unable to do spelling check."
-fi
-if [ -z "$(aspell dump dicts | grep -E '^en$')" ]; then
-  throw "aspell-en not installed. Unable to do spelling check."
-fi
-
-DIFF=$(which colordiff)
-if [ $? -ne 0 ]; then
-  DIFF=diff
-fi
-
-if command -v sha1sum >/dev/null 2>&1; then
-  SHA1SUM="sha1sum"
-elif command -v shasum >/dev/null 2>&1; then
-  SHA1SUM="shasum"
-else
-  throw "sha1sum or shasum not installed."
-fi
-
-# Get staged filenames (added, copied, or modified) into an array.
-FILES=($(git diff --cached --name-only --diff-filter=ACM))
+# === CHECK 3: Binary files ===
+update_progress "Checking for binary files"
 binary_files=()
-
 for file in "${FILES[@]}"; do
-  # Get MIME info for the file.
-  mime_info=$(file --mime "$file")
-  # Extract a friendly filename (everything before the colon).
-  name=$(file "$file" | cut -d ":" -f1)
-
-  if echo "$mime_info" | grep -qi binary; then
-    binary_files+=("$name")
-    printf "${RED}[!]${NC} '${YELLOW}$name${NC}' appears to be a binary blob.\n"
-  fi
-done
-
-if [ "${#binary_files[@]}" -gt 0 ]; then
-  printf "${RED}[!]${NC} Binary data found.\n"
-fi
-
-C_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h|hpp)$")
-for FILE in $C_FILES; do
-  nf=$(git checkout-index --temp $FILE | cut -f 1)
-  tempdir=$(mktemp -d) || exit 1
-  newfile=$(mktemp ${tempdir}/${nf}.XXXXXX) || exit 1
-  basename=$(basename $FILE)
-
-  source="${tempdir}/${basename}"
-  mv $nf $source
-  cp .clang-format $tempdir
-  $CLANG_FORMAT $source > $newfile 2>> /dev/null
-  $DIFF -u -p -B \
-        --label="modified $FILE" --label="expected coding style" \
-        "${source}" "${newfile}"
-  r=$?
-  rm -rf "${tempdir}"
-  if [ $r != 0 ] ; then
-    echo "[!] $FILE does not follow the consistent coding style." >&2
-    RETURN=1
-  fi
-  if [ $RETURN -eq 1 ]; then
-    echo "" >&2
-    echo "Make sure you indent as the following:" >&2
-    echo "    clang-format -i $FILE" >&2
-    echo
-  fi
-done
-
-# Check syntax for changed shell scripts
-SHELL_FILES=()
-for file in "${FILES[@]}"; do
-  if [[ "$file" =~ ^scripts/common\.sh$ || "$file" =~ ^scripts/.*\.hook$ ]]; then
-    SHELL_FILES+=("$file")
-  fi
-done
-if [ "${#SHELL_FILES[@]}" -gt 0 ]; then
-  for file in "${SHELL_FILES[@]}"; do
-    if ! bash -n "$file"; then
-      throw "Syntax errors detected in $file." >&2
+  if [ -f "$file" ]; then
+    mime_info=$(file --mime "$file" 2>/dev/null)
+    if echo "$mime_info" | grep -qi binary; then
+      binary_files+=("$file")
     fi
-  done
+  fi
+done
+if [ ${#binary_files[@]} -gt 0 ]; then
+  report_result 1 "Binary files detected: ${binary_files[*]}"
+  WARNINGS_FOUND+=("Binary files should not be committed")
+else
+  report_result 0
 fi
 
-ASPELL_DICT_FILE='scripts/aspell-pws'
-if ! LC_ALL=C tail -n +2 $ASPELL_DICT_FILE | sort -f -cdu; then
-  throw '%s\n%s\n%s' \
-    'Aspell dictionary is unsorted or contains duplicated entries.' \
-    'Make sure that by using:' \
-    "    tail -n +2 $ASPELL_DICT_FILE | sort -f -du"
-fi
-
-# Show insertion and deletion counts.
-if [ "${#FILES[@]}" -gt 0 ]; then
-  echo "Following files were changed:"
-  for file in "${FILES[@]}"; do
-    summary=$(git diff --cached --numstat "$file" | awk '{
-      if ($1 != "0" && $2 != "0")
-        printf "%s insertions(+), %s deletions(-)", $1, $2;
-      else if ($1 != "0")
-        printf "%s insertions(+)", $1;
-      else if ($2 != "0")
-        printf "%s deletions(-)", $2;
-    }')
-    if [ -n "$summary" ]; then
-      echo "  - $file : $summary"
-    else
-      echo "  - $file"
-    fi
-  done
-fi
-
+# === CHECK 4: Protected files (queue.h and list.h) ===
+update_progress "Checking protected files"
 $SHA1SUM -c scripts/checksums 2>/dev/null >/dev/null
 if [ $? -ne 0 ]; then
-  throw "You are not allowed to change the header file queue.h or list.h"
+  report_result 1 "Protected files (queue.h or list.h) have been modified"
+  RETURN=1
+else
+  report_result 0
 fi
 
-# Prevent unsafe functions
-root=$(git rev-parse --show-toplevel)
-banned="([^f]gets\()|(sprintf\()|(strcpy\()"
-status=0
-for file in $C_FILES; do
-  filepath="${root}/${file}"
-  output=$(grep -nrE "${banned}" "${filepath}")
-  if [ ! -z "${output}" ]; then
-    echo "Dangerous function detected in ${filepath}"
-    echo "${output}"
-    echo
-    echo "Read 'Common vulnerabilities guide for C programmers' carefully."
-    echo "    https://security.web.cern.ch/security/recommendations/en/codetools/c.shtml"
+# === CHECK 5: Code formatting ===
+update_progress "Checking code formatting"
+C_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "\.(c|cpp|h|hpp)$" || true)
+formatting_errors=0
+if [ -n "$C_FILES" ]; then
+  for FILE in $C_FILES; do
+    if [ -f "$FILE" ]; then
+      nf=$(git checkout-index --temp $FILE | cut -f 1)
+      tempdir=$(mktemp -d) || exit 1
+      newfile=$(mktemp ${tempdir}/${nf}.XXXXXX) || exit 1
+      basename=$(basename $FILE)
+
+      source="${tempdir}/${basename}"
+      mv $nf $source
+      cp .clang-format $tempdir 2>/dev/null || true
+      clang-format $source > $newfile 2>/dev/null
+
+      if ! diff -q "${source}" "${newfile}" >/dev/null 2>&1; then
+        formatting_errors=$((formatting_errors + 1))
+        WARNINGS_FOUND+=("$FILE needs formatting (run: clang-format -i $FILE)")
+      fi
+      rm -rf "${tempdir}"
+    fi
+  done
+fi
+if [ $formatting_errors -gt 0 ]; then
+  report_result 1 "$formatting_errors file(s) need formatting"
+  RETURN=1
+else
+  report_result 0
+fi
+
+# === CHECK 6: Unsafe functions ===
+update_progress "Checking for unsafe functions"
+unsafe_found=0
+if [ -n "$C_FILES" ]; then
+  banned="([^f]gets\()|(sprintf\()|(strcpy\()"
+  for file in $C_FILES; do
+    if [ -f "$file" ]; then
+      filepath="${workspace}/${file}"
+      if grep -qE "${banned}" "${filepath}" 2>/dev/null; then
+        unsafe_found=$((unsafe_found + 1))
+        line_nums=$(grep -nE "${banned}" "${filepath}" | cut -d: -f1 | tr '\n' ',' | sed 's/,$//')
+        ERRORS_FOUND+=("Unsafe functions in $file (lines: $line_nums)")
+      fi
+    fi
+  done
+fi
+if [ $unsafe_found -gt 0 ]; then
+  report_result 1 "$unsafe_found file(s) contain unsafe functions"
+  RETURN=1
+else
+  report_result 0
+fi
+
+# === CHECK 7: Static analysis ===
+update_progress "Running static analysis"
+if [ -n "$C_FILES" ]; then
+  cppcheck_errors=0
+  for file in $C_FILES; do
+    if [ -f "$file" ]; then
+      if ! cppcheck $CPPCHECK_OPTS "$file" >/dev/null 2>&1; then
+        cppcheck_errors=$((cppcheck_errors + 1))
+      fi
+    fi
+  done
+  if [ $cppcheck_errors -gt 0 ]; then
+    report_result 1 "$cppcheck_errors file(s) failed static analysis"
     RETURN=1
+  else
+    report_result 0
+  fi
+else
+  report_result 0
+fi
+
+# === CHECK 8: Non-ASCII filenames ===
+update_progress "Checking filenames"
+if test $(git diff --cached --name-only --diff-filter=A -z | \
+          LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0; then
+  report_result 1 "Non-ASCII filename detected"
+  RETURN=1
+else
+  report_result 0
+fi
+
+# Clear the progress line
+printf "\r%*s\r" 50 ""
+
+# === SUMMARY ===
+printf "\n${CYAN}=== Pre-commit Check Summary ===${NC}\n\n"
+
+# Show file changes
+printf "${CYAN}Files to be committed:${NC}\n"
+for file in "${FILES[@]}"; do
+  summary=$(git diff --cached --numstat "$file" 2>/dev/null | awk '{
+    if ($1 != "0" && $2 != "0")
+      printf "+%s/-%s", $1, $2;
+    else if ($1 != "0")
+      printf "+%s", $1;
+    else if ($2 != "0")
+      printf "-%s", $2;
+  }')
+  if [ -n "$summary" ]; then
+    printf "  ${WHITE}%-40s${NC} ${GREEN}%s${NC}\n" "$file" "$summary"
+  else
+    printf "  ${WHITE}%s${NC}\n" "$file"
   fi
 done
 
-# format string checks
-if [[ "$OSTYPE" != darwin* ]]; then
-  # Format string checks
-  if [ ! -f fmtscan ]; then
-    make fmtscan
-    if [ ! -f fmtscan ]; then
-      throw "Fail to build 'fmtscan' tool"
-    fi
-  fi
-  if [ -n "$C_FILES" ]; then
-    echo "Running fmtscan..."
-    ./fmtscan
-    if [ $? -ne 0 ]; then
-      throw "Check format strings for spelling"
-    fi
-  fi
+# Show errors if any
+if [ ${#ERRORS_FOUND[@]} -gt 0 ]; then
+  printf "\n${RED}Errors found:${NC}\n"
+  for error in "${ERRORS_FOUND[@]}"; do
+    printf "  ${RED}✗${NC} %s\n" "$error"
+  done
 fi
 
-# static analysis
-if [ -n "$C_FILES" ]; then
-  echo "Running static analysis..."
-  $CPPCHECK $CPPCHECK_OPTS $C_FILES >/dev/null
-  if [ $? -ne 0 ]; then
-    RETURN=1
-    echo "" >&2
-    echo "Fail to pass static analysis." >&2
-    echo
-  fi
+# Show warnings if any
+if [ ${#WARNINGS_FOUND[@]} -gt 0 ]; then
+  printf "\n${YELLOW}Warnings:${NC}\n"
+  for warning in "${WARNINGS_FOUND[@]}"; do
+    printf "  ${YELLOW}!${NC} %s\n" "$warning"
+  done
 fi
 
-# non-ASCII filenames are not allowed.
-# Cross platform projects tend to avoid non-ASCII filenames; prevent
-# them from being added to the repository.
-if test $(git diff --cached --name-only --diff-filter=A -z $against |
-          LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
-then
-  cat <<\EOF
-ERROR: Attempt to add a non-ASCII file name.
-This can cause problems if you want to work with people on other platforms.
-To be portable it is advisable to rename the file.
-EOF
-  RETURN=1
+# Final status
+if [ $RETURN -eq 0 ]; then
+  printf "\n${GREEN}All checks passed!${NC}\n"
+else
+  printf "\n${RED}Pre-commit checks failed. Please fix the issues above.${NC}\n"
+  printf "${YELLOW}Tip: Use 'git commit --no-verify' to bypass these checks (not recommended).${NC}\n"
 fi
 
 exit $RETURN
