@@ -19,7 +19,7 @@ char *test_strdup(const char *s);
 #ifdef INTERNAL
 
 /* Report number of allocated blocks */
-size_t allocation_check();
+size_t allocation_check(void);
 
 /* Probability of malloc failing, expressed as percent */
 extern int fail_probability;
@@ -37,7 +37,7 @@ void set_cautious_mode(bool cautious);
 void set_noallocate_mode(bool noallocate);
 
 /* Return whether any errors have occurred since last time checked */
-bool error_check();
+bool error_check(void);
 
 /* Prepare for a risky operation using setjmp.
  * Function returns true for initial return, false for error return
@@ -45,7 +45,7 @@ bool error_check();
 bool exception_setup(bool limit_time);
 
 /* Call once past risky code */
-void exception_cancel();
+void exception_cancel(void);
 
 /* Use longjmp to return to most recent exception setup.  Include error message
  */

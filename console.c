@@ -65,10 +65,10 @@ static bool has_infile = false;
 static cmd_func_t quit_helpers[MAXQUIT];
 static int quit_helper_cnt = 0;
 
-static void init_in();
+static void init_in(void);
 
 static bool push_file(char *fname);
-static void pop_file();
+static void pop_file(void);
 
 static bool interpret_cmda(int argc, char *argv[]);
 
@@ -189,7 +189,7 @@ static bool force_quit(int argc, char *argv[])
     return ok;
 }
 
-static void record_error()
+static void record_error(void)
 {
     err_cnt++;
     if (err_cnt >= err_limit) {
@@ -403,7 +403,7 @@ static bool do_time(int argc, char *argv[])
 }
 
 static bool use_linenoise = true;
-static int web_fd;
+static int web_fd = -1;
 
 static bool do_web(int argc, char *argv[])
 {
@@ -426,7 +426,7 @@ static bool do_web(int argc, char *argv[])
 }
 
 /* Initialize interpreter */
-void init_cmd()
+void init_cmd(void)
 {
     cmd_list = NULL;
     param_list = NULL;
@@ -479,7 +479,7 @@ static bool push_file(char *fname)
 }
 
 /* Pop a file buffer from stack */
-static void pop_file()
+static void pop_file(void)
 {
     if (buf_stack) {
         rio_t *rsave = buf_stack;
@@ -490,7 +490,7 @@ static void pop_file()
 }
 
 /* Handling of input */
-static void init_in()
+static void init_in(void)
 {
     buf_stack = NULL;
 }
@@ -498,7 +498,7 @@ static void init_in()
 /* Read command from input file.
  * When hit EOF, close that file and return NULL
  */
-static char *readline()
+static char *readline(void)
 {
     char c;
     char *lptr = linebuf;
@@ -551,7 +551,7 @@ static char *readline()
     return linebuf;
 }
 
-static bool cmd_done()
+static bool cmd_done(void)
 {
     return !buf_stack || quit_flag;
 }
@@ -607,7 +607,7 @@ static int cmd_select(int nfds,
     return 0;
 }
 
-bool finish_cmd()
+bool finish_cmd(void)
 {
     bool ok = true;
     if (!quit_flag)
@@ -618,7 +618,8 @@ bool finish_cmd()
 
 static bool cmd_maybe(const char *target, const char *src)
 {
-    for (int i = 0; i < strlen(src); i++) {
+    size_t src_len = strlen(src);
+    for (size_t i = 0; i < src_len; i++) {
         if (target[i] == '\0')
             return false;
         if (src[i] != target[i])
@@ -638,8 +639,8 @@ void completion(const char *buf, line_completions_t *lc)
             if (strlen(plist->name) > 120)
                 continue;
 
-            strcat(str, "option ");
-            strcat(str, plist->name);
+            strncat(str, "option ", sizeof(str) - 1);
+            strncat(str, plist->name, sizeof(str) - strlen(str) - 1);
             if (cmd_maybe(str, buf))
                 line_add_completion(lc, str);
 

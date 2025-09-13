@@ -69,7 +69,7 @@ typedef enum {
 /* Internal functions */
 
 /* Should this allocation fail? */
-static bool fail_allocation()
+static bool fail_allocation(void)
 {
     double weight = (double) random() / RAND_MAX;
     return (weight < 0.01 * fail_probability);
@@ -83,10 +83,11 @@ static block_element_t *find_header(void *p)
     if (!p) {
         report_event(MSG_ERROR, "Attempting to free null block");
         error_occurred = true;
+        return NULL;
     }
 
     block_element_t *b =
-        (block_element_t *) ((size_t) p - sizeof(block_element_t));
+        (block_element_t *) ((uintptr_t) p - sizeof(block_element_t));
     if (cautious_mode) {
         /* Make sure this is really an allocated block */
         block_element_t *ab = allocated;
@@ -119,7 +120,7 @@ static size_t *find_footer(block_element_t *b)
 {
     // cppcheck-suppress nullPointerRedundantCheck
     size_t *p =
-        (size_t *) ((size_t) b + b->payload_size + sizeof(block_element_t));
+        (size_t *) ((uintptr_t) b + b->payload_size + sizeof(block_element_t));
     return p;
 }
 
@@ -150,18 +151,15 @@ static void *alloc(alloc_t alloc_type, size_t size)
     if (!new_block) {
         report_event(MSG_FATAL, "Couldn't allocate any more memory");
         error_occurred = true;
+        return NULL;
     }
 
-    // cppcheck-suppress nullPointerRedundantCheck
     new_block->magic_header = MAGICHEADER;
-    // cppcheck-suppress nullPointerRedundantCheck
     new_block->payload_size = size;
     *find_footer(new_block) = MAGICFOOTER;
     void *p = (void *) &new_block->payload;
-    memset(p, !alloc_type * FILLCHAR, size);
-    // cppcheck-suppress nullPointerRedundantCheck
+    memset(p, (alloc_type == TEST_CALLOC) ? 0 : FILLCHAR, size);
     new_block->next = allocated;
-    // cppcheck-suppress nullPointerRedundantCheck
     new_block->prev = NULL;
 
     if (allocated)
@@ -260,7 +258,7 @@ char *test_strdup(const char *s)
     return memcpy(new, s, len);
 }
 
-size_t allocation_check()
+size_t allocation_check(void)
 {
     return allocated_count;
 }
@@ -283,8 +281,8 @@ void set_noallocate_mode(bool noallocate)
     noallocate_mode = noallocate;
 }
 
-/* Return whether any errors have occurred since last time set error limit */
-bool error_check()
+/* Return whether any errors have occurred since last time checked */
+bool error_check(void)
 {
     bool e = error_occurred;
     error_occurred = false;
@@ -320,7 +318,7 @@ bool exception_setup(bool limit_time)
 }
 
 /* Call once past risky code */
-void exception_cancel()
+void exception_cancel(void)
 {
     if (time_limited) {
         alarm(0);

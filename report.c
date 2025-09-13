@@ -30,7 +30,7 @@ static char fail_buf[1024] = "FATAL Error.  Exiting\n";
 static volatile int ret = 0;
 
 /* Default fatal function */
-static void default_fatal_fun()
+static void default_fatal_fun(void)
 {
     ret = write(STDOUT_FILENO, fail_buf, strlen(fail_buf) + 1);
     if (logfile)
@@ -38,7 +38,7 @@ static void default_fatal_fun()
 }
 
 /* Optional function to call when fatal error encountered */
-static void (*fatal_fun)() = default_fatal_fun;
+static void (*fatal_fun)(void) = default_fatal_fun;
 
 void set_verblevel(int level)
 {
@@ -102,7 +102,7 @@ void report(int level, char *fmt, ...)
     if (!verbfile)
         init_files(stdout, stdout);
 
-    char buffer[BUF_SIZE];
+    char buffer[BUF_SIZE] = {0};
     if (level <= verblevel) {
         va_list ap;
         va_start(ap, fmt);
@@ -135,7 +135,7 @@ void report_noreturn(int level, char *fmt, ...)
     if (!verbfile)
         init_files(stdout, stdout);
 
-    char buffer[BUF_SIZE];
+    char buffer[BUF_SIZE] = {0};
     if (level <= verblevel) {
         va_list ap;
         va_start(ap, fmt);
@@ -263,14 +263,17 @@ char *strsave_or_fail(const char *s, const char *fun_name)
     peak_bytes = MAX(peak_bytes, current_bytes);
     last_peak_bytes = MAX(last_peak_bytes, current_bytes);
 
+    // cppcheck-suppress returnDanglingLifetime
     return strncpy(ss, s, len + 1);
 }
 
 /* Free block, as from malloc, realloc, or strsave */
 void free_block(void *b, size_t bytes)
 {
-    if (!b)
+    if (!b) {
         report_event(MSG_ERROR, "Attempting to free null block");
+        return;
+    }
     free(b);
 
     free_cnt++;
@@ -281,8 +284,10 @@ void free_block(void *b, size_t bytes)
 /* Free array, as from calloc */
 void free_array(void *b, size_t cnt, size_t bytes)
 {
-    if (!b)
+    if (!b) {
         report_event(MSG_ERROR, "Attempting to free null block");
+        return;
+    }
     free(b);
 
     free_cnt++;
@@ -293,8 +298,10 @@ void free_array(void *b, size_t cnt, size_t bytes)
 /* Free string saved by strsave_or_fail */
 void free_string(char *s)
 {
-    if (!s)
+    if (!s) {
         report_event(MSG_ERROR, "Attempting to free null block");
+        return;
+    }
     free_block((void *) s, strlen(s) + 1);
 }
 
