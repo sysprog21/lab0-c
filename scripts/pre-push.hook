@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Validates repository integrity and runs build checks before pushing to master
+
 # Ensure that the common script exists and is readable, then verify it has no
 # syntax errors and defines the required function.
 common_script="$(dirname "$0")/../../scripts/common.sh"
@@ -11,46 +13,110 @@ declare -F set_colors >/dev/null 2>&1 || { echo "[!] '$common_script' does not d
 set_colors
 
 protected_branch='master'
-current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
+current_branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
 
-# Validate repository
-# commit 50c5ac53d31adf6baac4f8d3db6b3ce2215fee40
+# Validate repository integrity
+# Ensures this is a proper fork of the original lab0-c repository
+# Expected commit: 50c5ac53d31adf6baac4f8d3db6b3ce2215fee40
 # Author: Jim Huang <jserv.tw@gmail.com>
 # Date:   Thu Feb 20 05:20:55 2025 +0800
 #    Bump copyright year
-commit=$(git rev-list --skip 1 --grep '^Bump copyright' 0b8be2c15160c216e8b6ec82c99a000e81c0e429...HEAD)
-if [ x"$commit" != x"50c5ac53d31adf6baac4f8d3db6b3ce2215fee40" ] ; then
-  echo -e "${RED}ERROR${NC}: This repository is insane."
-  echo -e "Make sure you did fork from https://github.com/sysprog21/lab0-c recently."
-  echo ""
+validate_repository() {
+  local expected_commit="50c5ac53d31adf6baac4f8d3db6b3ce2215fee40"
+  local base_commit="0b8be2c15160c216e8b6ec82c99a000e81c0e429"
+
+  # Check if the expected commit exists in history
+  if ! git rev-parse --verify "$expected_commit^{commit}" >/dev/null 2>&1; then
+    echo -e "${RED}ERROR${NC}: Repository validation failed."
+    echo -e "${YELLOW}Expected commit not found:${NC} $expected_commit"
+    echo -e "Make sure you forked from https://github.com/sysprog21/lab0-c recently."
+    echo ""
+    return 1
+  fi
+
+  # Verify the commit matches expected pattern
+  local commit=$(git rev-list --skip 1 --grep '^Bump copyright' "$base_commit"...HEAD 2>/dev/null || true)
+  if [ "$commit" != "$expected_commit" ]; then
+    echo -e "${RED}ERROR${NC}: Repository history verification failed."
+    echo -e "Make sure you forked from https://github.com/sysprog21/lab0-c recently."
+    echo ""
+    return 1
+  fi
+
+  return 0
+}
+
+# Run repository validation
+if ! validate_repository; then
   exit 1
 fi
 
-# Show hints
-echo -e "${YELLOW}Hint${NC}: You might want to know why Git is always ${GREEN}asking for my password${NC}."
-echo -e "      https://docs.github.com/en/get-started/getting-started-with-git/why-is-git-always-asking-for-my-password"
-echo ""
+# Show helpful hints for common issues
+show_hints() {
+  echo -e "${YELLOW}Hint${NC}: If Git keeps asking for your password, see:"
+  echo -e "      https://docs.github.com/en/get-started/getting-started-with-git/why-is-git-always-asking-for-my-password"
+  echo ""
+}
 
-# only run this if you are pushing to master
-if [[ $current_branch = $protected_branch ]] ; then
-  echo -e "${YELLOW}Running pre push to master check...${NC}"
+# Run build checks for protected branch
+run_build_checks() {
+  echo -e "${YELLOW}Running pre-push checks for $protected_branch branch...${NC}"
+  echo ""
 
-  echo -e "${YELLOW}Trying to build tests project...${NC}"
+  # Clean previous build artifacts for fresh check
+  echo -e "${YELLOW}Cleaning previous build...${NC}"
+  make clean >/dev/null 2>&1 || true
 
-  # build the project
-  make
+  echo -e "${YELLOW}Building project...${NC}"
 
-  # $? is a shell variable which stores the return code from what we just ran
-  rc=$?
-  if [[ $rc != 0 ]] ; then
-    echo -e "${RED}Failed to build the project, please fix this and push again${NC}"
+  # Capture build output for better error reporting
+  build_output=$(make 2>&1)
+  build_result=$?
+
+  if [ $build_result -ne 0 ]; then
+    echo -e "${RED}Build failed!${NC}"
     echo ""
-    exit $rc
+    echo "Build output:"
+    echo "============="
+    echo "$build_output" | tail -20
+    echo "============="
+    echo ""
+    echo -e "${RED}Please fix build errors before pushing to $protected_branch${NC}"
+    return 1
   fi
 
-  # Everything went OK so we can exit with a zero
-  echo -e "${GREEN}Pre-push check passed!${NC}"
-  echo ""
-fi
+  echo -e "${GREEN}✓ Build successful${NC}"
 
-exit 0
+  # Additional checks could be added here
+  # For example: basic tests, format checks, etc.
+
+  return 0
+}
+
+# Main execution
+main() {
+  show_hints
+
+  # Check if pushing to protected branch
+  if [ "$current_branch" = "$protected_branch" ]; then
+    if ! run_build_checks; then
+      exit 1
+    fi
+
+    echo ""
+    echo -e "${GREEN}All pre-push checks passed!${NC}"
+    echo -e "${GREEN}Pushing to $protected_branch...${NC}"
+    echo ""
+  else
+    echo -e "${CYAN}Pushing to branch: $current_branch${NC}"
+    echo -e "${CYAN}(Pre-push checks are only run for $protected_branch)${NC}"
+    echo ""
+  fi
+
+  exit 0
+}
+
+# Handle script interruption gracefully
+trap 'echo -e "\n${YELLOW}Pre-push hook interrupted${NC}"; exit 130' INT TERM
+
+main "$@"
