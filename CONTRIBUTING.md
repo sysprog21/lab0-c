@@ -44,10 +44,17 @@ However, participation requires adherence to fundamental ground rules:
   This variant should be considered the standard for all documentation efforts.
   For instance, opt for "initialize" over "initialise" and "color" rather than "colour".
 
+### Code Formatting Tools
+
 Software requirement: [clang-format](https://clang.llvm.org/docs/ClangFormat.html) version 18 or later.
 
-This repository consistently contains an up-to-date `.clang-format` file with rules that match the explained ones.
-For maintaining a uniform coding style, execute the command `clang-format -i *.{c,h}`.
+This repository contains a `.clang-format` file that enforces the coding style described below.
+To format your code, run:
+```bash
+clang-format -i *.{c,h}
+```
+
+**Note**: The pre-commit hooks will verify code formatting automatically.
 
 ## Coding Style for Modern C
 
@@ -202,6 +209,12 @@ Each variable's name should clearly reflect its purpose.
 Use [snake_case](https://en.wikipedia.org/wiki/Snake_case) for naming conventions,
 and avoid using "camelCase."
 Additionally, do not use Hungarian notation or any other unnecessary prefixes or suffixes.
+
+#### Pointer NULL checks
+
+Both `if (!ptr)` and `if (ptr == NULL)` are acceptable for checking NULL pointers.
+The `!ptr` form is idiomatic C and widely used throughout the codebase.
+Choose one style and use it consistently within a function or module.
 
 When declaring pointers, follow these spacing conventions:
 ```c
@@ -365,16 +378,20 @@ int inspect(obj_t *obj)
 }
 ```
 
-Instead, consider this approach:
+Prefer early return for error conditions:
 ```c
 int inspect(obj_t *obj)
 {
     if (!cond)
         return -1;
+
+    /* Main logic here */
     ...
     return 0;
 }
 ```
+
+This pattern reduces nesting and keeps the main logic at the primary indentation level.
 
 However, be careful not to make the logic more convoluted in an attempt to simplify nesting.
 
@@ -391,15 +408,16 @@ Curly brackets and spacing follow the K&R style:
     }
 ```
 
-Simple and succinct one-line if-statements may omit curly brackets:
+Simple one-line if-statements may omit curly brackets:
 ```c
     if (!valid)
         return -1;
 ```
 
-However, do prefer curly brackets with multi-line or more complex statements.
-If one branch uses curly brackets, then all other branches shall use the
-curly brackets too.
+Curly brackets are required when:
+- The statement spans multiple lines
+- The statement is complex or contains nested operations
+- Any branch in an if-else chain uses curly brackets (then all branches must use them)
 
 Wrap long conditions to the if-statement indentation adding extra 4 spaces:
 ```c
@@ -877,22 +895,22 @@ Author: Jim Huang <jserv@ccns.ncku.edu.tw>
 Date:   Mon Feb 24 13:08:32 2025 +0800
 
     Introduce CPU architecture filtering in scheduler
-    
+
     In environments with mixed CPU architectures, it is crucial to ensure
     that an instance runs only on a host with a compatible CPU
     type—preventing, for example, a RISC-V instance from being scheduled on
     an Arm host.
-    
+
     This new scheduler filter enforces that requirement by comparing an
     instance's architecture against the host's allowed architectures. For
     the libvirt driver, the host's guest capabilities are queried, and the
     permitted architectures are recorded in the permitted_instances_types
     list within the host's cpu_info dictionary.
-    
+
     The filter systematically excludes hosts that do not support the
     instance's CPU architecture. Additionally, RISC-V has been added to the
     set of acceptable architectures for scheduling.
-    
+
     Note that the CPU architecture filter is disabled by default.
 ```
 
