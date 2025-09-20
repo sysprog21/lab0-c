@@ -17,6 +17,7 @@ class Tracer:
     autograde = False
     useValgrind = False
     colored = False
+    groupOutput = False
 
     traceDict = {
         1: "trace-01-ops",
@@ -69,13 +70,15 @@ class Tracer:
                  verbLevel=0,
                  autograde=False,
                  useValgrind=False,
-                 colored=False):
+                 colored=False,
+                 groupOutput=False):
         if qtest != "":
             self.qtest = qtest
         self.verbLevel = verbLevel
         self.autograde = autograde
         self.useValgrind = useValgrind
         self.colored = colored
+        self.groupOutput = groupOutput
 
     def printInColor(self, text, color):
         if self.colored == False:
@@ -117,9 +120,13 @@ class Tracer:
             tname = self.traceDict[t]
             if self.verbLevel > 0:
                 print("+++ TESTING trace %s:" % tname)
+                if self.groupOutput:
+                    print("::group::Trace %s" % tname, flush=True)
             ok = self.runTrace(t)
             maxval = self.maxScores[t]
             tval = maxval if ok else 0
+            if self.groupOutput:
+                print("::endgroup::", flush=True)
             if tval < maxval:
                 self.printInColor("---\t%s\t%d/%d" % (tname, tval, maxval), self.RED)
             else:
@@ -146,7 +153,7 @@ class Tracer:
             sys.exit(1)
 
 def usage(name):
-    print("Usage: %s [-h] [-p PROG] [-t TID] [-v LEVEL] [--valgrind] [-c]" % name)
+    print("Usage: %s [-h] [-p PROG] [-t TID] [-v LEVEL] [--valgrind] [-c] [--group-output]" % name)
     print("  -h        Print this message")
     print("  -p PROG   Program to test")
     print("  -t TID    Trace ID to test")
@@ -163,8 +170,9 @@ def run(name, args):
     autograde = False
     useValgrind = False
     colored = False
+    groupOutput = False
 
-    optlist, args = getopt.getopt(args, 'hp:t:v:A:c', ['valgrind'])
+    optlist, args = getopt.getopt(args, 'hp:t:v:A:c', ['valgrind', 'group-output'])
     for (opt, val) in optlist:
         if opt == '-h':
             usage(name)
@@ -181,6 +189,8 @@ def run(name, args):
             useValgrind = True
         elif opt == '-c':
             colored = True
+        elif opt == '--group-output':
+            groupOutput = True
         else:
             print("Unrecognized option '%s'" % opt)
             usage(name)
@@ -190,7 +200,8 @@ def run(name, args):
                verbLevel=vlevel,
                autograde=autograde,
                useValgrind=useValgrind,
-               colored=colored)
+               colored=colored,
+               groupOutput=groupOutput)
     t.run(tid)
 
 
